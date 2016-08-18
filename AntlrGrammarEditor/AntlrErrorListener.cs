@@ -13,13 +13,13 @@ namespace AntlrGrammarEditor
 
         public IReadOnlyList<ParsingError> Errors => _errors;
 
-        public virtual void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+        public void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
             var lexerError = new ParsingError(line, charPositionInLine, msg);
             _errors.Add(lexerError);
         }
 
-        public virtual void SyntaxError(IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+        public void SyntaxError(IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
             var parserError = new ParsingError(line, charPositionInLine, msg);
             _errors.Add(parserError);

@@ -175,16 +175,16 @@ namespace AntlrGrammarEditor
             {
                 var inputStream = new AntlrInputStream(Grammar);
                 var antlr4Lexer = new ANTLRv4Lexer(inputStream);
-                antlr4Lexer.ErrorListeners.Clear();
-                antlr4Lexer.ErrorListeners.Add(errorListener);
+                antlr4Lexer.RemoveErrorListeners();
+                antlr4Lexer.AddErrorListener(errorListener);
                 var codeTokenSource = new ListTokenSource(antlr4Lexer.GetAllTokens());
 
                 CancelOperationIfRequired(CheckGrammarCancelMessage);
 
                 var codeTokenStream = new CommonTokenStream(codeTokenSource);
                 var antlr4Parser = new ANTLRv4Parser(codeTokenStream);
-                antlr4Parser.ErrorListeners.Clear();
-                antlr4Parser.ErrorListeners.Add(errorListener);
+                antlr4Parser.RemoveErrorListeners();
+                antlr4Parser.AddErrorListener(errorListener);
 
                 var grammarInfoCollectorListener = new GrammarInfoCollectorListener();
                 var tree = antlr4Parser.grammarSpec();
@@ -193,7 +193,7 @@ namespace AntlrGrammarEditor
                 result.GrammarName = grammarInfoCollectorListener.GrammarName;
                 result.Rules = grammarInfoCollectorListener.Rules;
                 result.Errors = errorListener.Errors;
-                if (string.IsNullOrEmpty(Root))
+                if (string.IsNullOrEmpty(Root) && result.Rules.Count > 0)
                 {
                     Root = result.Rules.First();
                 }
@@ -427,17 +427,21 @@ namespace AntlrGrammarEditor
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
-
+                if (Runtime == Runtime.Java && e.Data.Contains(": error:"))
+                {
+                    _parserCompilationErrors.Add(new ParsingError(0, 0, e.Data));
+                }
             }
         }
 
         private void ParserCompilation_OutputDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
         {
-            if (e.Data != null && e.Data.Contains(": error CS"))
+            if (!string.IsNullOrEmpty(e.Data))
             {
-                var encoding = Encoding.GetEncoding("CP866");
-                var str = encoding.GetString(Encoding.Default.GetBytes(e.Data));
-                _parserCompilationErrors.Add(new ParsingError(0, 0, str));
+                if ((Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp) && e.Data.Contains(": error CS"))
+                {
+                    _parserCompilationErrors.Add(new ParsingError(0, 0, e.Data));
+                }
             }
         }
 
