@@ -12,8 +12,7 @@ namespace AntlrGrammarEditor
 {
     public class Workflow
     {
-        private static string GeneratedDirectoryName = "AntlrGrammarEditorGenerated";
-        private static string ParserDirectoryName = "AntlrGrammarEditorParser";
+        private static string HelperDirectoryName = "AntlrGrammarEditorHelperDirectory42";
         private const string TextFileName = "Text.txt";
 
         private const string TemplateGrammarName = "AntlrGrammarName42";
@@ -246,11 +245,10 @@ namespace AntlrGrammarEditor
             Process process = null;
             try
             {
-                if (Directory.Exists(GeneratedDirectoryName))
+                if (!Directory.Exists(HelperDirectoryName))
                 {
-                    Directory.Delete(GeneratedDirectoryName, true);
+                    Directory.CreateDirectory(HelperDirectoryName);
                 }
-                Directory.CreateDirectory(GeneratedDirectoryName);
                 var fileName = $"{state.GrammarName}.g4";
                 File.WriteAllText(fileName, state.Grammar);
 
@@ -259,8 +257,15 @@ namespace AntlrGrammarEditor
                 _parserGenerationErrors.Clear();
                 
                 var javaPath = "java";
-                var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{fileName}"" -o ""{GeneratedDirectoryName}"" " +
+                var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{fileName}"" -o ""{HelperDirectoryName}"" " +
                     $"-Dlanguage={GetLanguage(Runtime)} -no-visitor -no-listener";
+
+                string extension = GetExtension(Runtime);
+                var runtimeExtensionFiles = Directory.GetFiles(HelperDirectoryName, "*." + extension);
+                foreach (var file in runtimeExtensionFiles)
+                {
+                    File.Delete(file);
+                }
 
                 process = SetupAndStartProcess(javaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
 
@@ -296,26 +301,19 @@ namespace AntlrGrammarEditor
             Process process = null;
             try
             {
-                if (Directory.Exists(ParserDirectoryName))
-                {
-                    Directory.Delete(ParserDirectoryName, true);
-                }
-                Directory.CreateDirectory(ParserDirectoryName);
-
                 _parserCompilationErrors.Clear();
                 string compilatorPath = "";
                 string arguments = "";
                 string templateName = "";
-                string workingDirectory = ParserDirectoryName;
+                string workingDirectory = HelperDirectoryName;
                 string runtimeLibraryPath = Path.Combine(Runtime + "_Runtime", GetLibraryName(Runtime));
 
                 string extension = GetExtension(Runtime);
-                var generatedFiles = Directory.GetFiles(GeneratedDirectoryName, "*." + extension);
+                var generatedFiles = Directory.GetFiles(HelperDirectoryName, "*." + extension);
                 var compiliedFiles = new StringBuilder();
                 foreach (var file in generatedFiles)
                 {
                     compiliedFiles.Append('"' + Path.GetFileName(file) + "\" ");
-                    File.Copy(file, Path.Combine(ParserDirectoryName, Path.GetFileName(file)), true);
                 }
 
                 if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
@@ -333,7 +331,7 @@ namespace AntlrGrammarEditor
                     arguments = $@"-cp ""..\{runtimeLibraryPath}"" " + compiliedFiles.ToString();
                 }
 
-                var templateFile = Path.Combine(ParserDirectoryName, templateName);
+                var templateFile = Path.Combine(HelperDirectoryName, templateName);
                 var code = File.ReadAllText(Path.Combine(Runtime + "_Runtime", templateName));
                 code = code.Replace(TemplateGrammarName, state.GrammarCheckedState.GrammarName).Replace(TemplateGrammarRoot, Root);
                 File.WriteAllText(templateFile, code);
@@ -379,21 +377,21 @@ namespace AntlrGrammarEditor
             Process process = null;
             try
             {
-                File.WriteAllText(Path.Combine(ParserDirectoryName, TextFileName), result.Text);
+                File.WriteAllText(Path.Combine(HelperDirectoryName, TextFileName), result.Text);
                 _textErrors.Clear();
 
                 string runtimeLibraryPath = Path.Combine(Runtime + "_Runtime", GetLibraryName(Runtime));
                 string parserFileName = "";
                 string arguments = "";
-                string workingDirectory = ParserDirectoryName;
+                string workingDirectory = HelperDirectoryName;
                 if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
                 {
-                    var antlrRuntimeDir = Path.Combine(ParserDirectoryName, GetLibraryName(Runtime));
+                    var antlrRuntimeDir = Path.Combine(HelperDirectoryName, GetLibraryName(Runtime));
                     //if (!File.Exists(antlrRuntimeDir))
                     {
                         File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
                     }
-                    parserFileName = Path.Combine(ParserDirectoryName, $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.GrammarName}Parser.exe");
+                    parserFileName = Path.Combine(HelperDirectoryName, $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.GrammarName}Parser.exe");
                     arguments = TextFileName;
                 }
                 else if (Runtime == Runtime.Java)
