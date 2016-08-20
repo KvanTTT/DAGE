@@ -10,5 +10,6 @@ namespace AntlrGrammarEditor
     {
         Single,
         LexerParser,
+        PreprocessLexerParser
     }
 }

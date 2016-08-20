@@ -32,18 +32,31 @@ namespace AntlrGrammarEditor
         private Runtime _runtime;
         private string _root = "";
         private string _text = "";
-        private List<ParsingError> _parserGenerationErrors;
-        private List<ParsingError> _parserCompilationErrors;
-        private List<ParsingError> _textErrors;
+        private WorkflowState _currentState;
+
+        private List<ParsingError> _parserGenerationErrors = new List<ParsingError>();
+        private List<ParsingError> _parserCompilationErrors = new List<ParsingError>();
+        private List<ParsingError> _textErrors = new List<ParsingError>();
         private string _stringTree;
 
         private CancellationTokenSource _cancellationTokenSource;
-        private object _lock = new object();
-
-        public bool AutoProcessing { get; set; }
+        private InputState _inputState = new InputState();
+        private object _lockObj = new object();
 
         public GrammarCheckedState GrammarCheckedState { get; private set; }
-        public WorkflowState CurrentState { get; private set; } = new InputState();
+
+        public WorkflowState CurrentState
+        {
+            get
+            {
+                return _currentState;
+            }
+            private set
+            {
+                _currentState = value;
+                StateChanged?.Invoke(this, _currentState);
+            }
+        }
 
         public string Grammar
         {
@@ -53,6 +66,7 @@ namespace AntlrGrammarEditor
             }
             set
             {
+                StopIfRequired();
                 _grammar = value;
                 RollbackToStageAndProcessIfRequired(WorkflowStage.Input);
             }
@@ -66,6 +80,7 @@ namespace AntlrGrammarEditor
             }
             set
             {
+                StopIfRequired();
                 _runtime = value;
                 RollbackToStageAndProcessIfRequired(WorkflowStage.GrammarChecked);
             }
@@ -79,6 +94,7 @@ namespace AntlrGrammarEditor
             }
             set
             {
+                StopIfRequired();
                 _root = value;
                 RollbackToStageAndProcessIfRequired(WorkflowStage.ParserGenerated);
             }
@@ -92,10 +108,13 @@ namespace AntlrGrammarEditor
             }
             set
             {
+                StopIfRequired();
                 _text = value;
                 RollbackToStageAndProcessIfRequired(WorkflowStage.ParserCompilied);
             }
         }
+
+        public event EventHandler<WorkflowState> StateChanged;
 
         static Workflow()
         {
@@ -106,13 +125,36 @@ namespace AntlrGrammarEditor
 
         public Workflow()
         {
+            CurrentState = _inputState;
         }
 
         public WorkflowState Process()
         {
+            StopIfRequired();
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            while (!CurrentState.HasErrors && CurrentState.Stage < WorkflowStage.TextParsed)
+            {
+                ProcessOneStep();
+            }
+
+            _cancellationTokenSource = null;
+            return CurrentState;
+        }
+
+        public void RollbackToPreviousStageIfErrors()
+        {
+            if (CurrentState.HasErrors)
+            {
+                CurrentState = CurrentState.PreviousState;
+            }
+        }
+
+        private void StopIfRequired()
+        {
             if (_cancellationTokenSource != null)
             {
-                lock (_lock)
+                lock (_lockObj)
                 {
                     if (_cancellationTokenSource != null)
                     {
@@ -124,15 +166,6 @@ namespace AntlrGrammarEditor
                     }
                 }
             }
-            _cancellationTokenSource = new CancellationTokenSource();
-
-            while (!CurrentState.HasErrors && CurrentState.Stage < WorkflowStage.TextParsed)
-            {
-                ProcessOneStep();
-            }
-
-            _cancellationTokenSource = null;
-            return CurrentState;
         }
 
         private void ProcessOneStep()
@@ -154,22 +187,20 @@ namespace AntlrGrammarEditor
             }
         }
 
-        protected void RollbackToStageAndProcessIfRequired(WorkflowStage stage)
+        private void RollbackToStageAndProcessIfRequired(WorkflowStage stage)
         {
             RollbackToStage(stage);
-            if (AutoProcessing)
-            {
-                Process();
-            }
         }
 
-        protected GrammarCheckedState CheckGrammar()
+        private GrammarCheckedState CheckGrammar()
         {
             var errorListener = new AntlrErrorListener();
 
             var result = new GrammarCheckedState
             {
-                Grammar = Grammar
+                Grammar = Grammar,
+                InputState = _inputState,
+                Rules = new List<string>()
             };
             try
             {
@@ -183,6 +214,7 @@ namespace AntlrGrammarEditor
 
                 var codeTokenStream = new CommonTokenStream(codeTokenSource);
                 var antlr4Parser = new ANTLRv4Parser(codeTokenStream);
+
                 antlr4Parser.RemoveErrorListeners();
                 antlr4Parser.AddErrorListener(errorListener);
 
@@ -193,9 +225,9 @@ namespace AntlrGrammarEditor
                 result.GrammarName = grammarInfoCollectorListener.GrammarName;
                 result.Rules = grammarInfoCollectorListener.Rules;
                 result.Errors = errorListener.Errors;
-                if (string.IsNullOrEmpty(Root) && result.Rules.Count > 0)
+                if (result.Rules.Count > 0 && !result.Rules.Contains(_root))
                 {
-                    Root = result.Rules.First();
+                    _root = result.Rules.First();
                 }
 
                 CancelOperationIfRequired(CheckGrammarCancelMessage);
@@ -208,9 +240,9 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        protected ParserGeneratedState GenerateParser(GrammarCheckedState state)
+        private ParserGeneratedState GenerateParser(GrammarCheckedState state)
         {
-            ParserGeneratedState result = new ParserGeneratedState { GrammarCheckedState = state };
+            ParserGeneratedState result = new ParserGeneratedState { GrammarCheckedState = state, Errors = _parserGenerationErrors };
             Process process = null;
             try
             {
@@ -224,7 +256,7 @@ namespace AntlrGrammarEditor
 
                 CancelOperationIfRequired(GenerateParserCancelMessage);
 
-                _parserGenerationErrors = new List<ParsingError>();
+                _parserGenerationErrors.Clear();
                 
                 var javaPath = "java";
                 var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{fileName}"" -o ""{GeneratedDirectoryName}"" " +
@@ -237,7 +269,6 @@ namespace AntlrGrammarEditor
                     Thread.Sleep(GenerateParserProcessTimeout);
                     CancelOperationIfRequired(GenerateParserCancelMessage);
                 }
-                result.Errors = _parserGenerationErrors;
 
                 CancelOperationIfRequired(GenerateParserCancelMessage);
             }
@@ -259,9 +290,9 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        protected ParserCompiliedState CompileParser(ParserGeneratedState state)
+        private ParserCompiliedState CompileParser(ParserGeneratedState state)
         {
-            ParserCompiliedState result = new ParserCompiliedState { ParserGeneratedState = state };
+            ParserCompiliedState result = new ParserCompiliedState { ParserGeneratedState = state, Errors = _parserCompilationErrors };
             Process process = null;
             try
             {
@@ -271,7 +302,7 @@ namespace AntlrGrammarEditor
                 }
                 Directory.CreateDirectory(ParserDirectoryName);
 
-                _parserCompilationErrors = new List<ParsingError>();
+                _parserCompilationErrors.Clear();
                 string compilatorPath = "";
                 string arguments = "";
                 string templateName = "";
@@ -316,7 +347,6 @@ namespace AntlrGrammarEditor
                 }
 
                 result.Root = Root;
-                result.Errors = _parserCompilationErrors;
 
                 CancelOperationIfRequired(CompileParserCancelMessage);
             }
@@ -338,18 +368,19 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        protected TextParsedState ParseText(ParserCompiliedState state)
+        private TextParsedState ParseText(ParserCompiliedState state)
         {
             var result = new TextParsedState
             {
                 ParserCompiliedState = state,
-                Text = Text
+                Text = Text,
+                TextErrors = _textErrors
             };
             Process process = null;
             try
             {
                 File.WriteAllText(Path.Combine(ParserDirectoryName, TextFileName), result.Text);
-                _textErrors = new List<ParsingError>();
+                _textErrors.Clear();
 
                 string runtimeLibraryPath = Path.Combine(Runtime + "_Runtime", GetLibraryName(Runtime));
                 string parserFileName = "";
@@ -380,7 +411,6 @@ namespace AntlrGrammarEditor
                 }
 
                 result.StringTree = _stringTree;
-                result.TextErrors = _textErrors;
 
                 CancelOperationIfRequired(ParseTextCancelMessage);
             }
@@ -406,6 +436,19 @@ namespace AntlrGrammarEditor
         {
             while (CurrentState.Stage > stage && CurrentState.PreviousState != null)
             {
+                if (CurrentState.Stage <= WorkflowStage.TextParsed)
+                {
+                    _stringTree = "";
+                    _textErrors.Clear();
+                }
+                if (CurrentState.Stage <= WorkflowStage.ParserCompilied)
+                {
+                    _parserCompilationErrors.Clear();
+                }
+                if (CurrentState.Stage <= WorkflowStage.ParserGenerated)
+                {
+                    _parserGenerationErrors.Clear();
+                }
                 CurrentState = CurrentState.PreviousState;
             }
         }
