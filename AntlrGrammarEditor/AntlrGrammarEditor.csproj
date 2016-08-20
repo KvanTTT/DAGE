@@ -40,155 +40,155 @@
     <Content Include="antlr4-csharp-4.5.3-complete.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="CSharpSharwell_Runtime\Antlr4.Runtime.dll">
+    <Content Include="Runtimes\CSharpSharwell\Antlr4.Runtime.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="CSharp_Runtime\Antlr4.Runtime.dll">
+    <Content Include="Runtimes\CSharp\Antlr4.Runtime.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\ATN.js">
+    <Content Include="Runtimes\JavaScript\atn\ATN.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\ATNConfig.js">
+    <Content Include="Runtimes\JavaScript\atn\ATNConfig.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\ATNConfigSet.js">
+    <Content Include="Runtimes\JavaScript\atn\ATNConfigSet.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\ATNDeserializationOptions.js">
+    <Content Include="Runtimes\JavaScript\atn\ATNDeserializationOptions.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\ATNDeserializer.js">
+    <Content Include="Runtimes\JavaScript\atn\ATNDeserializer.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\ATNSimulator.js">
+    <Content Include="Runtimes\JavaScript\atn\ATNSimulator.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\ATNState.js">
+    <Content Include="Runtimes\JavaScript\atn\ATNState.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\ATNType.js">
+    <Content Include="Runtimes\JavaScript\atn\ATNType.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\index.js">
+    <Content Include="Runtimes\JavaScript\atn\index.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\LexerAction.js">
+    <Content Include="Runtimes\JavaScript\atn\LexerAction.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\LexerActionExecutor.js">
+    <Content Include="Runtimes\JavaScript\atn\LexerActionExecutor.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\LexerATNSimulator.js">
+    <Content Include="Runtimes\JavaScript\atn\LexerATNSimulator.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\ParserATNSimulator.js">
+    <Content Include="Runtimes\JavaScript\atn\ParserATNSimulator.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\PredictionMode.js">
+    <Content Include="Runtimes\JavaScript\atn\PredictionMode.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\SemanticContext.js">
+    <Content Include="Runtimes\JavaScript\atn\SemanticContext.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\atn\Transition.js">
+    <Content Include="Runtimes\JavaScript\atn\Transition.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\BufferedTokenStream.js">
+    <Content Include="Runtimes\JavaScript\BufferedTokenStream.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\CommonTokenFactory.js">
+    <Content Include="Runtimes\JavaScript\CommonTokenFactory.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\CommonTokenStream.js">
+    <Content Include="Runtimes\JavaScript\CommonTokenStream.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\dfa\DFA.js">
+    <Content Include="Runtimes\JavaScript\dfa\DFA.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\dfa\DFASerializer.js">
+    <Content Include="Runtimes\JavaScript\dfa\DFASerializer.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\dfa\DFAState.js">
+    <Content Include="Runtimes\JavaScript\dfa\DFAState.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\dfa\index.js">
+    <Content Include="Runtimes\JavaScript\dfa\index.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\error\DiagnosticErrorListener.js">
+    <Content Include="Runtimes\JavaScript\error\DiagnosticErrorListener.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\error\ErrorListener.js">
+    <Content Include="Runtimes\JavaScript\error\ErrorListener.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\error\Errors.js">
+    <Content Include="Runtimes\JavaScript\error\Errors.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\error\ErrorStrategy.js">
+    <Content Include="Runtimes\JavaScript\error\ErrorStrategy.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\error\index.js">
+    <Content Include="Runtimes\JavaScript\error\index.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\FileStream.js">
+    <Content Include="Runtimes\JavaScript\FileStream.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\index.js">
+    <Content Include="Runtimes\JavaScript\index.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\InputStream.js">
+    <Content Include="Runtimes\JavaScript\InputStream.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\IntervalSet.js">
+    <Content Include="Runtimes\JavaScript\IntervalSet.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\Lexer.js">
+    <Content Include="Runtimes\JavaScript\Lexer.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\LL1Analyzer.js">
+    <Content Include="Runtimes\JavaScript\LL1Analyzer.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\Parser.js">
+    <Content Include="Runtimes\JavaScript\Parser.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\ParserRuleContext.js">
+    <Content Include="Runtimes\JavaScript\ParserRuleContext.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\PredictionContext.js">
+    <Content Include="Runtimes\JavaScript\PredictionContext.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\Recognizer.js">
+    <Content Include="Runtimes\JavaScript\Recognizer.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\RuleContext.js">
+    <Content Include="Runtimes\JavaScript\RuleContext.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\Token.js">
+    <Content Include="Runtimes\JavaScript\Token.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\tree\index.js">
+    <Content Include="Runtimes\JavaScript\tree\index.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\tree\Tree.js">
+    <Content Include="Runtimes\JavaScript\tree\Tree.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\tree\Trees.js">
+    <Content Include="Runtimes\JavaScript\tree\Trees.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="JavaScript_Runtime\Utils.js">
+    <Content Include="Runtimes\JavaScript\Utils.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Java_Runtime\antlr-runtime-4.5.3.jar">
+    <Content Include="Runtimes\Java\antlr-runtime-4.5.3.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Java_Runtime\Main.java">
+    <Content Include="Runtimes\Java\Main.java">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AntlrErrorListener.cs" />
     <Compile Include="AntlrHelper.cs" />
-    <Content Include="CSharp_Runtime\Program.cs">
+    <Content Include="Runtimes\CSharp\Program.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Compile Include="LexerAdaptor.cs" />
@@ -214,7 +214,7 @@
     <Content Include="antlr-4.5.3-complete.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="CSharpSharwell_Runtime\Program.cs">
+    <Content Include="Runtimes\CSharpSharwell\Program.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Compile Include="Generated\ANTLRv4Lexer.cs" />
@@ -228,10 +228,10 @@
     <None Include="ANTLRv4Parser.g4" />
     <None Include="Generated\ANTLRv4Lexer.tokens" />
     <None Include="Generated\ANTLRv4Parser.tokens" />
-    <None Include="JavaScript_Runtime\package.json">
+    <None Include="Runtimes\JavaScript\package.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="JavaScript_Runtime\README.md">
+    <None Include="Runtimes\JavaScript\README.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="LexBasic.g4" />

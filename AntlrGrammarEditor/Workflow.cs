@@ -306,7 +306,7 @@ namespace AntlrGrammarEditor
                 string arguments = "";
                 string templateName = "";
                 string workingDirectory = HelperDirectoryName;
-                string runtimeLibraryPath = Path.Combine(Runtime + "_Runtime", GetLibraryName(Runtime));
+                string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), GetLibraryName(Runtime));
 
                 string extension = GetExtension(Runtime);
                 var generatedFiles = Directory.GetFiles(HelperDirectoryName, "*." + extension);
@@ -332,7 +332,7 @@ namespace AntlrGrammarEditor
                 }
 
                 var templateFile = Path.Combine(HelperDirectoryName, templateName);
-                var code = File.ReadAllText(Path.Combine(Runtime + "_Runtime", templateName));
+                var code = File.ReadAllText(Path.Combine("Runtimes", Runtime.ToString(), templateName));
                 code = code.Replace(TemplateGrammarName, state.GrammarCheckedState.GrammarName).Replace(TemplateGrammarRoot, Root);
                 File.WriteAllText(templateFile, code);
 
@@ -380,7 +380,7 @@ namespace AntlrGrammarEditor
                 File.WriteAllText(Path.Combine(HelperDirectoryName, TextFileName), result.Text);
                 _textErrors.Clear();
 
-                string runtimeLibraryPath = Path.Combine(Runtime + "_Runtime", GetLibraryName(Runtime));
+                string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), GetLibraryName(Runtime));
                 string parserFileName = "";
                 string arguments = "";
                 string workingDirectory = HelperDirectoryName;
