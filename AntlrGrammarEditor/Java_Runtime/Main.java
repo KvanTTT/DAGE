@@ -11,11 +11,11 @@ public class Main {
         try {
             String code = readFile(args[0]);
             ANTLRInputStream codeStream = new ANTLRInputStream(code);
-            testLexer lexer = new AntlrGrammarName42Lexer(codeStream);
+            AntlrGrammarName42Lexer lexer = new AntlrGrammarName42Lexer(codeStream);
             List<? extends Token> tokens = lexer.getAllTokens();
             ListTokenSource tokensSource = new ListTokenSource(tokens);
             CommonTokenStream tokensStream = new CommonTokenStream(tokensSource);
-            testParser parser = new AntlrGrammarName42Parser(tokensStream);
+            AntlrGrammarName42Parser parser = new AntlrGrammarName42Parser(tokensStream);
             ParserRuleContext ast = parser.AntlrGrammarRoot42();
             String stringTree = ast.toStringTree(parser);
             System.out.print(stringTree);
