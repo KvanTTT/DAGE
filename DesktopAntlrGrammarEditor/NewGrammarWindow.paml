@@ -1,0 +1,53 @@
+﻿<Window xmlns="https://github.com/avaloniaui" 
+        xmlns:DAGE="clr-namespace:DesktopAntlrGrammarEditor;assembly=DesktopAntlrGrammarEditor"
+        Title="New Grammar" SizeToContent="WidthAndHeight" >
+  <Window.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </Window.Styles>
+
+  <StackPanel Margin="10" Gap="10">
+    <Grid ColumnDefinitions="250,250" >
+      <TextBlock>Grammar Name</TextBlock>
+      <TextBox Grid.Column="1" Text="{Binding GrammarName}" />
+    </Grid>
+    <Grid ColumnDefinitions="250,250" >
+      <TextBlock>Grammar Directory</TextBlock>
+      <TextBox Grid.Column="1" Text="{Binding GrammarDirectory}" />
+    </Grid>
+    <Grid ColumnDefinitions="250,250" >
+      <TextBlock>Grammar Root</TextBlock>
+      <TextBox Grid.Column="1" Text="{Binding GrammarRoot}" />
+    </Grid>
+    <Grid ColumnDefinitions="250,250" >
+      <TextBlock>Runtimes</TextBlock>
+      <DropDown Grid.Column="1" SelectedItem="{Binding Runtime}" Items ="{Binding Runtimes}" ></DropDown>
+    </Grid>
+    <Grid ColumnDefinitions="250,250" >
+      <TextBlock >Separated Lexer and Parser</TextBlock>
+      <CheckBox Grid.Column="1" IsChecked="{Binding SeparatedLexerAndParser}" />
+    </Grid>
+    <Grid ColumnDefinitions="250,250" >
+      <TextBlock >Case Insensitive</TextBlock>
+      <CheckBox Grid.Column="1" IsChecked="{Binding CaseInsensitive}" />
+    </Grid>
+    <CheckBox Name="PreprocessorCheckBox" IsChecked="{Binding Preprocessor}">Preprocessor</CheckBox>
+    <Grid ColumnDefinitions="250,250" IsVisible="{Binding ElementName=PreprocessorCheckBox, Path=IsChecked}">
+      <TextBlock>Preprocessor Grammar Root</TextBlock>
+      <TextBox Grid.Column="1" Text="{Binding PreprocessorGrammarRoot}" />
+    </Grid>
+    <Grid ColumnDefinitions="250,250" IsVisible="{Binding ElementName=PreprocessorCheckBox, Path=IsChecked}">
+      <TextBlock >Preprocessor Separated Lexer and Parser</TextBlock>
+      <CheckBox Grid.Column="1" IsChecked="{Binding PreprocessorSeparatedLexerAndParser}"/>
+    </Grid>
+    <Grid ColumnDefinitions="250,250" IsVisible="{Binding ElementName=PreprocessorCheckBox, Path=IsChecked}">
+      <TextBlock Grid.Row="1" >Preprocessor Case Insensitive</TextBlock>
+      <CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding PreprocessorCaseInsensitive}" />
+    </Grid>
+    <Grid ColumnDefinitions="250,250" >
+      <Button Margin="0,5,10,10" Command="{Binding OkCommand}" >OK</Button>
+      <Button Grid.Column="1" Margin="10,5,0,10" Command="{Binding CancelCommand}">Cancel</Button>
+    </Grid>
+  </StackPanel>
+</Window>

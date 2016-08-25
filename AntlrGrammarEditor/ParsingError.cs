@@ -14,11 +14,19 @@ namespace AntlrGrammarEditor
 
         public string Message { get; set; }
 
+        public string FileName { get; set; }
+
         public ParsingError(int line, int column, string message)
+            : this(line, column, message, "")
+        {
+        }
+
+        public ParsingError(int line, int column, string message, string fileName)
         {
             Line = line;
             Column = column;
             Message = message;
+            FileName = fileName;
         }
 
         public override bool Equals(object obj)
@@ -30,7 +38,10 @@ namespace AntlrGrammarEditor
             var parsingError = obj as ParsingError;
             if (parsingError != null)
             {
-                return Line == parsingError.Line && Column == parsingError.Column && Message == parsingError.Message;
+                return Line == parsingError.Line && 
+                       Column == parsingError.Column &&
+                       Message == parsingError.Message &&
+                       FileName == parsingError.FileName;
             }
             else
             {

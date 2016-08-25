@@ -27,9 +27,7 @@ namespace AntlrGrammarEditor
         private string CompileParserCancelMessage = "Parser compilation has been cancelled.";
         private string ParseTextCancelMessage = "Text parsing has been cancelled.";
 
-        private string _grammar = "";
-        private Runtime _runtime;
-        private string _root = "";
+        private Grammar _grammar = new Grammar();
         private string _text = "";
         private WorkflowState _currentState;
 
@@ -57,7 +55,7 @@ namespace AntlrGrammarEditor
             }
         }
 
-        public string Grammar
+        public Grammar Grammar
         {
             get
             {
@@ -67,7 +65,7 @@ namespace AntlrGrammarEditor
             {
                 StopIfRequired();
                 _grammar = value;
-                RollbackToStageAndProcessIfRequired(WorkflowStage.Input);
+                RollbackToStage(WorkflowStage.Input);
             }
         }
 
@@ -75,13 +73,13 @@ namespace AntlrGrammarEditor
         {
             get
             {
-                return _runtime;
+                return Grammar.Runtimes.First();
             }
             set
             {
                 StopIfRequired();
-                _runtime = value;
-                RollbackToStageAndProcessIfRequired(WorkflowStage.GrammarChecked);
+                Grammar.Runtimes.Add(value);
+                RollbackToStage(WorkflowStage.GrammarChecked);
             }
         }
 
@@ -89,13 +87,27 @@ namespace AntlrGrammarEditor
         {
             get
             {
-                return _root;
+                return _grammar.Root;
             }
             set
             {
                 StopIfRequired();
-                _root = value;
-                RollbackToStageAndProcessIfRequired(WorkflowStage.ParserGenerated);
+                _grammar.Root = value;
+                RollbackToStage(WorkflowStage.ParserGenerated); // TODO: make ParserGenerated stage.
+            }
+        }
+
+        public string PreprocessorRoot
+        {
+            get
+            {
+                return _grammar.PreprocessorRoot;
+            }
+            set
+            {
+                StopIfRequired();
+                _grammar.PreprocessorRoot = value;
+                RollbackToStage(WorkflowStage.ParserGenerated);
             }
         }
 
@@ -109,9 +121,11 @@ namespace AntlrGrammarEditor
             {
                 StopIfRequired();
                 _text = value;
-                RollbackToStageAndProcessIfRequired(WorkflowStage.ParserCompilied);
+                RollbackToStage(WorkflowStage.ParserCompilied);
             }
         }
+
+        public WorkflowStage EndStage { get; set; } = WorkflowStage.TextParsed;
 
         public event EventHandler<WorkflowState> StateChanged;
 
@@ -132,7 +146,7 @@ namespace AntlrGrammarEditor
             StopIfRequired();
             _cancellationTokenSource = new CancellationTokenSource();
 
-            while (!CurrentState.HasErrors && CurrentState.Stage < WorkflowStage.TextParsed)
+            while (!CurrentState.HasErrors && CurrentState.Stage < WorkflowStage.TextParsed && CurrentState.Stage < EndStage)
             {
                 ProcessOneStep();
             }
@@ -141,15 +155,7 @@ namespace AntlrGrammarEditor
             return CurrentState;
         }
 
-        public void RollbackToPreviousStageIfErrors()
-        {
-            if (CurrentState.HasErrors)
-            {
-                CurrentState = CurrentState.PreviousState;
-            }
-        }
-
-        private void StopIfRequired()
+        public void StopIfRequired()
         {
             if (_cancellationTokenSource != null)
             {
@@ -164,6 +170,35 @@ namespace AntlrGrammarEditor
                         }
                     }
                 }
+            }
+        }
+
+        public void RollbackToPreviousStageIfErrors()
+        {
+            if (CurrentState.HasErrors)
+            {
+                CurrentState = CurrentState.PreviousState;
+            }
+        }
+
+        public void RollbackToStage(WorkflowStage stage)
+        {
+            while (CurrentState.Stage > stage && CurrentState.PreviousState != null)
+            {
+                if (CurrentState.Stage <= WorkflowStage.TextParsed)
+                {
+                    _stringTree = "";
+                    _textErrors.Clear();
+                }
+                if (CurrentState.Stage <= WorkflowStage.ParserCompilied)
+                {
+                    _parserCompilationErrors.Clear();
+                }
+                if (CurrentState.Stage <= WorkflowStage.ParserGenerated)
+                {
+                    _parserGenerationErrors.Clear();
+                }
+                CurrentState = CurrentState.PreviousState;
             }
         }
 
@@ -186,11 +221,6 @@ namespace AntlrGrammarEditor
             }
         }
 
-        private void RollbackToStageAndProcessIfRequired(WorkflowStage stage)
-        {
-            RollbackToStage(stage);
-        }
-
         private GrammarCheckedState CheckGrammar()
         {
             var errorListener = new AntlrErrorListener();
@@ -203,33 +233,65 @@ namespace AntlrGrammarEditor
             };
             try
             {
-                var inputStream = new AntlrInputStream(Grammar);
-                var antlr4Lexer = new ANTLRv4Lexer(inputStream);
-                antlr4Lexer.RemoveErrorListeners();
-                antlr4Lexer.AddErrorListener(errorListener);
-                var codeTokenSource = new ListTokenSource(antlr4Lexer.GetAllTokens());
-
-                CancelOperationIfRequired(CheckGrammarCancelMessage);
-
-                var codeTokenStream = new CommonTokenStream(codeTokenSource);
-                var antlr4Parser = new ANTLRv4Parser(codeTokenStream);
-
-                antlr4Parser.RemoveErrorListeners();
-                antlr4Parser.AddErrorListener(errorListener);
-
-                var grammarInfoCollectorListener = new GrammarInfoCollectorListener();
-                var tree = antlr4Parser.grammarSpec();
-                grammarInfoCollectorListener.CollectInfo(tree);
-
-                result.GrammarName = grammarInfoCollectorListener.GrammarName;
-                result.Rules = grammarInfoCollectorListener.Rules;
-                result.Errors = errorListener.Errors;
-                if (result.Rules.Count > 0 && !result.Rules.Contains(_root))
+                foreach (var file in Grammar.Files)
                 {
-                    _root = result.Rules.First();
-                }
+                    errorListener.CurrentFileName = Path.GetFileName(file);
+                    var inputStream = new AntlrFileStream(file);
+                    var antlr4Lexer = new ANTLRv4Lexer(inputStream);
+                    antlr4Lexer.RemoveErrorListeners();
+                    antlr4Lexer.AddErrorListener(errorListener);
+                    var codeTokenSource = new ListTokenSource(antlr4Lexer.GetAllTokens());
 
-                CancelOperationIfRequired(CheckGrammarCancelMessage);
+                    CancelOperationIfRequired(CheckGrammarCancelMessage);
+
+                    var codeTokenStream = new CommonTokenStream(codeTokenSource);
+                    var antlr4Parser = new ANTLRv4Parser(codeTokenStream);
+
+                    antlr4Parser.RemoveErrorListeners();
+                    antlr4Parser.AddErrorListener(errorListener);
+
+                    var tree = antlr4Parser.grammarSpec();
+
+                    var shortFileName = Path.GetFileNameWithoutExtension(file);
+                    if (!shortFileName.Contains(GrammarFactory.LexerPostfix))
+                    {
+                        var grammarInfoCollectorListener = new GrammarInfoCollectorListener();
+                        grammarInfoCollectorListener.CollectInfo(tree);
+
+                        string root;
+                        bool preprocesor;
+                        List<string> rules;
+                        if (!shortFileName.Contains(GrammarFactory.PreprocessorPostfix))
+                        {
+                            result.Rules = grammarInfoCollectorListener.Rules;
+                            rules = result.Rules;
+                            root = _grammar.Root;
+                            preprocesor = false;
+                        }
+                        else
+                        {
+                            result.PreprocessorRules = grammarInfoCollectorListener.Rules;
+                            rules = result.PreprocessorRules;
+                            root = _grammar.PreprocessorRoot;
+                            preprocesor = true;
+                        }
+                        if (rules.Count > 0 && !rules.Contains(root))
+                        {
+                            root = rules.First();
+                            if (!preprocesor)
+                            {
+                                _grammar.Root = root;
+                            }
+                            else
+                            {
+                                _grammar.PreprocessorRoot = root;
+                            }
+                        }
+
+                        CancelOperationIfRequired(CheckGrammarCancelMessage);
+                    }
+                }
+                result.Errors = errorListener.Errors;
             }
             catch (Exception ex)
             {
@@ -249,16 +311,8 @@ namespace AntlrGrammarEditor
                 {
                     Directory.CreateDirectory(HelperDirectoryName);
                 }
-                var fileName = $"{state.GrammarName}.g4";
-                File.WriteAllText(fileName, state.Grammar);
-
                 CancelOperationIfRequired(GenerateParserCancelMessage);
-
                 _parserGenerationErrors.Clear();
-                
-                var javaPath = "java";
-                var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{fileName}"" -o ""{HelperDirectoryName}"" " +
-                    $"-Dlanguage={GetLanguage(Runtime)} -no-visitor -no-listener";
 
                 string extension = GetExtension(Runtime);
                 var runtimeExtensionFiles = Directory.GetFiles(HelperDirectoryName, "*." + extension);
@@ -266,16 +320,23 @@ namespace AntlrGrammarEditor
                 {
                     File.Delete(file);
                 }
+                var javaPath = "java";
 
-                process = SetupAndStartProcess(javaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
-
-                while (!process.HasExited)
+                foreach (var fileName in state.Grammar.Files)
                 {
-                    Thread.Sleep(GenerateParserProcessTimeout);
+                    var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{fileName}"" -o ""{HelperDirectoryName}"" " +
+                        $"-Dlanguage={GetLanguage(Runtime)} -no-visitor -no-listener";
+
+                    process = SetupAndStartProcess(javaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
+
+                    while (!process.HasExited)
+                    {
+                        Thread.Sleep(GenerateParserProcessTimeout);
+                        CancelOperationIfRequired(GenerateParserCancelMessage);
+                    }
+
                     CancelOperationIfRequired(GenerateParserCancelMessage);
                 }
-
-                CancelOperationIfRequired(GenerateParserCancelMessage);
             }
             catch (Exception ex)
             {
@@ -321,7 +382,7 @@ namespace AntlrGrammarEditor
                     templateName = "Program.cs";
                     compiliedFiles.Append('"' + templateName + '"');
                     compilatorPath = Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "csc.exe");
-                    arguments = $@"/reference:""..\{runtimeLibraryPath}"" /out:{Runtime}_{state.GrammarCheckedState.GrammarName}Parser.exe " + compiliedFiles;
+                    arguments = $@"/reference:""..\{runtimeLibraryPath}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
                 }
                 else if (Runtime == Runtime.Java)
                 {
@@ -333,7 +394,7 @@ namespace AntlrGrammarEditor
 
                 var templateFile = Path.Combine(HelperDirectoryName, templateName);
                 var code = File.ReadAllText(Path.Combine("Runtimes", Runtime.ToString(), templateName));
-                code = code.Replace(TemplateGrammarName, state.GrammarCheckedState.GrammarName).Replace(TemplateGrammarRoot, Root);
+                code = code.Replace(TemplateGrammarName, state.GrammarCheckedState.Grammar.Name).Replace(TemplateGrammarRoot, Grammar.Root);
                 File.WriteAllText(templateFile, code);
 
                 process = SetupAndStartProcess(compilatorPath, arguments, workingDirectory, ParserCompilation_ErrorDataReceived, ParserCompilation_OutputDataReceived);
@@ -344,7 +405,8 @@ namespace AntlrGrammarEditor
                     CancelOperationIfRequired(CompileParserCancelMessage);
                 }
 
-                result.Root = Root;
+                result.Root = Grammar.Root;
+                result.PreprocessorRoot = Grammar.PreprocessorRoot;
 
                 CancelOperationIfRequired(CompileParserCancelMessage);
             }
@@ -391,7 +453,7 @@ namespace AntlrGrammarEditor
                     {
                         File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
                     }
-                    parserFileName = Path.Combine(HelperDirectoryName, $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.GrammarName}Parser.exe");
+                    parserFileName = Path.Combine(HelperDirectoryName, $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.Grammar.Name}Parser.exe");
                     arguments = TextFileName;
                 }
                 else if (Runtime == Runtime.Java)
@@ -430,38 +492,28 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        private void RollbackToStage(WorkflowStage stage)
-        {
-            while (CurrentState.Stage > stage && CurrentState.PreviousState != null)
-            {
-                if (CurrentState.Stage <= WorkflowStage.TextParsed)
-                {
-                    _stringTree = "";
-                    _textErrors.Clear();
-                }
-                if (CurrentState.Stage <= WorkflowStage.ParserCompilied)
-                {
-                    _parserCompilationErrors.Clear();
-                }
-                if (CurrentState.Stage <= WorkflowStage.ParserGenerated)
-                {
-                    _parserGenerationErrors.Clear();
-                }
-                CurrentState = CurrentState.PreviousState;
-            }
-        }
-
         private void ParserGeneration_ErrorDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
                 var strs = e.Data.Split(':');
-                _parserGenerationErrors.Add(new ParsingError(int.Parse(strs[2]), int.Parse(strs[3]), e.Data));
+                if (strs.Length >= 4)
+                {
+                    _parserGenerationErrors.Add(new ParsingError(int.Parse(strs[2]), int.Parse(strs[3]), e.Data));
+                }
+                else
+                {
+                    _parserCompilationErrors.Add(new ParsingError(0, 0, e.Data));
+                }
             }
         }
 
         private void ParserGeneration_OutputDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
         {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+
+            }
         }
 
         private void ParserCompilation_ErrorDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
@@ -538,9 +590,9 @@ namespace AntlrGrammarEditor
                     return "Antlr4.Runtime.dll";
                 case Runtime.Java:
                     return "antlr-runtime-4.5.3.jar";
-                case Runtime.Python2:
+                /*case Runtime.Python2:
                 case Runtime.Python3:
-                case Runtime.JavaScript:
+                case Runtime.JavaScript:*/
                 default:
                     throw new NotImplementedException();
             }
@@ -555,11 +607,11 @@ namespace AntlrGrammarEditor
                     return "cs";
                 case Runtime.Java:
                     return "java";
-                case Runtime.Python2:
+                /*case Runtime.Python2:
                 case Runtime.Python3:
                     return "py";
                 case Runtime.JavaScript:
-                    return "js";
+                    return "js";*/
                 default:
                     throw new NotImplementedException();
             }

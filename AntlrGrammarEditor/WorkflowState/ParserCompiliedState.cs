@@ -18,6 +18,8 @@ namespace AntlrGrammarEditor
 
         public string Root { get; set; }
 
+        public string PreprocessorRoot { get; set; }
+
         public IReadOnlyList<ParsingError> Errors { get; set; } = new ParsingError[0];
     }
 }

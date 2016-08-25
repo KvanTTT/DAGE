@@ -16,14 +16,14 @@ namespace AntlrGrammarEditor
 
         public InputState InputState { get; set; }
 
-        public string Grammar { get; set; }
+        public Grammar Grammar { get; set; }
 
-        public string GrammarName { get; set; }
+        public List<string> Rules { get; set; }
 
-        public IReadOnlyList<string> Rules { get; set; }
+        public List<string> PreprocessorRules { get; set; }
 
-        public IReadOnlyList<ParsingError> Errors { get; set; }
+        public List<ParsingError> Errors { get; set; }
 
-        public IList<TextSpan> ActionTextSpans { get; set; }
+        public List<TextSpan> ActionTextSpans { get; set; }
     }
 }

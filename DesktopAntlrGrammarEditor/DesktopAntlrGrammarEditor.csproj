@@ -177,6 +177,10 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NewGrammarWindow.paml.cs">
+      <DependentUpon>NewGrammarWindow.paml</DependentUpon>
+    </Compile>
+    <Compile Include="NewGrammarWindowViewModel.cs" />
     <Compile Include="Settings.cs" />
     <EmbeddedResource Include="App.paml">
       <SubType>Designer</SubType>
@@ -196,6 +200,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <EmbeddedResource Include="NewGrammarWindow.paml">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

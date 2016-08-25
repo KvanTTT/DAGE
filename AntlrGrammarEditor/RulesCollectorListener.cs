@@ -13,9 +13,9 @@ namespace AntlrGrammarEditor
         private List<string> _rules = new List<string>();
         private List<TextSpanAndText> _textSpanAndTexts = new List<TextSpanAndText>();
 
-        public IReadOnlyList<string> Rules => _rules;
+        public List<string> Rules => _rules;
 
-        public IReadOnlyList<TextSpanAndText> TextSpanAndTexts => _textSpanAndTexts;
+        public List<TextSpanAndText> TextSpanAndTexts => _textSpanAndTexts;
 
         public string GrammarName { get; private set; }
 

@@ -1,12 +1,25 @@
 ﻿<Window xmlns="https://github.com/avaloniaui" MinWidth="640" Width="1366" MinHeight="480" Height="768" Title="DAGE" >
+  <Window.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </Window.Styles>
+  
   <Grid ColumnDefinitions="*,Auto,*" Margin="10">
     <Grid Grid.Column="0" RowDefinitions="35,*,Auto,40" >
-      <Grid Grid.Row="0"  ColumnDefinitions="60,*,40,120,50,120" Margin="0,0,0,5">
-        <TextBlock Text="Grammar" Grid.Column="0" VerticalAlignment="Center" />
-        <TextBlock Text="Root" Grid.Column="2" VerticalAlignment="Center" />
-        <DropDown Grid.Column="3" Margin="0,0,5,0" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" ></DropDown>
-        <TextBlock Text="Runtime" Grid.Column="4" VerticalAlignment="Center" />
-        <DropDown Grid.Column="5" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></DropDown>
+      <Grid Grid.Row="0"  ColumnDefinitions="60,60,60,*" Margin="0,0,0,5" >
+        <TextBlock Grid.Column="0" Text="Grammar" />
+        <Button Grid.Column="1" Margin="0,0,5,0" Command="{Binding NewGrammarCommand}" >New</Button>
+        <Button Grid.Column="2" Margin="0,0,5,0" Command="{Binding OpenGrammarCommand}" >Open</Button>
+
+        <StackPanel HorizontalAlignment="Right" Grid.Column="3" Gap="4" Orientation="Horizontal">
+          <TextBlock HorizontalAlignment="Right" Text="File" />
+          <DropDown Width="90" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" ></DropDown>
+          <TextBlock HorizontalAlignment="Right" Text="Root" IsVisible="{Binding IsParserOpened}" />
+          <DropDown Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" IsVisible="{Binding IsParserOpened}" ></DropDown>
+          <TextBlock HorizontalAlignment="Right" Text="Runtime" />
+          <DropDown Width="90" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></DropDown>
+        </StackPanel>
       </Grid>
       <TextBox Grid.Row="1" Name="GrammarTextBox" AcceptsReturn="true" />
       <Expander Grid.Row="2" Header="{Binding GrammarErrorsText}" IsExpanded="false">
@@ -15,22 +28,28 @@
       <Grid Grid.Row="3" ColumnDefinitions="100,100,150,*">
         <Button Grid.Column="0" Margin="5" Command="{Binding ProcessCommand}">Process</Button>
         <CheckBox Grid.Column="1" IsChecked="{Binding AutoProcessing}" >Auto</CheckBox>
-        <TextBlock Grid.Column="2" Text="Current Stage:" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="3" Text="{Binding CurrentState}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="Current Stage:"  />
+        <TextBlock Grid.Column="3" Text="{Binding CurrentState}"  />
       </Grid>
     </Grid>
     <GridSplitter Grid.Column="1" />
     <Grid Grid.Column="2" RowDefinitions="35,*,Auto,Auto,Auto" >
-      <TextBlock Grid.Row="0" Text="Text" VerticalAlignment="Center" />
+      <TextBlock Grid.Row="0" Text="Text"  />
       <TextBox Grid.Row="1" Name="SourceCodeTextBox" AcceptsReturn="true"/>
       <Expander Grid.Row="2" Header="Tokens" IsExpanded="false">
-        <ListBox MinHeight="120" Items="{Binding Tokens}" />
+        <Grid RowDefinitions="120">
+          <ListBox MinHeight="120" Items="{Binding Tokens}" />
+        </Grid>
       </Expander>
       <Expander Grid.Row="3" Header="Tree" IsExpanded="false">
-        <TextBox MinHeight="120" Text="{Binding Tree, Mode=TwoWay}" IsReadOnly="true" TextWrapping="Wrap" />
+        <Grid RowDefinitions="120">
+          <TextBox MinHeight="120" Text="{Binding Tree, Mode=TwoWay}" IsReadOnly="true" TextWrapping="Wrap" />
+        </Grid>
       </Expander>
       <Expander Grid.Row="4" Header="{Binding SourceCodeErrorsText}" IsExpanded="false">
-        <ListBox Name="SourceCodeErrorsListBox" MinHeight="120" Items="{Binding TextErrors}" />
+        <Grid RowDefinitions="120" >
+          <ListBox Name="SourceCodeErrorsListBox" MinHeight="120" Items="{Binding TextErrors}" />
+        </Grid>
       </Expander>
     </Grid>
   </Grid>

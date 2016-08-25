@@ -10,12 +10,11 @@ namespace DesktopAntlrGrammarEditor
 {
     public class Settings
     {
-        private static string _settingsFileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AntlrGrammarEditor.json");
+        private static JsonConverter[] _converters = new JsonConverter[] { new StringEnumConverter() };
+        private static string _settingsFileName;
         private static readonly object _saveLock = new object();
 
-        public GrammarType GrammarType { get; set; } = GrammarType.Single;
-
-        public string GrammarText { get; set; } = "";
+        public static string DefaultDirectory { get; private set; }
 
         public double Left { get; set; } = -1;
 
@@ -27,14 +26,24 @@ namespace DesktopAntlrGrammarEditor
 
         public WindowState WindowState { get; set; } = WindowState.Normal;
 
-        [JsonConverter(typeof(StringEnumConverter))]
-        public Runtime SelectedRuntime { get; set; } = Runtime.Java;
+        // Antlr Grammar Edtiro FileName
+        public string AgeFileName { get; set; }
 
-        public string Root { get; set; } = "";
+        public string OpenedGrammarFile { get; set; }
 
         public string Text { get; set; } = "";
 
         public bool Autoprocessing { get; set; } = false;
+
+        static Settings()
+        {
+            DefaultDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DAGE");
+            if (!Directory.Exists(DefaultDirectory))
+            {
+                Directory.CreateDirectory(DefaultDirectory);
+            }
+            _settingsFileName = Path.Combine(DefaultDirectory, "AntlrGrammarEditor.json");
+        }
 
         public static Settings Load()
         {
@@ -42,7 +51,7 @@ namespace DesktopAntlrGrammarEditor
             {
                 try
                 {
-                    var settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(_settingsFileName)) ?? new Settings();
+                    var settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(_settingsFileName), _converters) ?? new Settings();
                     return settings;
                 }
                 catch
@@ -60,7 +69,7 @@ namespace DesktopAntlrGrammarEditor
         {
             lock (_saveLock)
             {
-                File.WriteAllText(_settingsFileName, JsonConvert.SerializeObject(this, Formatting.Indented));
+                File.WriteAllText(_settingsFileName, JsonConvert.SerializeObject(this, Formatting.Indented, _converters));
             }
         }
     }
