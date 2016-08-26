@@ -38,7 +38,7 @@
       <TextBox Grid.Row="1" Name="SourceCodeTextBox" AcceptsReturn="true"/>
       <Expander Grid.Row="2" Header="Tokens" IsExpanded="false">
         <Grid RowDefinitions="120">
-          <ListBox MinHeight="120" Items="{Binding Tokens}" />
+          <TextBox MinHeight="120" Text="{Binding Tokens}" IsReadOnly="true" TextWrapping="Wrap" />
         </Grid>
       </Expander>
       <Expander Grid.Row="3" Header="Tree" IsExpanded="false">

@@ -199,7 +199,13 @@
     <Compile Include="RulesCollectorListener.cs" />
     <Compile Include="Runtime.cs" />
     <Compile Include="RuntimeInfo.cs" />
-    <Content Include="Runtimes\CSharpSharwell\AntlrCaseInsensitiveInputStream.cs" />
+    <Content Include="Runtimes\CSharpSharwell\AntlrCaseInsensitiveInputStream.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Compile Include="Runtimes\CSharp\AntlrCaseInsensitiveInputStream.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="TextParsedOutput.cs" />
     <Compile Include="TextSpan.cs" />
     <Compile Include="TextSpanAndText.cs" />
     <Compile Include="TextSpanMap.cs" />
@@ -251,6 +257,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="Ude, Version=0.1.1.0, Culture=neutral, PublicKeyToken=dd537652db4726a9, processorArchitecture=MSIL">
+      <HintPath>..\packages\Ude.Signed.0.1.1\lib\net40\Ude.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

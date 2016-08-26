@@ -25,7 +25,7 @@ namespace DesktopAntlrGrammarEditor
         private string _grammarErrorsText = "Grammar Errors (0)";
         private string _sourceCodeErrorsText = "Text Errors (0)";
         private ListBox _grammarErrorsListBox, _sourceCodeErrorsListBox;
-        private string _tree;
+        private string _tokens, _tree;
         private bool _autoprocessing;
 
         public MainWindowViewModel(Window window)
@@ -316,6 +316,18 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
+        public string Tokens
+        {
+            get
+            {
+                return _tokens;
+            }
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _tokens, value);
+            }
+        }
+
         public string Tree
         {
             get
@@ -430,6 +442,7 @@ namespace DesktopAntlrGrammarEditor
 
         private void UpdateUI()
         {
+            Tokens = "";
             Tree = "";
             GrammarErrors.Clear();
             TextErrors.Clear();
@@ -475,7 +488,8 @@ namespace DesktopAntlrGrammarEditor
                     case WorkflowStage.TextParsed:
                         var textParsedState = currentState as TextParsedState;
                         parsingErrors = textParsedState.TextErrors;
-                        Tree = textParsedState.StringTree;
+                        Tokens = textParsedState.Tokens;
+                        Tree = textParsedState.Tree;
                         break;
                 }
                 if (parsingErrors != null)

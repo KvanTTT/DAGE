@@ -20,6 +20,12 @@ namespace AntlrGrammarEditor
 
         public IReadOnlyList<ParsingError> TextErrors { get; set; } = new ParsingError[0];
 
-        public string StringTree { get; set; }
+        public TimeSpan LexerTime { get; set; }
+
+        public TimeSpan ParserTime { get; set; }
+
+        public string Tokens { get; set; }
+
+        public string Tree { get; set; }
     }
 }

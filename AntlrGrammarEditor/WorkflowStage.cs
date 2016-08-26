@@ -12,6 +12,7 @@ namespace AntlrGrammarEditor
         GrammarChecked,
         ParserGenerated,
         ParserCompilied,
+        TextTokenized,
         TextParsed
     }
 }
