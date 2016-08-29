@@ -11,10 +11,5 @@ namespace AntlrGrammarEditor
         Java,
         CSharp,
         CSharpSharwell,
-        /* Not supported for now
-        Python2,
-        Python3,
-        JavaScript,
-        */
     }
 }

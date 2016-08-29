@@ -17,13 +17,13 @@ namespace DesktopAntlrGrammarEditor
         private Window _window;
         private Settings _settings;
         private Grammar _grammar;
-        protected Workflow _workflow;
+        private Workflow _workflow;
         private FileName _openedGrammarFile;
         private bool _grammarFileChanged, _textFileChanged;
         private string _currentState = WorkflowStage.Input.ToString();
-        private TextBox _grammarTextBox, _sourceCodeTextBox;
+        private TextBox _grammarTextBox, _textTextBox;
         private string _grammarErrorsText = "Grammar Errors (0)";
-        private string _sourceCodeErrorsText = "Text Errors (0)";
+        private string _textErrorsText = "Text Errors (0)";
         private ListBox _grammarErrorsListBox, _sourceCodeErrorsListBox;
         private string _tokens, _tree;
         private bool _autoprocessing;
@@ -32,16 +32,20 @@ namespace DesktopAntlrGrammarEditor
         {
             _window = window;
             _grammarTextBox = _window.Find<TextBox>("GrammarTextBox");
-            _sourceCodeTextBox = _window.Find<TextBox>("SourceCodeTextBox");
+            _textTextBox = _window.Find<TextBox>("TextTextBox");
             _grammarErrorsListBox = _window.Find<ListBox>("GrammarErrorsListBox");
-            _sourceCodeErrorsListBox = _window.Find<ListBox>("SourceCodeErrorsListBox");
+            _sourceCodeErrorsListBox = _window.Find<ListBox>("TextErrorsListBox");
             _grammarErrorsListBox.DoubleTapped += ErrorsListBox_DoubleTapped;
             _sourceCodeErrorsListBox.DoubleTapped += ErrorsListBox_DoubleTapped;
 
             _settings = Settings.Load();
 
             _workflow = new Workflow();
-            _workflow.StateChanged += Workflow_StateChanged;
+            _workflow.JavaPath = _settings.JavaPath;
+            _workflow.StateChanged += workflow_StateChanged;
+            _workflow.NewErrorEvent += workflow_NewErrorEvent;
+            _workflow.ClearErrorsEvent += workflow_ClearErrorsEvent;
+            _workflow.TextParsedOutputEvent += workflow_TextParsedOutputEvent;
             _window = window;
 
             if (string.IsNullOrEmpty(_settings.AgeFileName))
@@ -58,7 +62,7 @@ namespace DesktopAntlrGrammarEditor
 
             _workflow.Grammar = _grammar;
             _workflow.Text = _settings.Text;
-            _sourceCodeTextBox.Text = _settings.Text;
+            _textTextBox.Text = _settings.Text;
             SelectedRuntime = _grammar.Runtimes.First();
 
             InitFiles();
@@ -100,7 +104,7 @@ namespace DesktopAntlrGrammarEditor
                     _settings.WindowState = _window.WindowState;
                     _settings.Save();
                 });
-            _window.Closed += _window_Closed;
+            _window.Closed += window_Closed;
 
             _grammarTextBox.GetObservable(TextBox.TextProperty)
                 .Subscribe(str => _grammarFileChanged = true);
@@ -109,7 +113,6 @@ namespace DesktopAntlrGrammarEditor
                 .Subscribe(str =>
                 {
                     _workflow.Grammar = _grammar;
-                    Dispatcher.UIThread.InvokeAsync(() => UpdateUI());
                     if (AutoProcessing)
                     {
                         SaveGrammarFileIfRequired();
@@ -117,14 +120,13 @@ namespace DesktopAntlrGrammarEditor
                     }
                 });
 
-            _sourceCodeTextBox.GetObservable(TextBox.TextProperty)
+            _textTextBox.GetObservable(TextBox.TextProperty)
                 .Subscribe(str => _textFileChanged = true);
-            _sourceCodeTextBox.GetObservable(TextBox.TextProperty)
+            _textTextBox.GetObservable(TextBox.TextProperty)
                 .Throttle(TimeSpan.FromMilliseconds(1000))
                 .Subscribe(str =>
                 {
                     _workflow.Text = str;
-                    Dispatcher.UIThread.InvokeAsync(() => UpdateUI());
                     if (AutoProcessing)
                     {
                         ProcessAndUpdateUI();
@@ -135,7 +137,7 @@ namespace DesktopAntlrGrammarEditor
                         _settings.Text = _workflow.Text;
                         _settings.Save();
                     }
-                } );
+                });
 
             NewGrammarCommand.Subscribe(async _ =>
             {
@@ -163,7 +165,7 @@ namespace DesktopAntlrGrammarEditor
             {
                 SaveGrammarFileIfRequired();
                 _workflow.Grammar = _grammar;
-                _workflow.Text = _sourceCodeTextBox.Text;
+                _workflow.Text = _textTextBox.Text;
                 _settings.Text = _workflow.Text;
                 _settings.Save();
                 ProcessAndUpdateUI();
@@ -304,15 +306,15 @@ namespace DesktopAntlrGrammarEditor
 
         public ObservableCollection<object> TextErrors { get; } = new ObservableCollection<object>();
 
-        public string SourceCodeErrorsText
+        public string TextErrorsText
         {
             get
             {
-                return _sourceCodeErrorsText;
+                return _textErrorsText;
             }
             set
             {
-                this.RaiseAndSetIfChanged(ref _sourceCodeErrorsText, value);
+                this.RaiseAndSetIfChanged(ref _textErrorsText, value);
             }
         }
 
@@ -360,12 +362,100 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private void Workflow_StateChanged(object sender, WorkflowState e)
+        private void workflow_StateChanged(object sender, WorkflowState e)
         {
             Dispatcher.UIThread.InvokeAsync(() => CurrentState = e.Stage.ToString());
         }
 
-        private void _window_Closed(object sender, EventArgs e)
+        private void workflow_NewErrorEvent(object sender, Tuple<WorkflowStage, ParsingError> e)
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                switch (e.Item1)
+                {
+                    case WorkflowStage.GrammarChecked:
+                    case WorkflowStage.ParserGenerated:
+                    case WorkflowStage.ParserCompilied:
+                        GrammarErrors.Add(e.Item2);
+                        GrammarErrorsText = $"Grammar Errors ({GrammarErrors.Count})";
+                        break;
+                    case WorkflowStage.TextTokenized:
+                    case WorkflowStage.TextParsed:
+                        TextErrors.Add(e.Item2);
+                        TextErrorsText = $"Text Errors ({TextErrors.Count})";
+                        break;
+                }
+            });
+        }
+
+        private void workflow_ClearErrorsEvent(object sender, WorkflowStage e)
+        {
+            ObservableCollection<object> errorsList = GrammarErrors;
+            bool grammarErrors = false;
+            switch (e)
+            {
+                case WorkflowStage.GrammarChecked:
+                case WorkflowStage.ParserGenerated:
+                case WorkflowStage.ParserCompilied:
+                    errorsList = GrammarErrors;
+                    grammarErrors = true;
+                    break;
+                case WorkflowStage.TextTokenized:
+                case WorkflowStage.TextParsed:
+                    errorsList = TextErrors;
+                    break;
+            }
+            if (errorsList.Count > 0)
+            {
+                Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    int i = 0;
+                    while (i < errorsList.Count)
+                    {
+                        var parsingError = errorsList[i] as ParsingError;
+                        if (parsingError != null)
+                        {
+                            if (parsingError.WorkflowStage == e)
+                            {
+                                errorsList.RemoveAt(i);
+                                continue;
+                            }
+                        }
+                        i++;
+                    }
+                    if (grammarErrors)
+                    {
+                        GrammarErrorsText = $"Grammar Errors ({GrammarErrors.Count})";
+                    }
+                    else
+                    {
+                        TextErrorsText = $"Text Errors ({TextErrors.Count})";
+                    }
+                });
+            }
+        }
+
+        private void workflow_TextParsedOutputEvent(object sender, Tuple<TextParsedOutput, object> e)
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            { 
+                switch (e.Item1)
+                {
+                    case TextParsedOutput.LexerTime:
+                        break;
+                    case TextParsedOutput.ParserTime:
+                        break;
+                    case TextParsedOutput.Tokens:
+                        Tokens = (string)e.Item2;
+                        break;
+                    case TextParsedOutput.Tree:
+                        Tree = (string)e.Item2;
+                        break;
+                }
+            });
+        }
+
+        private void window_Closed(object sender, EventArgs e)
         {
             SaveGrammarFileIfRequired();
             _settings.Left = _window.Position.X;
@@ -381,7 +471,7 @@ namespace DesktopAntlrGrammarEditor
             var parsingError = listBox.SelectedItem as ParsingError;
             if (parsingError != null)
             {
-                TextBox textBox = listBox == _grammarErrorsListBox ? _grammarTextBox : _sourceCodeTextBox;
+                TextBox textBox = listBox == _grammarErrorsListBox ? _grammarTextBox : _textTextBox;
                 textBox.SelectionStart = Utils.LineColumnToLinear(textBox.Text, parsingError.Line, parsingError.Column);
                 textBox.SelectionEnd = textBox.SelectionStart + 1;
             }
@@ -405,19 +495,42 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private void ProcessAndUpdateUI()
+        private async void ProcessAndUpdateUI()
         {
             _workflow.RollbackToPreviousStageIfErrors();
             var assemblyPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             Directory.SetCurrentDirectory(assemblyPath);
-            _workflow.Process();
+
+            if (string.IsNullOrEmpty(_settings.JavaPath))
+            {
+                var javaPath = Helpers.GetJavaInstallationPath();
+                if (javaPath != null)
+                {
+                    javaPath = Path.Combine(javaPath, "bin\\Java.exe");
+                    if (!File.Exists(javaPath))
+                    {
+                        javaPath = null;
+                    }
+                }
+                if (javaPath == null)
+                {
+                    javaPath = "";
+                }
+                var window = new SelectPathDialog("Select Java path", javaPath);
+                var selectResult = await window.ShowDialog<string>();
+                if (selectResult != null)
+                {
+                    _workflow.JavaPath = selectResult;
+                    _settings.JavaPath = selectResult;
+                    _settings.Save();
+                }
+            }
+            await _workflow.ProcessAsync();
 
             if (_workflow.GrammarCheckedState != null)
             {
                 UpdateRules();
             }
-
-            UpdateUI();
         }
 
         private void UpdateRules()
@@ -437,85 +550,6 @@ namespace DesktopAntlrGrammarEditor
             {
                 _grammar.Save();
                 this.RaisePropertyChanged(nameof(Root));
-            }
-        }
-
-        private void UpdateUI()
-        {
-            Tokens = "";
-            Tree = "";
-            GrammarErrors.Clear();
-            TextErrors.Clear();
-            GrammarErrorsText = $"Grammar Errors (0)";
-            SourceCodeErrorsText = "Text Errors (0)";
-
-            var currentState = _workflow.CurrentState;
-            while (currentState != null)
-            {
-                ObservableCollection<object> errors;
-                switch (currentState.Stage)
-                {
-                    case WorkflowStage.Input:
-                    case WorkflowStage.GrammarChecked:
-                    case WorkflowStage.ParserGenerated:
-                    case WorkflowStage.ParserCompilied:
-                        errors = GrammarErrors;
-                        break;
-                    case WorkflowStage.TextParsed:
-                        errors = TextErrors;
-                        break;
-                    default:
-                        errors = GrammarErrors;
-                        break;
-                }
-                if (currentState.Exception != null)
-                {
-                    errors.Add(currentState.Exception);
-                }
-
-                IReadOnlyList<ParsingError> parsingErrors = null;
-                switch (currentState.Stage)
-                {
-                    case WorkflowStage.GrammarChecked:
-                        parsingErrors = (currentState as GrammarCheckedState).Errors;
-                        break;
-                    case WorkflowStage.ParserGenerated:
-                        parsingErrors = (currentState as ParserGeneratedState).Errors;
-                        break;
-                    case WorkflowStage.ParserCompilied:
-                        parsingErrors = (currentState as ParserCompiliedState).Errors;
-                        break;
-                    case WorkflowStage.TextParsed:
-                        var textParsedState = currentState as TextParsedState;
-                        parsingErrors = textParsedState.TextErrors;
-                        Tokens = textParsedState.Tokens;
-                        Tree = textParsedState.Tree;
-                        break;
-                }
-                if (parsingErrors != null)
-                {
-                    foreach (var error in parsingErrors)
-                    {
-                        errors.Add(error);
-                    }
-                }
-
-                switch (currentState.Stage)
-                {
-                    case WorkflowStage.Input:
-                    case WorkflowStage.GrammarChecked:
-                    case WorkflowStage.ParserGenerated:
-                    case WorkflowStage.ParserCompilied:
-                        GrammarErrorsText = $"Grammar Errors ({errors.Count})";
-                        break;
-                    case WorkflowStage.TextParsed:
-                        SourceCodeErrorsText = $"Text Errors ({errors.Count})";
-                        break;
-                    default:
-                        break;
-                }
-
-                currentState = currentState.PreviousState;
             }
         }
     }

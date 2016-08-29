@@ -53,7 +53,7 @@ namespace AntlrGrammarEditor
                     grammarText.AppendLine("    : TOKEN+");
                     grammarText.AppendLine("    ;");
                     grammarText.AppendLine();
-                    grammarText.AppendLine("TOKEN: [a-z]+");
+                    grammarText.AppendLine("TOKEN: [a-z]+;");
                     File.WriteAllText(Path.Combine(path, grammarName + Extension), grammarText.ToString());
                 }
             }

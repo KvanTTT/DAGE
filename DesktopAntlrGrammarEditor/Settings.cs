@@ -26,7 +26,7 @@ namespace DesktopAntlrGrammarEditor
 
         public WindowState WindowState { get; set; } = WindowState.Normal;
 
-        // Antlr Grammar Edtiro FileName
+        // Antlr Grammar Editor FileName
         public string AgeFileName { get; set; }
 
         public string OpenedGrammarFile { get; set; }
@@ -34,6 +34,10 @@ namespace DesktopAntlrGrammarEditor
         public string Text { get; set; } = "";
 
         public bool Autoprocessing { get; set; } = false;
+
+        public string JavaPath { get; set; }
+
+        public string JavaCompilerPath { get; set; }
 
         static Settings()
         {

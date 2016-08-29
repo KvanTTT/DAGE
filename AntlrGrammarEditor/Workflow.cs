@@ -22,10 +22,10 @@ namespace AntlrGrammarEditor
         private const int CompileParserProcessTimeout = 200;
         private const int ParseTextTimeout = 200;
 
-        private string CheckGrammarCancelMessage = "Grammar checking has been cancelled.";
-        private string GenerateParserCancelMessage = "Parser generation has been cancelled.";
-        private string CompileParserCancelMessage = "Parser compilation has been cancelled.";
-        private string ParseTextCancelMessage = "Text parsing has been cancelled.";
+        private const string CheckGrammarCancelMessage = "Grammar checking has been cancelled.";
+        private const string GenerateParserCancelMessage = "Parser generation has been cancelled.";
+        private const string CompileParserCancelMessage = "Parser compilation has been cancelled.";
+        private const string ParseTextCancelMessage = "Text parsing has been cancelled.";
 
         private Grammar _grammar = new Grammar();
         private string _text = "";
@@ -33,7 +33,6 @@ namespace AntlrGrammarEditor
 
         private List<ParsingError> _parserGenerationErrors = new List<ParsingError>();
         private List<ParsingError> _parserCompilationErrors = new List<ParsingError>();
-
         private List<ParsingError> _textErrors = new List<ParsingError>();
         private string _outputTree;
         private string _outputTokens;
@@ -43,6 +42,10 @@ namespace AntlrGrammarEditor
         private CancellationTokenSource _cancellationTokenSource;
         private InputState _inputState = new InputState();
         private object _lockObj = new object();
+
+        public string JavaPath { get; set; }
+
+        public string JavaCompilerPath { get; set; }
 
         public GrammarCheckedState GrammarCheckedState { get; private set; }
 
@@ -97,7 +100,7 @@ namespace AntlrGrammarEditor
             {
                 StopIfRequired();
                 _grammar.Root = value;
-                RollbackToStage(WorkflowStage.ParserGenerated); // TODO: make ParserGenerated stage.
+                RollbackToStage(WorkflowStage.ParserCompilied);
             }
         }
 
@@ -133,6 +136,12 @@ namespace AntlrGrammarEditor
 
         public event EventHandler<WorkflowState> StateChanged;
 
+        public event EventHandler<Tuple<WorkflowStage, ParsingError>> NewErrorEvent;
+
+        public event EventHandler<WorkflowStage> ClearErrorsEvent;
+
+        public event EventHandler<Tuple<TextParsedOutput, object>> TextParsedOutputEvent;
+
         static Workflow()
         {
             var tempDir = Path.GetTempPath();
@@ -145,9 +154,16 @@ namespace AntlrGrammarEditor
             CurrentState = _inputState;
         }
 
-        public WorkflowState Process()
+        public Task<WorkflowState> ProcessAsync()
         {
             StopIfRequired();
+
+            Func<WorkflowState> func = Process;
+            return Task.Run(func);
+        }
+
+        public WorkflowState Process()
+        {
             _cancellationTokenSource = new CancellationTokenSource();
 
             while (!CurrentState.HasErrors && CurrentState.Stage < WorkflowStage.TextParsed && CurrentState.Stage < EndStage)
@@ -193,14 +209,28 @@ namespace AntlrGrammarEditor
                 {
                     _outputTree = "";
                     _textErrors.Clear();
+                    TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tree, _outputTree));
+                    ClearErrorsEvent?.Invoke(this, WorkflowStage.TextParsed);
+                }
+                if (CurrentState.Stage <= WorkflowStage.TextTokenized)
+                {
+                    _outputTokens = "";
+                    TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tokens, _outputTokens));
+                    ClearErrorsEvent?.Invoke(this, WorkflowStage.TextTokenized);
                 }
                 if (CurrentState.Stage <= WorkflowStage.ParserCompilied)
                 {
                     _parserCompilationErrors.Clear();
+                    ClearErrorsEvent?.Invoke(this, WorkflowStage.ParserCompilied);
                 }
                 if (CurrentState.Stage <= WorkflowStage.ParserGenerated)
                 {
                     _parserGenerationErrors.Clear();
+                    ClearErrorsEvent?.Invoke(this, WorkflowStage.ParserGenerated);
+                }
+                if (CurrentState.Stage <= WorkflowStage.GrammarChecked)
+                {
+                    ClearErrorsEvent?.Invoke(this, WorkflowStage.GrammarChecked);
                 }
                 CurrentState = CurrentState.PreviousState;
             }
@@ -307,7 +337,11 @@ namespace AntlrGrammarEditor
 
         private ParserGeneratedState GenerateParser(GrammarCheckedState state)
         {
-            ParserGeneratedState result = new ParserGeneratedState { GrammarCheckedState = state, Errors = _parserGenerationErrors };
+            ParserGeneratedState result = new ParserGeneratedState
+            {
+                GrammarCheckedState = state,
+                Errors = _parserGenerationErrors
+            };
             Process process = null;
             try
             {
@@ -331,7 +365,7 @@ namespace AntlrGrammarEditor
                     var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{fileName}"" -o ""{HelperDirectoryName}"" " +
                         $"-Dlanguage={GetLanguage(Runtime)} -no-visitor -no-listener";
 
-                    process = SetupAndStartProcess(javaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
+                    process = SetupHiddenProcessAndStart(javaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
 
                     while (!process.HasExited)
                     {
@@ -410,7 +444,7 @@ namespace AntlrGrammarEditor
                 }
                 File.WriteAllText(templateFile, code);
 
-                process = SetupAndStartProcess(compilatorPath, arguments, workingDirectory, ParserCompilation_ErrorDataReceived, ParserCompilation_OutputDataReceived);
+                process = SetupHiddenProcessAndStart(compilatorPath, arguments, workingDirectory, ParserCompilation_ErrorDataReceived, ParserCompilation_OutputDataReceived);
 
                 while (!process.HasExited)
                 {
@@ -475,7 +509,7 @@ namespace AntlrGrammarEditor
                     arguments = $@"-cp ""..\{runtimeLibraryPath}"";. " + "Main " + TextFileName;
                 }
 
-                process = SetupAndStartProcess(parserFileName, arguments, workingDirectory, TextParsing_ErrorDataReceived, TextParsing_OutputDataReceived);
+                process = SetupHiddenProcessAndStart(parserFileName, arguments, workingDirectory, TextParsing_ErrorDataReceived, TextParsing_OutputDataReceived);
 
                 while (!process.HasExited)
                 {
@@ -508,23 +542,27 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        private void ParserGeneration_ErrorDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
+        private void ParserGeneration_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
                 var strs = e.Data.Split(':');
+                ParsingError error;
                 if (strs.Length >= 4)
                 {
-                    _parserGenerationErrors.Add(new ParsingError(int.Parse(strs[2]), int.Parse(strs[3]), e.Data));
+                    error = new ParsingError(int.Parse(strs[2]), int.Parse(strs[3]), e.Data);
                 }
                 else
                 {
-                    _parserCompilationErrors.Add(new ParsingError(0, 0, e.Data));
+                    error = new ParsingError(0, 0, e.Data);
                 }
+                error.WorkflowStage = WorkflowStage.ParserGenerated;
+                _parserGenerationErrors.Add(error);
+                NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.ParserGenerated, error));
             }
         }
 
-        private void ParserGeneration_OutputDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
+        private void ParserGeneration_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
@@ -532,57 +570,67 @@ namespace AntlrGrammarEditor
             }
         }
 
-        private void ParserCompilation_ErrorDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
+        private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
                 if (Runtime == Runtime.Java && e.Data.Contains(": error:"))
                 {
-                    _parserCompilationErrors.Add(new ParsingError(0, 0, e.Data));
+                    var error = new ParsingError(0, 0, e.Data) { WorkflowStage = WorkflowStage.ParserCompilied };
+                    _parserCompilationErrors.Add(error);
+                    NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.ParserCompilied, error));
                 }
             }
         }
 
-        private void ParserCompilation_OutputDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
+        private void ParserCompilation_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
                 if ((Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp) && e.Data.Contains(": error CS"))
                 {
                     var errorString = FixEncoding(e.Data);
+                    ParsingError error;
                     try
                     {
                         var words = errorString.Split(' ');
                         var strs = words[1].Split(':');
-                        _parserCompilationErrors.Add(new ParsingError(int.Parse(strs[0]), int.Parse(strs[1]), errorString));
+                        error = new ParsingError(int.Parse(strs[0]), int.Parse(strs[1]), errorString);
                     }
                     catch
                     {
-                        _parserCompilationErrors.Add(new ParsingError(0, 0, errorString));
+                        error = new ParsingError(0, 0, errorString);
                     }
+                    error.WorkflowStage = WorkflowStage.ParserCompilied;
+                    _parserCompilationErrors.Add(error);
+                    NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.ParserCompilied, error));
                 }
             }
         }
 
-        private void TextParsing_ErrorDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
+        private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
                 var errorString = FixEncoding(e.Data);
+                ParsingError error;
                 try
                 {
                     var words = errorString.Split(' ');
                     var strs = words[1].Split(':');
-                    _textErrors.Add(new ParsingError(int.Parse(strs[0]), int.Parse(strs[1]), errorString));
+                    error = new ParsingError(int.Parse(strs[0]), int.Parse(strs[1]), errorString);
                 }
                 catch
                 {
-                    _textErrors.Add(new ParsingError(0, 0, errorString));
+                    error = new ParsingError(0, 0, errorString);
                 }
+                error.WorkflowStage = WorkflowStage.TextParsed;
+                _textErrors.Add(error);
+                NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.TextParsed, error));
             }
         }
 
-        private void TextParsing_OutputDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
+        private void TextParsing_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
@@ -595,15 +643,19 @@ namespace AntlrGrammarEditor
                     {
                         case TextParsedOutput.LexerTime:
                             _outputLexerTime = TimeSpan.Parse(data);
+                            TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.LexerTime, _outputLexerTime));
                             break;
                         case TextParsedOutput.ParserTime:
                             _outputParserTime = TimeSpan.Parse(data);
+                            TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.ParserTime, _outputParserTime));
                             break;
                         case TextParsedOutput.Tokens:
                             _outputTokens = data;
+                            TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tokens, _outputTokens));
                             break;
                         case TextParsedOutput.Tree:
                             _outputTree = data;
+                            TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tree, _outputTree));
                             break;
                     }
                 }
@@ -665,9 +717,6 @@ namespace AntlrGrammarEditor
                     return "Antlr4.Runtime.dll";
                 case Runtime.Java:
                     return "antlr-runtime-4.5.3.jar";
-                /*case Runtime.Python2:
-                case Runtime.Python3:
-                case Runtime.JavaScript:*/
                 default:
                     throw new NotImplementedException();
             }
@@ -682,11 +731,6 @@ namespace AntlrGrammarEditor
                     return "cs";
                 case Runtime.Java:
                     return "java";
-                /*case Runtime.Python2:
-                case Runtime.Python3:
-                    return "py";
-                case Runtime.JavaScript:
-                    return "js";*/
                 default:
                     throw new NotImplementedException();
             }
@@ -694,13 +738,14 @@ namespace AntlrGrammarEditor
 
         private void CancelOperationIfRequired(string message)
         {
-            if (_cancellationTokenSource.IsCancellationRequested)
+            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+            /*if (_cancellationTokenSource.IsCancellationRequested)
             {
                 throw new OperationCanceledException(message, _cancellationTokenSource.Token);
-            }
+            }*/
         }
 
-        private Process SetupAndStartProcess(string fileName, string arguments, string workingDirectory,
+        private Process SetupHiddenProcessAndStart(string fileName, string arguments, string workingDirectory,
             DataReceivedEventHandler errorDataReceived, DataReceivedEventHandler outputDataReceived)
         {
             var process = new Process();

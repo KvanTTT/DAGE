@@ -114,7 +114,7 @@ namespace AntlrGrammarEditor.Tests
                     new ParsingError(1, 3, "line 1:3 extraneous input 'asdf' expecting DIGIT")
                 },
                 textParsedState.TextErrors);
-            Assert.AreEqual("(start asdf 1234)", textParsedState.StringTree);
+            Assert.AreEqual("(start asdf 1234)", textParsedState.Tree);
         }
     }
 }

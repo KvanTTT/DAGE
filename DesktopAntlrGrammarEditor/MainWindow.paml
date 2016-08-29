@@ -11,7 +11,6 @@
         <TextBlock Grid.Column="0" Text="Grammar" />
         <Button Grid.Column="1" Margin="0,0,5,0" Command="{Binding NewGrammarCommand}" >New</Button>
         <Button Grid.Column="2" Margin="0,0,5,0" Command="{Binding OpenGrammarCommand}" >Open</Button>
-
         <StackPanel HorizontalAlignment="Right" Grid.Column="3" Gap="4" Orientation="Horizontal">
           <TextBlock HorizontalAlignment="Right" Text="File" />
           <DropDown Width="90" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" ></DropDown>
@@ -35,7 +34,7 @@
     <GridSplitter Grid.Column="1" />
     <Grid Grid.Column="2" RowDefinitions="35,*,Auto,Auto,Auto" >
       <TextBlock Grid.Row="0" Text="Text"  />
-      <TextBox Grid.Row="1" Name="SourceCodeTextBox" AcceptsReturn="true"/>
+      <TextBox Grid.Row="1" Name="TextTextBox" AcceptsReturn="true"/>
       <Expander Grid.Row="2" Header="Tokens" IsExpanded="false">
         <Grid RowDefinitions="120">
           <TextBox MinHeight="120" Text="{Binding Tokens}" IsReadOnly="true" TextWrapping="Wrap" />
@@ -46,9 +45,9 @@
           <TextBox MinHeight="120" Text="{Binding Tree, Mode=TwoWay}" IsReadOnly="true" TextWrapping="Wrap" />
         </Grid>
       </Expander>
-      <Expander Grid.Row="4" Header="{Binding SourceCodeErrorsText}" IsExpanded="false">
+      <Expander Grid.Row="4" Header="{Binding TextErrorsText}" IsExpanded="false">
         <Grid RowDefinitions="120" >
-          <ListBox Name="SourceCodeErrorsListBox" MinHeight="120" Items="{Binding TextErrors}" />
+          <ListBox Name="TextErrorsListBox" MinHeight="120" Items="{Binding TextErrors}" />
         </Grid>
       </Expander>
     </Grid>

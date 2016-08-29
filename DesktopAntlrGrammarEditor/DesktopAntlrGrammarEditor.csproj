@@ -177,10 +177,15 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers.cs" />
     <Compile Include="NewGrammarWindow.paml.cs">
       <DependentUpon>NewGrammarWindow.paml</DependentUpon>
     </Compile>
     <Compile Include="NewGrammarWindowViewModel.cs" />
+    <Compile Include="SelectPathDialog.paml.cs">
+      <DependentUpon>SelectPathDialog.paml</DependentUpon>
+    </Compile>
+    <Compile Include="SelectPathViewModel.cs" />
     <Compile Include="Settings.cs" />
     <EmbeddedResource Include="App.paml">
       <SubType>Designer</SubType>
@@ -204,6 +209,9 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="packages.config" />
+    <EmbeddedResource Include="SelectPathDialog.paml">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AntlrGrammarEditor\AntlrGrammarEditor.csproj">

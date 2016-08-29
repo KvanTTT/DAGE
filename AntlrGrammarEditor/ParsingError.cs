@@ -29,6 +29,8 @@ namespace AntlrGrammarEditor
             FileName = fileName;
         }
 
+        public WorkflowStage WorkflowStage { get; set; } = WorkflowStage.GrammarChecked;
+
         public override bool Equals(object obj)
         {
             if (obj == null)

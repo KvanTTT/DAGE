@@ -31,6 +31,6 @@ namespace DesktopAntlrGrammarEditor
         {
             var parsingError = new ParsingError(line, charPositionInLine, msg);
             Dispatcher.UIThread.InvokeAsync(() => parsingErrors.Add(parsingError));
-        }
+        } 
     }
 }
