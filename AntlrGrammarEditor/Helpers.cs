@@ -1,13 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DesktopAntlrGrammarEditor
+namespace AntlrGrammarEditor
 {
     public static class Helpers
     {
+        public static string GetJavaExePath(string exeName)
+        {
+            string result = null;
+            var javaInstallationPath = GetJavaInstallationPath();
+            if (javaInstallationPath != null)
+            {
+                result = Path.Combine(javaInstallationPath, exeName);
+                if (!File.Exists(result))
+                {
+                    result = null;
+                }
+            }
+            return result;
+        }
+
         public static string GetJavaInstallationPath()
         {
             string environmentPath = Environment.GetEnvironmentVariable("JAVA_HOME");

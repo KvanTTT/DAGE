@@ -41,6 +41,7 @@ namespace AntlrGrammarEditor.Tests
         public void ParserGeneratedStage()
         {
             var workflow = new Workflow();
+            workflow.JavaPath = Helpers.GetJavaExePath(@"bin\java.exe");
             var grammarText =
                 @"grammar test;
                 start:  rule1+;
@@ -68,6 +69,8 @@ namespace AntlrGrammarEditor.Tests
         public void ParserCompiliedStage(Runtime runtime)
         {
             var workflow = new Workflow();
+            workflow.JavaPath = Helpers.GetJavaExePath(@"bin\java.exe");
+            workflow.JavaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe");
             var grammarText =
                 @"grammar test;
                 start:  DIGIT+ { i++; };
@@ -75,6 +78,7 @@ namespace AntlrGrammarEditor.Tests
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultGrammar(grammarText, ".", "test");
+            grammar.Runtimes.Clear();
             grammar.Runtimes.Add(runtime);
             workflow.Grammar = grammar;
 
@@ -92,6 +96,8 @@ namespace AntlrGrammarEditor.Tests
         public void TextParsedStage(Runtime runtime)
         {
             var workflow = new Workflow();
+            workflow.JavaPath = Helpers.GetJavaExePath(@"bin\java.exe");
+            workflow.JavaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe");
             var grammarText =
                 @"grammar test;
                 start: DIGIT+;
@@ -99,6 +105,7 @@ namespace AntlrGrammarEditor.Tests
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultGrammar(grammarText, ".", "test");
+            grammar.Runtimes.Clear();
             grammar.Runtimes.Add(runtime);
             workflow.Grammar = grammar;
             workflow.Text =

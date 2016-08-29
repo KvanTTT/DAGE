@@ -22,7 +22,7 @@ namespace AntlrGrammarEditor
             var grammar = new Grammar();
             grammar.Name = grammarName;
             grammar.Files.Add(Path.Combine(path, grammarName + Extension));
-            grammar.Runtimes = new HashSet<Runtime>() { Runtime.Java };
+            grammar.Runtimes = new HashSet<Runtime>() { Runtime.CSharpSharwell };
 
             File.WriteAllText(grammar.Files.First(), grammarText);
 

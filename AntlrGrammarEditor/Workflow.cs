@@ -416,7 +416,6 @@ namespace AntlrGrammarEditor
                     Directory.CreateDirectory(HelperDirectoryName);
                 }
                 CancelOperationIfRequired(GenerateParserCancelMessage);
-                _parserGenerationErrors.Clear();
 
                 string extension = GetExtension(Runtime);
                 var runtimeExtensionFiles = Directory.GetFiles(HelperDirectoryName, "*." + extension);
@@ -469,7 +468,6 @@ namespace AntlrGrammarEditor
             Process process = null;
             try
             {
-                _parserCompilationErrors.Clear();
                 string compilatorPath = "";
                 string arguments = "";
                 string templateName = "";
@@ -499,7 +497,7 @@ namespace AntlrGrammarEditor
                 {
                     templateName = "Main.java";
                     compiliedFiles.Append('"' + templateName + '"');
-                    compilatorPath = @"C:\Program Files\Java\jdk1.8.0_66\bin\javac.exe";
+                    compilatorPath = JavaCompilerPath;
                     arguments = $@"-cp ""..\{runtimeLibraryPath}"" " + compiliedFiles.ToString();
                 }
 
@@ -560,7 +558,6 @@ namespace AntlrGrammarEditor
             try
             {
                 File.WriteAllText(Path.Combine(HelperDirectoryName, TextFileName), result.Text);
-                _textErrors.Clear();
 
                 string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), GetLibraryName(Runtime));
                 string parserFileName = "";

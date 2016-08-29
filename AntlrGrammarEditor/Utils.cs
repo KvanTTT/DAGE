@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AntlrGrammarEditor
 {
-    public static class Utils
+    public static class TextHelpers
     {
         public static int LineColumnToLinear(string text, int line, int column)
         {

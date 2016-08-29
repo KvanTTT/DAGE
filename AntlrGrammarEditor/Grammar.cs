@@ -28,6 +28,9 @@ namespace AntlrGrammarEditor
         public List<string> Files { get; set; } = new List<string>();
 
         [JsonIgnore]
+        public string GrammarPath { get; set; }
+
+        [JsonIgnore]
         public string AgeFileName { get; set; }
 
         public static Grammar Load(string fileName)

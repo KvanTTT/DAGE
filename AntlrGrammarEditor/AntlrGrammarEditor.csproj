@@ -194,6 +194,7 @@
     <Compile Include="FileName.cs" />
     <Compile Include="Grammar.cs" />
     <Compile Include="GrammarFactory.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="LexerAdaptor.cs" />
     <Compile Include="ParsingError.cs" />
     <Compile Include="RulesCollectorListener.cs" />
@@ -211,7 +212,6 @@
     <Compile Include="TextSpanMap.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Workflow.cs" />
-    <Compile Include="WorkflowCommand.cs" />
     <Compile Include="WorkflowStage.cs" />
     <Compile Include="WorkflowState\GrammarCheckedState.cs" />
     <Compile Include="WorkflowState\InputState.cs" />
