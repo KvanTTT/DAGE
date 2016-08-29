@@ -10,24 +10,31 @@ namespace AntlrGrammarEditor
 {
     public class AntlrErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
     {
-        protected List<ParsingError> _errors = new List<ParsingError>();
+        public List<ParsingError> Errors { get; private set; }
+
+        public event EventHandler<Tuple<WorkflowStage, ParsingError>> NewErrorEvent;
 
         public string CurrentFileName { get; set; }
 
-        public List<ParsingError> Errors => _errors;
+        public AntlrErrorListener(List<ParsingError> errorsList)
+        {
+            Errors = errorsList;
+        }
 
         public void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
             var message = FormatErrorMessage(CurrentFileName, line, charPositionInLine, msg);
-            var lexerError = new ParsingError(line, charPositionInLine, message);
-            _errors.Add(lexerError);
+            var lexerError = new ParsingError(line, charPositionInLine, message) { WorkflowStage = WorkflowStage.GrammarChecked };
+            Errors.Add(lexerError);
+            NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.GrammarChecked, lexerError));
         }
 
         public void SyntaxError(IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
             var message = FormatErrorMessage(CurrentFileName, line, charPositionInLine, msg);
-            var parserError = new ParsingError(line, charPositionInLine, message);
-            _errors.Add(parserError);
+            var parserError = new ParsingError(line, charPositionInLine, message) { WorkflowStage = WorkflowStage.GrammarChecked };
+            Errors.Add(parserError);
+            NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.GrammarChecked, parserError));
         }
 
         private static string FormatErrorMessage(string fileName, int line, int charPositionInLine, string msg)

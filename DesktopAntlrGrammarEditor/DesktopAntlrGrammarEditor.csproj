@@ -196,7 +196,6 @@
     <EmbeddedResource Include="MainWindow.paml">
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <Compile Include="GuiErrorListener.cs" />
     <Compile Include="MainWindow.paml.cs">
       <DependentUpon>MainWindow.paml</DependentUpon>
     </Compile>

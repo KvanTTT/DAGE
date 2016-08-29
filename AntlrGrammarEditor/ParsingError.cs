@@ -16,6 +16,13 @@ namespace AntlrGrammarEditor
 
         public string FileName { get; set; }
 
+        public ParsingError(Exception ex)
+        {
+            Line = -1;
+            Column = -1;
+            Message = ex.ToString();
+        }
+
         public ParsingError(int line, int column, string message)
             : this(line, column, message, "")
         {

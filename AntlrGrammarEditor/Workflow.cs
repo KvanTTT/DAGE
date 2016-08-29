@@ -31,6 +31,7 @@ namespace AntlrGrammarEditor
         private string _text = "";
         private WorkflowState _currentState;
 
+        private List<ParsingError> _grammarCheckErrors = new List<ParsingError>();
         private List<ParsingError> _parserGenerationErrors = new List<ParsingError>();
         private List<ParsingError> _parserCompilationErrors = new List<ParsingError>();
         private List<ParsingError> _textErrors = new List<ParsingError>();
@@ -38,6 +39,8 @@ namespace AntlrGrammarEditor
         private string _outputTokens;
         private TimeSpan _outputLexerTime;
         private TimeSpan _outputParserTime;
+        private AntlrErrorListener _antlrErrorListener;
+        private event EventHandler<Tuple<WorkflowStage, ParsingError>> _newErrorEvent;
 
         private CancellationTokenSource _cancellationTokenSource;
         private InputState _inputState = new InputState();
@@ -136,11 +139,75 @@ namespace AntlrGrammarEditor
 
         public event EventHandler<WorkflowState> StateChanged;
 
-        public event EventHandler<Tuple<WorkflowStage, ParsingError>> NewErrorEvent;
+        public event EventHandler<Tuple<WorkflowStage, ParsingError>> NewErrorEvent
+        {
+            add
+            {
+                _antlrErrorListener.NewErrorEvent += value;
+                _newErrorEvent += value;
+            }
+            remove
+            {
+                _antlrErrorListener.NewErrorEvent -= value;
+                _newErrorEvent -= value;
+            }
+        }
 
         public event EventHandler<WorkflowStage> ClearErrorsEvent;
 
         public event EventHandler<Tuple<TextParsedOutput, object>> TextParsedOutputEvent;
+
+        public TimeSpan OutputLexerTime
+        {
+            get
+            {
+                return _outputLexerTime;
+            }
+            set
+            {
+                _outputLexerTime = value;
+                TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.LexerTime, _outputLexerTime));
+            }
+        }
+
+        public TimeSpan OutputParserTime
+        {
+            get
+            {
+                return _outputParserTime;
+            }
+            set
+            {
+                _outputParserTime = value;
+                TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.ParserTime, _outputParserTime));
+            }
+        }
+
+        public string OutputTokens
+        {
+            get
+            {
+                return _outputTokens;
+            }
+            private set
+            {
+                _outputTokens = value;
+                TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tokens, _outputTokens));
+            }
+        }
+
+        public string OutputTree
+        {
+            get
+            {
+                return _outputTree;
+            }
+            private set
+            {
+                _outputTree = value;
+                TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tree, _outputTree));
+            }
+        }
 
         static Workflow()
         {
@@ -152,6 +219,7 @@ namespace AntlrGrammarEditor
         public Workflow()
         {
             CurrentState = _inputState;
+            _antlrErrorListener = new AntlrErrorListener(_grammarCheckErrors);
         }
 
         public Task<WorkflowState> ProcessAsync()
@@ -197,6 +265,7 @@ namespace AntlrGrammarEditor
         {
             if (CurrentState.HasErrors)
             {
+                ClearErrors(CurrentState.Stage);
                 CurrentState = CurrentState.PreviousState;
             }
         }
@@ -207,30 +276,25 @@ namespace AntlrGrammarEditor
             {
                 if (CurrentState.Stage <= WorkflowStage.TextParsed)
                 {
-                    _outputTree = "";
-                    _textErrors.Clear();
-                    TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tree, _outputTree));
-                    ClearErrorsEvent?.Invoke(this, WorkflowStage.TextParsed);
+                    OutputTree = "";
+                    ClearErrors(WorkflowStage.TextParsed);
                 }
                 if (CurrentState.Stage <= WorkflowStage.TextTokenized)
                 {
-                    _outputTokens = "";
-                    TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tokens, _outputTokens));
-                    ClearErrorsEvent?.Invoke(this, WorkflowStage.TextTokenized);
+                    OutputTokens = "";
+                    ClearErrors(WorkflowStage.TextTokenized);
                 }
                 if (CurrentState.Stage <= WorkflowStage.ParserCompilied)
                 {
-                    _parserCompilationErrors.Clear();
-                    ClearErrorsEvent?.Invoke(this, WorkflowStage.ParserCompilied);
+                    ClearErrors(WorkflowStage.ParserCompilied);
                 }
                 if (CurrentState.Stage <= WorkflowStage.ParserGenerated)
                 {
-                    _parserGenerationErrors.Clear();
-                    ClearErrorsEvent?.Invoke(this, WorkflowStage.ParserGenerated);
+                    ClearErrors(WorkflowStage.ParserGenerated);
                 }
                 if (CurrentState.Stage <= WorkflowStage.GrammarChecked)
                 {
-                    ClearErrorsEvent?.Invoke(this, WorkflowStage.GrammarChecked);
+                    ClearErrors(WorkflowStage.GrammarChecked);
                 }
                 CurrentState = CurrentState.PreviousState;
             }
@@ -257,8 +321,6 @@ namespace AntlrGrammarEditor
 
         private GrammarCheckedState CheckGrammar()
         {
-            var errorListener = new AntlrErrorListener();
-
             var result = new GrammarCheckedState
             {
                 Grammar = Grammar,
@@ -269,11 +331,11 @@ namespace AntlrGrammarEditor
             {
                 foreach (var file in Grammar.Files)
                 {
-                    errorListener.CurrentFileName = Path.GetFileName(file);
+                    _antlrErrorListener.CurrentFileName = Path.GetFileName(file);
                     var inputStream = new AntlrFileStream(file);
                     var antlr4Lexer = new ANTLRv4Lexer(inputStream);
                     antlr4Lexer.RemoveErrorListeners();
-                    antlr4Lexer.AddErrorListener(errorListener);
+                    antlr4Lexer.AddErrorListener(_antlrErrorListener);
                     var codeTokenSource = new ListTokenSource(antlr4Lexer.GetAllTokens());
 
                     CancelOperationIfRequired(CheckGrammarCancelMessage);
@@ -282,7 +344,7 @@ namespace AntlrGrammarEditor
                     var antlr4Parser = new ANTLRv4Parser(codeTokenStream);
 
                     antlr4Parser.RemoveErrorListeners();
-                    antlr4Parser.AddErrorListener(errorListener);
+                    antlr4Parser.AddErrorListener(_antlrErrorListener);
 
                     var tree = antlr4Parser.grammarSpec();
 
@@ -325,11 +387,15 @@ namespace AntlrGrammarEditor
                         CancelOperationIfRequired(CheckGrammarCancelMessage);
                     }
                 }
-                result.Errors = errorListener.Errors;
+                result.Errors = _antlrErrorListener.Errors;
             }
             catch (Exception ex)
             {
                 result.Exception = ex;
+                if (!(ex is OperationCanceledException))
+                {
+                    AddError(WorkflowStage.GrammarChecked, new ParsingError(ex));
+                }
             }
             GrammarCheckedState = result;
             return result;
@@ -358,14 +424,13 @@ namespace AntlrGrammarEditor
                 {
                     File.Delete(file);
                 }
-                var javaPath = "java";
 
                 foreach (var fileName in state.Grammar.Files)
                 {
                     var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{fileName}"" -o ""{HelperDirectoryName}"" " +
                         $"-Dlanguage={GetLanguage(Runtime)} -no-visitor -no-listener";
 
-                    process = SetupHiddenProcessAndStart(javaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
+                    process = SetupHiddenProcessAndStart(JavaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
 
                     while (!process.HasExited)
                     {
@@ -379,6 +444,10 @@ namespace AntlrGrammarEditor
             catch (Exception ex)
             {
                 result.Exception = ex;
+                if (!(ex is OperationCanceledException))
+                {
+                    AddError(WorkflowStage.ParserGenerated, new ParsingError(ex));
+                }
             }
             finally
             {
@@ -460,6 +529,10 @@ namespace AntlrGrammarEditor
             catch (Exception ex)
             {
                 result.Exception = ex;
+                if (!(ex is OperationCanceledException))
+                {
+                    AddError(WorkflowStage.ParserCompilied, new ParsingError(ex));
+                }
             }
             finally
             {
@@ -505,7 +578,7 @@ namespace AntlrGrammarEditor
                 }
                 else if (Runtime == Runtime.Java)
                 {
-                    parserFileName = "java";
+                    parserFileName = JavaPath;
                     arguments = $@"-cp ""..\{runtimeLibraryPath}"";. " + "Main " + TextFileName;
                 }
 
@@ -527,6 +600,10 @@ namespace AntlrGrammarEditor
             catch (Exception ex)
             {
                 result.Exception = ex;
+                if (!(ex is OperationCanceledException))
+                {
+                    AddError(WorkflowStage.TextParsed, new ParsingError(ex));
+                }
             }
             finally
             {
@@ -556,9 +633,7 @@ namespace AntlrGrammarEditor
                 {
                     error = new ParsingError(0, 0, e.Data);
                 }
-                error.WorkflowStage = WorkflowStage.ParserGenerated;
-                _parserGenerationErrors.Add(error);
-                NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.ParserGenerated, error));
+                AddError(WorkflowStage.ParserGenerated, error);
             }
         }
 
@@ -576,9 +651,8 @@ namespace AntlrGrammarEditor
             {
                 if (Runtime == Runtime.Java && e.Data.Contains(": error:"))
                 {
-                    var error = new ParsingError(0, 0, e.Data) { WorkflowStage = WorkflowStage.ParserCompilied };
-                    _parserCompilationErrors.Add(error);
-                    NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.ParserCompilied, error));
+                    var error = new ParsingError(0, 0, e.Data);
+                    AddError(WorkflowStage.ParserCompilied, error);
                 }
             }
         }
@@ -601,9 +675,7 @@ namespace AntlrGrammarEditor
                     {
                         error = new ParsingError(0, 0, errorString);
                     }
-                    error.WorkflowStage = WorkflowStage.ParserCompilied;
-                    _parserCompilationErrors.Add(error);
-                    NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.ParserCompilied, error));
+                    AddError(WorkflowStage.ParserCompilied, error);
                 }
             }
         }
@@ -624,9 +696,7 @@ namespace AntlrGrammarEditor
                 {
                     error = new ParsingError(0, 0, errorString);
                 }
-                error.WorkflowStage = WorkflowStage.TextParsed;
-                _textErrors.Add(error);
-                NewErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(WorkflowStage.TextParsed, error));
+                AddError(WorkflowStage.TextParsed, error);
             }
         }
 
@@ -642,20 +712,16 @@ namespace AntlrGrammarEditor
                     switch (outputState)
                     {
                         case TextParsedOutput.LexerTime:
-                            _outputLexerTime = TimeSpan.Parse(data);
-                            TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.LexerTime, _outputLexerTime));
+                            OutputLexerTime = TimeSpan.Parse(data);
                             break;
                         case TextParsedOutput.ParserTime:
-                            _outputParserTime = TimeSpan.Parse(data);
-                            TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.ParserTime, _outputParserTime));
+                            OutputParserTime = TimeSpan.Parse(data);
                             break;
                         case TextParsedOutput.Tokens:
-                            _outputTokens = data;
-                            TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tokens, _outputTokens));
+                            OutputTokens = data;
                             break;
                         case TextParsedOutput.Tree:
-                            _outputTree = data;
-                            TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tree, _outputTree));
+                            OutputTree = data;
                             break;
                     }
                 }
@@ -663,6 +729,49 @@ namespace AntlrGrammarEditor
                 {
                 }
             }
+        }
+
+        private void AddError(WorkflowStage stage, ParsingError error)
+        {
+            error.WorkflowStage = stage;
+            switch (stage)
+            {
+                case WorkflowStage.GrammarChecked:
+                    _grammarCheckErrors.Add(error);
+                    break;
+                case WorkflowStage.ParserGenerated:
+                    _parserGenerationErrors.Add(error);
+                    break;
+                case WorkflowStage.ParserCompilied:
+                    _parserCompilationErrors.Add(error);
+                    break;
+                case WorkflowStage.TextTokenized:
+                case WorkflowStage.TextParsed:
+                    _textErrors.Add(error);
+                    break;
+            }
+            _newErrorEvent?.Invoke(this, new Tuple<WorkflowStage, ParsingError>(stage, error));
+        }
+
+        private void ClearErrors(WorkflowStage stage)
+        {
+            switch (stage)
+            {
+                case WorkflowStage.GrammarChecked:
+                    _grammarCheckErrors.Clear();
+                    break;
+                case WorkflowStage.ParserGenerated:
+                    _parserGenerationErrors.Clear();
+                    break;
+                case WorkflowStage.ParserCompilied:
+                    _parserCompilationErrors.Clear();
+                    break;
+                case WorkflowStage.TextTokenized:
+                case WorkflowStage.TextParsed:
+                    _textErrors.Clear();
+                    break;
+            }
+            ClearErrorsEvent?.Invoke(this, stage);
         }
 
         private string FixEncoding(string str)
@@ -738,11 +847,10 @@ namespace AntlrGrammarEditor
 
         private void CancelOperationIfRequired(string message)
         {
-            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
-            /*if (_cancellationTokenSource.IsCancellationRequested)
+            if (_cancellationTokenSource.IsCancellationRequested)
             {
                 throw new OperationCanceledException(message, _cancellationTokenSource.Token);
-            }*/
+            }
         }
 
         private Process SetupHiddenProcessAndStart(string fileName, string arguments, string workingDirectory,

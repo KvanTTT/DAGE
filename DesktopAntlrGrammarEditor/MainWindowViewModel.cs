@@ -20,11 +20,10 @@ namespace DesktopAntlrGrammarEditor
         private Workflow _workflow;
         private FileName _openedGrammarFile;
         private bool _grammarFileChanged, _textFileChanged;
-        private string _currentState = WorkflowStage.Input.ToString();
         private TextBox _grammarTextBox, _textTextBox;
         private string _grammarErrorsText = "Grammar Errors (0)";
         private string _textErrorsText = "Text Errors (0)";
-        private ListBox _grammarErrorsListBox, _sourceCodeErrorsListBox;
+        private ListBox _grammarErrorsListBox, _textErrorsListBox;
         private string _tokens, _tree;
         private bool _autoprocessing;
 
@@ -34,18 +33,15 @@ namespace DesktopAntlrGrammarEditor
             _grammarTextBox = _window.Find<TextBox>("GrammarTextBox");
             _textTextBox = _window.Find<TextBox>("TextTextBox");
             _grammarErrorsListBox = _window.Find<ListBox>("GrammarErrorsListBox");
-            _sourceCodeErrorsListBox = _window.Find<ListBox>("TextErrorsListBox");
+            _textErrorsListBox = _window.Find<ListBox>("TextErrorsListBox");
+            
             _grammarErrorsListBox.DoubleTapped += ErrorsListBox_DoubleTapped;
-            _sourceCodeErrorsListBox.DoubleTapped += ErrorsListBox_DoubleTapped;
+            _textErrorsListBox.DoubleTapped += ErrorsListBox_DoubleTapped;
 
             _settings = Settings.Load();
 
             _workflow = new Workflow();
             _workflow.JavaPath = _settings.JavaPath;
-            _workflow.StateChanged += workflow_StateChanged;
-            _workflow.NewErrorEvent += workflow_NewErrorEvent;
-            _workflow.ClearErrorsEvent += workflow_ClearErrorsEvent;
-            _workflow.TextParsedOutputEvent += workflow_TextParsedOutputEvent;
             _window = window;
 
             if (string.IsNullOrEmpty(_settings.AgeFileName))
@@ -64,6 +60,8 @@ namespace DesktopAntlrGrammarEditor
             _workflow.Text = _settings.Text;
             _textTextBox.Text = _settings.Text;
             SelectedRuntime = _grammar.Runtimes.First();
+
+            SetupWorkflowSubscriptions();
 
             InitFiles();
             if (string.IsNullOrEmpty(_settings.OpenedGrammarFile))
@@ -88,23 +86,8 @@ namespace DesktopAntlrGrammarEditor
             {
                 _window.Position = new Point(_settings.Left, _settings.Top);
             }
-            _window.GetObservable(Window.WidthProperty)
-                .Throttle(TimeSpan.FromMilliseconds(100))
-                .Subscribe(width =>
-                {
-                    _settings.Width = width;
-                    _settings.WindowState = _window.WindowState;
-                    _settings.Save();
-                });
-            _window.GetObservable(Window.HeightProperty)
-                .Throttle(TimeSpan.FromMilliseconds(100))
-                .Subscribe(height =>
-                {
-                    _settings.Height = height;
-                    _settings.WindowState = _window.WindowState;
-                    _settings.Save();
-                });
-            _window.Closed += window_Closed;
+
+            SetupWindowSubscriptions();
 
             _grammarTextBox.GetObservable(TextBox.TextProperty)
                 .Subscribe(str => _grammarFileChanged = true);
@@ -129,7 +112,7 @@ namespace DesktopAntlrGrammarEditor
                     _workflow.Text = str;
                     if (AutoProcessing)
                     {
-                        ProcessAndUpdateUI();
+                        Process();
                     }
                     if (_textFileChanged)
                     {
@@ -139,47 +122,7 @@ namespace DesktopAntlrGrammarEditor
                     }
                 });
 
-            NewGrammarCommand.Subscribe(async _ =>
-            {
-                var newGrammarWindow = new NewGrammarWindow();
-                Grammar grammar = await newGrammarWindow.ShowDialog<Grammar>();
-                if (grammar != null)
-                {
-                    OpenGrammar(grammar);
-                }
-            });
-
-            OpenGrammarCommand.Subscribe(async _ =>
-            {
-                var openDialog = new OpenFileDialog();
-                openDialog.Filters.Add(new FileDialogFilter() { Name = "Antlr Grammar Editor", Extensions = new List<string>() { "age" } });
-                string[] fileNames = await openDialog.ShowAsync();
-                if (fileNames != null)
-                {
-                    var grammar = Grammar.Load(fileNames.First());
-                    OpenGrammar(grammar);
-                }
-            });
-
-            ProcessCommand.Subscribe(_ =>
-            {
-                SaveGrammarFileIfRequired();
-                _workflow.Grammar = _grammar;
-                _workflow.Text = _textTextBox.Text;
-                _settings.Text = _workflow.Text;
-                _settings.Save();
-                ProcessAndUpdateUI();
-            });
-        }
-
-        private void OpenGrammar(Grammar grammar)
-        {
-            _grammar = grammar;
-            _workflow.Grammar = grammar;
-            _settings.AgeFileName = grammar.AgeFileName;
-            _settings.Save();
-            InitFiles();
-            OpenedGrammarFile = GrammarFiles.First();
+            SetupCommandsSubscription();
         }
 
         public FileName OpenedGrammarFile
@@ -243,7 +186,7 @@ namespace DesktopAntlrGrammarEditor
                     }
                     if (AutoProcessing)
                     {
-                        ProcessAndUpdateUI();
+                        Process();
                     }
                     _grammar.Save();
                     this.RaisePropertyChanged(nameof(Root));
@@ -270,23 +213,13 @@ namespace DesktopAntlrGrammarEditor
                     this.RaisePropertyChanged(nameof(SelectedRuntime));
                     if (AutoProcessing)
                     {
-                        ProcessAndUpdateUI();
+                        Process();
                     }
                 }
             }
         }
 
-        public string CurrentState
-        {
-            get
-            {
-                return _currentState;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _currentState, value);
-            }
-        }
+        public string CurrentState => _workflow.CurrentState.Stage.ToString();
 
         public ObservableCollection<Runtime> Runtimes { get; } = new ObservableCollection<Runtime>((Runtime[])Enum.GetValues(typeof(Runtime)));
 
@@ -362,33 +295,153 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private void workflow_StateChanged(object sender, WorkflowState e)
+        private void SetupWindowSubscriptions()
         {
-            Dispatcher.UIThread.InvokeAsync(() => CurrentState = e.Stage.ToString());
+            _window.GetObservable(Window.WidthProperty)
+                .Throttle(TimeSpan.FromMilliseconds(250))
+                .Subscribe(width =>
+                {
+                    _settings.Width = width;
+                    _settings.WindowState = _window.WindowState;
+                    _settings.Save();
+                });
+
+            _window.GetObservable(Window.HeightProperty)
+                .Throttle(TimeSpan.FromMilliseconds(250))
+                .Subscribe(height =>
+                {
+                    _settings.Height = height;
+                    _settings.WindowState = _window.WindowState;
+                    _settings.Save();
+                });
+
+            Observable.FromEventPattern(
+                ev => _window.Closed += ev, ev => _window.Closed -= ev)
+                .Subscribe(ev =>
+                {
+                    SaveGrammarFileIfRequired();
+                    _settings.Left = _window.Position.X;
+                    _settings.Top = _window.Position.Y;
+                    _settings.Save();
+                });
         }
 
-        private void workflow_NewErrorEvent(object sender, Tuple<WorkflowStage, ParsingError> e)
+        private void SetupWorkflowSubscriptions()
         {
-            Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                switch (e.Item1)
+            Observable.FromEventPattern<WorkflowState>(
+                ev => _workflow.StateChanged += ev, ev => _workflow.StateChanged -= ev)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(ev =>
                 {
-                    case WorkflowStage.GrammarChecked:
-                    case WorkflowStage.ParserGenerated:
-                    case WorkflowStage.ParserCompilied:
-                        GrammarErrors.Add(e.Item2);
-                        GrammarErrorsText = $"Grammar Errors ({GrammarErrors.Count})";
-                        break;
-                    case WorkflowStage.TextTokenized:
-                    case WorkflowStage.TextParsed:
-                        TextErrors.Add(e.Item2);
-                        TextErrorsText = $"Text Errors ({TextErrors.Count})";
-                        break;
+                    this.RaisePropertyChanged(nameof(CurrentState));
+                });
+
+            Observable.FromEventPattern<Tuple<WorkflowStage, ParsingError>>(
+                ev => _workflow.NewErrorEvent += ev, ev => _workflow.NewErrorEvent -= ev)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(ev =>
+                {
+                    switch (ev.EventArgs.Item1)
+                    {
+                        case WorkflowStage.GrammarChecked:
+                        case WorkflowStage.ParserGenerated:
+                        case WorkflowStage.ParserCompilied:
+                            GrammarErrors.Add(ev.EventArgs.Item2);
+                            GrammarErrorsText = $"Grammar Errors ({GrammarErrors.Count})";
+                            break;
+                        case WorkflowStage.TextTokenized:
+                        case WorkflowStage.TextParsed:
+                            TextErrors.Add(ev.EventArgs.Item2);
+                            TextErrorsText = $"Text Errors ({TextErrors.Count})";
+                            break;
+                    }
+                });
+
+            Observable.FromEventPattern<Tuple<TextParsedOutput, object>>(
+                 ev => _workflow.TextParsedOutputEvent += ev, ev => _workflow.TextParsedOutputEvent -= ev)
+                 .ObserveOn(RxApp.MainThreadScheduler)
+                 .Subscribe(ev =>
+                 {
+                     switch (ev.EventArgs.Item1)
+                     {
+                         case TextParsedOutput.LexerTime:
+                             break;
+                         case TextParsedOutput.ParserTime:
+                             break;
+                         case TextParsedOutput.Tokens:
+                             Tokens = (string)ev.EventArgs.Item2;
+                             break;
+                         case TextParsedOutput.Tree:
+                             Tree = (string)ev.EventArgs.Item2;
+                             break;
+                     }
+                 });
+
+            _workflow.ClearErrorsEvent += Workflow_ClearErrorsEvent;
+        }
+
+        private void SetupCommandsSubscription()
+        {
+            NewGrammarCommand.Subscribe(async _ =>
+            {
+                var newGrammarWindow = new NewGrammarWindow();
+                Grammar grammar = await newGrammarWindow.ShowDialog<Grammar>();
+                if (grammar != null)
+                {
+                    OpenGrammar(grammar);
                 }
+            });
+
+            OpenGrammarCommand.Subscribe(async _ =>
+            {
+                var openDialog = new OpenFileDialog();
+                openDialog.Filters.Add(new FileDialogFilter() { Name = "Antlr Grammar Editor", Extensions = new List<string>() { "age" } });
+                string[] fileNames = await openDialog.ShowAsync();
+                if (fileNames != null)
+                {
+                    var grammar = Grammar.Load(fileNames.First());
+                    OpenGrammar(grammar);
+                }
+            });
+
+            ProcessCommand.Subscribe(_ =>
+            {
+                bool changed = false;
+                if (_grammarFileChanged)
+                {
+                    File.WriteAllText(_openedGrammarFile.LongFileName, _grammarTextBox.Text);
+                    _workflow.Grammar = _grammar;
+                    _grammarFileChanged = false;
+                    changed = true;
+                }
+
+                if (_textFileChanged)
+                {
+                    _workflow.Text = _textTextBox.Text;
+                    _settings.Text = _workflow.Text;
+                    _textFileChanged = false;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    _settings.Save();
+                }
+                Process();
             });
         }
 
-        private void workflow_ClearErrorsEvent(object sender, WorkflowStage e)
+        private void OpenGrammar(Grammar grammar)
+        {
+            _grammar = grammar;
+            _workflow.Grammar = grammar;
+            _settings.AgeFileName = grammar.AgeFileName;
+            _settings.Save();
+            InitFiles();
+            OpenedGrammarFile = GrammarFiles.First();
+        }
+
+        private void Workflow_ClearErrorsEvent(object sender, WorkflowStage e)
         {
             ObservableCollection<object> errorsList = GrammarErrors;
             bool grammarErrors = false;
@@ -435,34 +488,6 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private void workflow_TextParsedOutputEvent(object sender, Tuple<TextParsedOutput, object> e)
-        {
-            Dispatcher.UIThread.InvokeAsync(() =>
-            { 
-                switch (e.Item1)
-                {
-                    case TextParsedOutput.LexerTime:
-                        break;
-                    case TextParsedOutput.ParserTime:
-                        break;
-                    case TextParsedOutput.Tokens:
-                        Tokens = (string)e.Item2;
-                        break;
-                    case TextParsedOutput.Tree:
-                        Tree = (string)e.Item2;
-                        break;
-                }
-            });
-        }
-
-        private void window_Closed(object sender, EventArgs e)
-        {
-            SaveGrammarFileIfRequired();
-            _settings.Left = _window.Position.X;
-            _settings.Top = _window.Position.Y;
-            _settings.Save();
-        }
-
         private void ErrorsListBox_DoubleTapped(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             ListBox listBox = (ListBox)sender;
@@ -495,9 +520,10 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private async void ProcessAndUpdateUI()
+        private async void Process()
         {
             _workflow.RollbackToPreviousStageIfErrors();
+
             var assemblyPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             Directory.SetCurrentDirectory(assemblyPath);
 
@@ -525,6 +551,7 @@ namespace DesktopAntlrGrammarEditor
                     _settings.Save();
                 }
             }
+
             await _workflow.ProcessAsync();
 
             if (_workflow.GrammarCheckedState != null)
