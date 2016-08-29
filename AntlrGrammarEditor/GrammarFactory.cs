@@ -35,8 +35,8 @@ namespace AntlrGrammarEditor
         {
             var grammar = new Grammar();
             grammar.Name = grammarName;
-            grammar.Files.Add(Path.Combine(path, grammarName + Extension));
-            grammar.Runtimes = new HashSet<Runtime>() { Runtime.Java };
+            grammar.Files.Add(grammarName + Extension);
+            grammar.Runtimes = new HashSet<Runtime>() { Runtime.CSharpSharwell };
 
             foreach (var file in grammar.Files)
             {

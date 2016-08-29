@@ -333,7 +333,7 @@ namespace AntlrGrammarEditor
                 foreach (var file in Grammar.Files)
                 {
                     _antlrErrorListener.CurrentFileName = Path.GetFileName(file);
-                    var inputStream = new AntlrFileStream(file);
+                    var inputStream = new AntlrFileStream(Path.Combine(_grammar.GrammarPath, file));
                     var antlr4Lexer = new ANTLRv4Lexer(inputStream);
                     antlr4Lexer.RemoveErrorListeners();
                     antlr4Lexer.AddErrorListener(_antlrErrorListener);
@@ -427,7 +427,7 @@ namespace AntlrGrammarEditor
 
                 foreach (var fileName in state.Grammar.Files)
                 {
-                    var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{fileName}"" -o ""{HelperDirectoryName}"" " +
+                    var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{Path.Combine(_grammar.GrammarPath, fileName)}"" -o ""{HelperDirectoryName}"" " +
                         $"-Dlanguage={GetLanguage(Runtime)} -no-visitor -no-listener";
 
                     process = SetupHiddenProcessAndStart(JavaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);

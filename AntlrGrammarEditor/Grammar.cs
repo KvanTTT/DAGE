@@ -12,6 +12,7 @@ namespace AntlrGrammarEditor
     public class Grammar
     {
         private static JsonConverter[] _jsonConverter = new JsonConverter[] { new StringEnumConverter() };
+        private string _ageFileName;
 
         public string Name { get; set; }
         
@@ -28,10 +29,21 @@ namespace AntlrGrammarEditor
         public List<string> Files { get; set; } = new List<string>();
 
         [JsonIgnore]
-        public string GrammarPath { get; set; }
+        public string GrammarPath { get; private set; }
 
         [JsonIgnore]
-        public string AgeFileName { get; set; }
+        public string AgeFileName
+        {
+            get
+            {
+                return _ageFileName;
+            }
+            set
+            {
+                _ageFileName = value;
+                GrammarPath = Path.GetDirectoryName(_ageFileName);
+            }
+        }
 
         public static Grammar Load(string fileName)
         {

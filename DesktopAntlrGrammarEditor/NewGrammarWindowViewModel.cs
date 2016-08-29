@@ -25,31 +25,30 @@ namespace DesktopAntlrGrammarEditor
                     CaseInsensitive = CaseInsensitive,
                     PreprocessorCaseInsensitive = PreprocessorCaseInsensitive
                 };
-
-                var fullGrammarDir = Path.GetFullPath(GrammarDirectory);
-                var grammarPath = Path.Combine(fullGrammarDir, GrammarName);
+                
                 if (Preprocessor)
                 {
                     if (PreprocessorSeparatedLexerAndParser)
                     {
-                        grammar.Files.Add(grammarPath + GrammarFactory.PreprocessorPostfix + GrammarFactory.LexerPostfix + GrammarFactory.Extension);
-                        grammar.Files.Add(grammarPath + GrammarFactory.PreprocessorPostfix + GrammarFactory.ParserPostfix + GrammarFactory.Extension);
+                        grammar.Files.Add(GrammarName + GrammarFactory.PreprocessorPostfix + GrammarFactory.LexerPostfix + GrammarFactory.Extension);
+                        grammar.Files.Add(GrammarName + GrammarFactory.PreprocessorPostfix + GrammarFactory.ParserPostfix + GrammarFactory.Extension);
                     }
                     else
                     {
-                        grammar.Files.Add(grammarPath + GrammarFactory.PreprocessorPostfix + GrammarFactory.Extension);
+                        grammar.Files.Add(GrammarName + GrammarFactory.PreprocessorPostfix + GrammarFactory.Extension);
                     }
                 }
                 if (SeparatedLexerAndParser)
                 {
-                    grammar.Files.Add(grammarPath + GrammarFactory.LexerPostfix + GrammarFactory.Extension);
-                    grammar.Files.Add(grammarPath + GrammarFactory.ParserPostfix + GrammarFactory.Extension);
+                    grammar.Files.Add(GrammarName + GrammarFactory.LexerPostfix + GrammarFactory.Extension);
+                    grammar.Files.Add(GrammarName + GrammarFactory.ParserPostfix + GrammarFactory.Extension);
                 }
                 else
                 {
-                    grammar.Files.Add(grammarPath + GrammarFactory.Extension);
+                    grammar.Files.Add(GrammarName + GrammarFactory.Extension);
                 }
 
+                var fullGrammarDir = Path.GetFullPath(GrammarDirectory);
                 if (!Directory.Exists(fullGrammarDir))
                 {
                     Directory.CreateDirectory(fullGrammarDir);
@@ -57,28 +56,28 @@ namespace DesktopAntlrGrammarEditor
 
                 foreach (var file in grammar.Files)
                 {
-                    var shortFileName = Path.GetFileNameWithoutExtension(file);
+                    var fileWithoutExtension = Path.GetFileNameWithoutExtension(file);
                     var text = new StringBuilder();
-                    if (shortFileName.Contains(GrammarFactory.LexerPostfix))
+                    if (fileWithoutExtension.Contains(GrammarFactory.LexerPostfix))
                     {
                         text.Append("lexer ");
                     }
-                    else if (shortFileName.Contains(GrammarFactory.ParserPostfix))
+                    else if (fileWithoutExtension.Contains(GrammarFactory.ParserPostfix))
                     {
                         text.Append("parser ");
                     }
-                    text.AppendLine($"grammar {shortFileName};");
+                    text.AppendLine($"grammar {fileWithoutExtension};");
                     text.AppendLine();
 
-                    if (shortFileName.Contains(GrammarFactory.ParserPostfix))
+                    if (fileWithoutExtension.Contains(GrammarFactory.ParserPostfix))
                     {
-                        text.AppendLine($"options {{ tokenVocab = {shortFileName.Replace(GrammarFactory.ParserPostfix, GrammarFactory.LexerPostfix)}; }}");
+                        text.AppendLine($"options {{ tokenVocab = {fileWithoutExtension.Replace(GrammarFactory.ParserPostfix, GrammarFactory.LexerPostfix)}; }}");
                         text.AppendLine();
                     }
 
-                    if (!shortFileName.Contains(GrammarFactory.LexerPostfix) && !string.IsNullOrEmpty(GrammarRoot))
+                    if (!fileWithoutExtension.Contains(GrammarFactory.LexerPostfix) && !string.IsNullOrEmpty(GrammarRoot))
                     {
-                        text.AppendLine($"{(shortFileName.Contains(GrammarFactory.PreprocessorPostfix) ? PreprocessorGrammarRoot : GrammarRoot)}");
+                        text.AppendLine($"{(fileWithoutExtension.Contains(GrammarFactory.PreprocessorPostfix) ? PreprocessorGrammarRoot : GrammarRoot)}");
                         text.AppendLine("    : tokensOrRules* EOF");
                         text.AppendLine("    ;");
                         text.AppendLine();
@@ -88,17 +87,17 @@ namespace DesktopAntlrGrammarEditor
                         text.AppendLine();
                     }
 
-                    if (!shortFileName.Contains(GrammarFactory.ParserPostfix))
+                    if (!fileWithoutExtension.Contains(GrammarFactory.ParserPostfix))
                     {
                         text.AppendLine("TOKEN: [a-z]+;");
                         text.AppendLine();
                     }
 
-                    File.WriteAllText(file, text.ToString());
+                    File.WriteAllText(Path.Combine(fullGrammarDir, file), text.ToString());
                 }
 
                 grammar.Runtimes = new HashSet<Runtime>() { Runtime };
-                grammar.AgeFileName = Path.Combine(GrammarDirectory, grammar.Name) + ".age";
+                grammar.AgeFileName = Path.Combine(fullGrammarDir, grammar.Name) + ".age";
                 grammar.Save();
 
                 _window.Close(grammar);
