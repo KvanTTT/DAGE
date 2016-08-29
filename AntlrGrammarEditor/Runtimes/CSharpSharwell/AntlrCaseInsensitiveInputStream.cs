@@ -4,10 +4,13 @@ class AntlrCaseInsensitiveInputStream : AntlrInputStream
 {
     private string lookaheadData;
 
-    public AntlrCaseInsensitiveInputStream(string input)
+    public readonly bool LowerCase;
+
+    public AntlrCaseInsensitiveInputStream(string input, bool lowerCase = true)
         : base(input)
     {
-        lookaheadData = input.ToLower();
+        LowerCase = lowerCase;
+        lookaheadData = lowerCase ? input.ToLower() : input.ToUpper();
     }
 
     public override int La(int i)

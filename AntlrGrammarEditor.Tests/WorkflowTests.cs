@@ -123,5 +123,32 @@ namespace AntlrGrammarEditor.Tests
                 textParsedState.TextErrors);
             Assert.AreEqual("(start asdf 1234)", textParsedState.Tree);
         }
+
+        [TestCase(Runtime.CSharpSharwell)]
+        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.Java)]
+        public void CaseInsensitive(Runtime runtime)
+        {
+            var workflow = new Workflow();
+            workflow.JavaPath = Helpers.GetJavaExePath(@"bin\java.exe");
+            workflow.JavaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe");
+            var grammarText =
+                @"grammar test;
+                start:  A A DIGIT;
+                A:      'a';
+                DIGIT:  [0-9]+;
+                WS:     [ \r\n\t]+ -> skip;";
+            var grammar = GrammarFactory.CreateDefaultGrammar(grammarText, ".", "test");
+            grammar.CaseInsensitive = true;
+            grammar.Runtimes.Clear();
+            grammar.Runtimes.Add(runtime);
+            workflow.Grammar = grammar;
+            workflow.Text = @"A a 1234";
+
+            var state = workflow.Process();
+            TextParsedState textParsedState = state as TextParsedState;
+            Assert.AreEqual(0, textParsedState.TextErrors.Count);
+            Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
+        }
     }
 }

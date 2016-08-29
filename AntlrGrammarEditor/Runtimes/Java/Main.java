@@ -18,7 +18,7 @@ public class Main {
             AntlrGrammarName42Parser parser = new AntlrGrammarName42Parser(tokensStream);
             ParserRuleContext ast = parser.AntlrGrammarRoot42();
             String stringTree = ast.toStringTree(parser);
-            System.out.print(stringTree);
+            System.out.print("Tree " + stringTree);
         }
         catch (IOException e) {
         }

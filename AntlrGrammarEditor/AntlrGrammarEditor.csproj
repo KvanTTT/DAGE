@@ -206,6 +206,9 @@
     <Compile Include="Runtimes\CSharp\AntlrCaseInsensitiveInputStream.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Compile>
+    <Content Include="Runtimes\Java\AntlrCaseInsensitiveInputStream.java">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Compile Include="TextParsedOutput.cs" />
     <Compile Include="TextSpan.cs" />
     <Compile Include="TextSpanAndText.cs" />

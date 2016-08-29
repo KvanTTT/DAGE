@@ -88,6 +88,7 @@ namespace AntlrGrammarEditor
             set
             {
                 StopIfRequired();
+                Grammar.Runtimes.Clear();
                 Grammar.Runtimes.Add(value);
                 RollbackToStage(WorkflowStage.GrammarChecked);
             }
@@ -497,6 +498,11 @@ namespace AntlrGrammarEditor
                 {
                     templateName = "Main.java";
                     compiliedFiles.Append('"' + templateName + '"');
+                    if (_grammar.CaseInsensitive)
+                    {
+                        compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
+                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.java"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.java"));
+                    }
                     compilatorPath = JavaCompilerPath;
                     arguments = $@"-cp ""..\{runtimeLibraryPath}"" " + compiliedFiles.ToString();
                 }
@@ -507,7 +513,8 @@ namespace AntlrGrammarEditor
                 code = code.Replace(TemplateGrammarRoot, Grammar.Root);
                 if (_grammar.CaseInsensitive)
                 {
-                    code = code.Replace("AntlrInputStream", "AntlrCaseInsensitiveInputStream");
+                    var inputStreamStr = Runtime == Runtime.Java ? "ANTLRInputStream" : "AntlrInputStream";
+                    code = code.Replace(inputStreamStr, "AntlrCaseInsensitiveInputStream");
                 }
                 File.WriteAllText(templateFile, code);
 
