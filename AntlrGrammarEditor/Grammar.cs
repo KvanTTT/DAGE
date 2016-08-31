@@ -18,13 +18,19 @@ namespace AntlrGrammarEditor
         
         public string Root { get; set; }
 
+        public HashSet<Runtime> Runtimes = new HashSet<Runtime>();
+
+        public bool SeparatedLexerAndParser { get; set; }
+
         public bool CaseInsensitive { get; set; }
+
+        public bool Preprocessor { get; set; }
 
         public bool PreprocessorCaseInsensitive { get; set; }
 
         public string PreprocessorRoot { get; set; }
-        
-        public HashSet<Runtime> Runtimes = new HashSet<Runtime>();
+
+        public bool PreprocessorSeparatedLexerAndParser { get; set; }
 
         public List<string> Files { get; set; } = new List<string>();
 

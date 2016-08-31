@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AntlrGrammarEditor
 {
@@ -18,7 +14,7 @@ namespace AntlrGrammarEditor
 
         public int Start { get; set; }
 
-        public int Length { get; set; }
+        public int Length { get;  set; }
 
         public static readonly TextSpan Empty = new TextSpan(-1, -1, -1, -1) { Start = -1, Length = 0 };
 
@@ -42,11 +38,6 @@ namespace AntlrGrammarEditor
             EndChar = textSpan.EndChar;
             Start = textSpan.Start;
             Length = textSpan.Length;
-        }
-
-        public override string ToString()
-        {
-            return $"({BeginLine};{BeginChar})-({EndLine};{EndChar})";
         }
 
         public TextSpan UnionWith(TextSpan textSpan)
@@ -118,119 +109,28 @@ namespace AntlrGrammarEditor
             };
         }
 
-        public static int LineColumnToLinear(string text, int line, int column)
+        public override bool Equals(object obj)
         {
-            int currentLine = 1;
-            int currentColumn = 0;
-
-            int i = 0;
-            try
+            var textSpan = obj as TextSpan;
+            if (textSpan != null)
             {
-                while (currentLine != line || currentLine == line && currentColumn != column)
-                {
-                    // General line endings:
-                    //  Windows: '\r\n'
-                    //  Mac (OS 9-): '\r'
-                    //  Mac (OS 10+): '\n'
-                    //  Unix/Linux: '\n'
-
-                    switch (text[i])
-                    {
-                        case '\r':
-                            currentLine++;
-                            currentColumn = 0;
-                            if (i + 1 < text.Length && text[i + 1] == '\n')
-                            {
-                                i++;
-                            }
-                            break;
-
-                        case '\n':
-                            currentLine++;
-                            currentColumn = 0;
-                            break;
-
-                        default:
-                            currentColumn++;
-                            break;
-                    }
-
-                    i++;
-                }
+                return BeginLine == textSpan.BeginLine && BeginChar == textSpan.BeginChar &&
+                       EndLine == textSpan.EndLine && EndChar == textSpan.EndChar;
             }
-            catch
+            else
             {
-            }
-
-            return i;
-        }
-
-        public static void LinearToLineColumn(int index, string text, out int line, out int column)
-        {
-            line = 1;
-            column = 0;
-
-            try
-            {
-                int i = 0;
-                while (i != index)
-                {
-                    // General line endings:
-                    //  Windows: '\r\n'
-                    //  Mac (OS 9-): '\r'
-                    //  Mac (OS 10+): '\n'
-                    //  Unix/Linux: '\n'
-
-                    switch (text[i])
-                    {
-                        case '\r':
-                            line++;
-                            column = 0;
-                            if (i + 1 < text.Length && text[i + 1] == '\n')
-                            {
-                                i++;
-                            }
-                            break;
-
-                        case '\n':
-                            line++;
-                            column = 0;
-                            break;
-
-                        default:
-                            column++;
-                            break;
-                    }
-                    i++;
-                }
-            }
-            catch
-            {
+                return false;
             }
         }
 
-        public static int GetLinesCount(string text)
+        public override int GetHashCode()
         {
-            int result = 1;
-            int length = text.Length;
-            int i = 0;
-            while (i < length)
-            {
-                if (text[i] == '\r')
-                {
-                    result++;
-                    if (i + 1 < length && text[i + 1] == '\n')
-                    {
-                        i++;
-                    }
-                }
-                else if (text[i] == '\n')
-                {
-                    result++;
-                }
-                i++;
-            }
-            return result;
+            return BeginLine ^ BeginChar ^ EndLine ^ EndChar ^ Start ^ Length;
+        }
+
+        public override string ToString()
+        {
+            return $"({BeginLine};{BeginChar})-({EndLine};{EndChar})";
         }
     }
 }

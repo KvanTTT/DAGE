@@ -211,8 +211,8 @@
     <Compile Include="TextParsedOutput.cs" />
     <Compile Include="TextSpan.cs" />
     <Compile Include="TextSpanAndText.cs" />
-    <Compile Include="TextSpanMap.cs" />
-    <Compile Include="Utils.cs" />
+    <Compile Include="TextSpanMapping.cs" />
+    <Compile Include="TextHelpers.cs" />
     <Compile Include="Workflow.cs" />
     <Compile Include="WorkflowStage.cs" />
     <Compile Include="WorkflowState\GrammarCheckedState.cs" />

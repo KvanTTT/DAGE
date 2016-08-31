@@ -58,7 +58,8 @@ namespace DesktopAntlrGrammarEditor
 
             if (string.IsNullOrEmpty(_settings.AgeFileName))
             {
-                _grammar = GrammarFactory.CreateOrOpenDefaultGrammar(Settings.DefaultDirectory, "NewGrammar");
+                _grammar = GrammarFactory.CreateDefault();
+                GrammarFactory.FillGrammarFiles(_grammar, Settings.Directory, false);
                 _settings.AgeFileName = _grammar.AgeFileName;
                 _settings.Save();
             }
@@ -119,7 +120,8 @@ namespace DesktopAntlrGrammarEditor
                     _settings.Save();
 
                     this.RaisePropertyChanged(nameof(IsParserOpened));
-                    this.RaisePropertyChanged(nameof(OpenedGrammarFile));
+                    this.RaisePropertyChanged(nameof(IsPreprocessor));
+                    this.RaisePropertyChanged();
                 }
             }
         }
@@ -154,7 +156,7 @@ namespace DesktopAntlrGrammarEditor
                         Process();
                     }
                     _grammar.Save();
-                    this.RaisePropertyChanged(nameof(Root));
+                    this.RaisePropertyChanged();
                 }
             }
         }
@@ -175,7 +177,7 @@ namespace DesktopAntlrGrammarEditor
                     _grammar.Runtimes.Clear();
                     _grammar.Runtimes.Add(value);
                     _grammar.Save();
-                    this.RaisePropertyChanged(nameof(SelectedRuntime));
+                    this.RaisePropertyChanged();
                     if (AutoProcessing)
                     {
                         Process();
@@ -264,7 +266,7 @@ namespace DesktopAntlrGrammarEditor
                     _settings.Autoprocessing = _autoprocessing;
                     _settings.Save();
 
-                    this.RaisePropertyChanged(nameof(AutoProcessing));
+                    this.RaisePropertyChanged();
                 }
             }
         }
@@ -322,22 +324,22 @@ namespace DesktopAntlrGrammarEditor
                     this.RaisePropertyChanged(nameof(CurrentState));
                 });
 
-            Observable.FromEventPattern<Tuple<WorkflowStage, ParsingError>>(
+            Observable.FromEventPattern<ParsingError>(
                 ev => _workflow.NewErrorEvent += ev, ev => _workflow.NewErrorEvent -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev =>
                 {
-                    switch (ev.EventArgs.Item1)
+                    switch (ev.EventArgs.WorkflowStage)
                     {
                         case WorkflowStage.GrammarChecked:
                         case WorkflowStage.ParserGenerated:
                         case WorkflowStage.ParserCompilied:
-                            GrammarErrors.Add(ev.EventArgs.Item2);
+                            GrammarErrors.Add(ev.EventArgs);
                             GrammarErrorsText = $"Grammar Errors ({GrammarErrors.Count})";
                             break;
                         case WorkflowStage.TextTokenized:
                         case WorkflowStage.TextParsed:
-                            TextErrors.Add(ev.EventArgs.Item2);
+                            TextErrors.Add(ev.EventArgs);
                             TextErrorsText = $"Text Errors ({TextErrors.Count})";
                             break;
                     }
@@ -552,8 +554,9 @@ namespace DesktopAntlrGrammarEditor
             if (parsingError != null)
             {
                 TextBox textBox = listBox == _grammarErrorsListBox ? _grammarTextBox : _textTextBox;
-                textBox.SelectionStart = TextHelpers.LineColumnToLinear(textBox.Text, parsingError.Line, parsingError.Column);
-                textBox.SelectionEnd = textBox.SelectionStart + 1;
+                OpenedGrammarFile = parsingError.FileName;
+                textBox.SelectionStart = parsingError.TextSpan.Start;
+                textBox.SelectionEnd = parsingError.TextSpan.Start + parsingError.TextSpan.Length;
             }
         }
 

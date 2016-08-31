@@ -14,7 +14,7 @@ namespace DesktopAntlrGrammarEditor
         private static string _settingsFileName;
         private static readonly object _saveLock = new object();
 
-        public static string DefaultDirectory { get; private set; }
+        public static string Directory { get; private set; }
 
         public double Left { get; set; } = -1;
 
@@ -41,12 +41,12 @@ namespace DesktopAntlrGrammarEditor
 
         static Settings()
         {
-            DefaultDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DAGE");
-            if (!Directory.Exists(DefaultDirectory))
+            Directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DAGE");
+            if (!System.IO.Directory.Exists(Directory))
             {
-                Directory.CreateDirectory(DefaultDirectory);
+                System.IO.Directory.CreateDirectory(Directory);
             }
-            _settingsFileName = Path.Combine(DefaultDirectory, "AntlrGrammarEditor.json");
+            _settingsFileName = Path.Combine(Directory, "AntlrGrammarEditor.json");
         }
 
         public static Settings Load()

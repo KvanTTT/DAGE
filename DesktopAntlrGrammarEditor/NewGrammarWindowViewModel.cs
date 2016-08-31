@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace DesktopAntlrGrammarEditor
@@ -12,6 +13,7 @@ namespace DesktopAntlrGrammarEditor
     public class NewGrammarWindowViewModel : ReactiveObject
     {
         private Window _window;
+        private Grammar _grammar = GrammarFactory.CreateDefault();
 
         public NewGrammarWindowViewModel(Window window)
         {
@@ -19,88 +21,8 @@ namespace DesktopAntlrGrammarEditor
             
             OkCommand.Subscribe(_ =>
             {
-                var grammar = new Grammar
-                {
-                    Name = GrammarName,
-                    CaseInsensitive = CaseInsensitive,
-                    PreprocessorCaseInsensitive = PreprocessorCaseInsensitive
-                };
-                
-                if (Preprocessor)
-                {
-                    if (PreprocessorSeparatedLexerAndParser)
-                    {
-                        grammar.Files.Add(GrammarName + GrammarFactory.PreprocessorPostfix + GrammarFactory.LexerPostfix + GrammarFactory.Extension);
-                        grammar.Files.Add(GrammarName + GrammarFactory.PreprocessorPostfix + GrammarFactory.ParserPostfix + GrammarFactory.Extension);
-                    }
-                    else
-                    {
-                        grammar.Files.Add(GrammarName + GrammarFactory.PreprocessorPostfix + GrammarFactory.Extension);
-                    }
-                }
-                if (SeparatedLexerAndParser)
-                {
-                    grammar.Files.Add(GrammarName + GrammarFactory.LexerPostfix + GrammarFactory.Extension);
-                    grammar.Files.Add(GrammarName + GrammarFactory.ParserPostfix + GrammarFactory.Extension);
-                }
-                else
-                {
-                    grammar.Files.Add(GrammarName + GrammarFactory.Extension);
-                }
-
-                var fullGrammarDir = Path.GetFullPath(GrammarDirectory);
-                if (!Directory.Exists(fullGrammarDir))
-                {
-                    Directory.CreateDirectory(fullGrammarDir);
-                }
-
-                foreach (var file in grammar.Files)
-                {
-                    var fileWithoutExtension = Path.GetFileNameWithoutExtension(file);
-                    var text = new StringBuilder();
-                    if (fileWithoutExtension.Contains(GrammarFactory.LexerPostfix))
-                    {
-                        text.Append("lexer ");
-                    }
-                    else if (fileWithoutExtension.Contains(GrammarFactory.ParserPostfix))
-                    {
-                        text.Append("parser ");
-                    }
-                    text.AppendLine($"grammar {fileWithoutExtension};");
-                    text.AppendLine();
-
-                    if (fileWithoutExtension.Contains(GrammarFactory.ParserPostfix))
-                    {
-                        text.AppendLine($"options {{ tokenVocab = {fileWithoutExtension.Replace(GrammarFactory.ParserPostfix, GrammarFactory.LexerPostfix)}; }}");
-                        text.AppendLine();
-                    }
-
-                    if (!fileWithoutExtension.Contains(GrammarFactory.LexerPostfix) && !string.IsNullOrEmpty(GrammarRoot))
-                    {
-                        text.AppendLine($"{(fileWithoutExtension.Contains(GrammarFactory.PreprocessorPostfix) ? PreprocessorGrammarRoot : GrammarRoot)}");
-                        text.AppendLine("    : tokensOrRules* EOF");
-                        text.AppendLine("    ;");
-                        text.AppendLine();
-                        text.AppendLine("tokensOrRules");
-                        text.AppendLine("    : TOKEN+");
-                        text.AppendLine("    ;");
-                        text.AppendLine();
-                    }
-
-                    if (!fileWithoutExtension.Contains(GrammarFactory.ParserPostfix))
-                    {
-                        text.AppendLine("TOKEN: [a-z]+;");
-                        text.AppendLine();
-                    }
-
-                    File.WriteAllText(Path.Combine(fullGrammarDir, file), text.ToString());
-                }
-
-                grammar.Runtimes = new HashSet<Runtime>() { Runtime };
-                grammar.AgeFileName = Path.Combine(fullGrammarDir, grammar.Name) + ".age";
-                grammar.Save();
-
-                _window.Close(grammar);
+                GrammarFactory.FillGrammarFiles(_grammar, GrammarDirectory, true);
+                _window.Close(_grammar);
             });
 
             CancelCommand.Subscribe(_ =>
@@ -113,26 +35,153 @@ namespace DesktopAntlrGrammarEditor
 
         public ReactiveCommand<object> CancelCommand { get; } = ReactiveCommand.Create();
 
-        public string GrammarName { get; set; } = GrammarFactory.DefaultGrammarName;
+        public string GrammarName
+        {
+            get
+            {
+                return _grammar.Name;
+            }
+            set
+            {
+                if (_grammar.Name != value)
+                {
+                    _grammar.Name = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
 
-        public string GrammarDirectory { get; set; } = GrammarFactory.DefaultGrammarName;
+        public string GrammarDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DAGE Grammars");
 
-        public string GrammarRoot { get; set; } = GrammarFactory.DefaultRootRule;
+        public string GrammarRoot
+        {
+            get
+            {
+                return _grammar.Root;
+            }
+            set
+            {
+                if (_grammar.Root != value)
+                {
+                    _grammar.Root = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
 
-        public Runtime Runtime { get; set; } = Runtime.CSharpSharwell;
+        public Runtime Runtime
+        {
+            get
+            {
+                return _grammar.Runtimes.First();
+            }
+            set
+            {
+                if (_grammar.Runtimes.First() != value)
+                {
+                    _grammar.Runtimes.Clear();
+                    _grammar.Runtimes.Add(value);
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
 
         public ObservableCollection<Runtime> Runtimes { get; } = new ObservableCollection<Runtime>((Runtime[])Enum.GetValues(typeof(Runtime)));
 
-        public bool SeparatedLexerAndParser { get; set; }
+        public bool SeparatedLexerAndParser
+        {
+            get
+            {
+                return _grammar.SeparatedLexerAndParser;
+            }
+            set
+            {
+                if (_grammar.SeparatedLexerAndParser != value)
+                {
+                    _grammar.SeparatedLexerAndParser = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
 
-        public bool CaseInsensitive { get; set; }
+        public bool CaseInsensitive
+        {
+            get
+            {
+                return _grammar.CaseInsensitive;
+            }
+            set
+            {
+                if (_grammar.CaseInsensitive != value)
+                {
+                    _grammar.CaseInsensitive = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
 
-        public bool Preprocessor { get; set; }
+        public bool Preprocessor
+        {
+            get
+            {
+                return _grammar.Preprocessor;
+            }
+            set
+            {
+                if (_grammar.Preprocessor != value)
+                {
+                    _grammar.Preprocessor = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
 
-        public string PreprocessorGrammarRoot { get; set; } = GrammarFactory.DefaultPreprocessorRootRule;
+        public string PreprocessorGrammarRoot
+        {
+            get
+            {
+                return _grammar.PreprocessorRoot;
+            }
+            set
+            {
+                if (_grammar.PreprocessorRoot != value)
+                {
+                    _grammar.PreprocessorRoot = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
 
-        public bool PreprocessorSeparatedLexerAndParser { get; set; }
+        public bool PreprocessorSeparatedLexerAndParser
+        {
+            get
+            {
+                return _grammar.PreprocessorSeparatedLexerAndParser;
+            }
+            set
+            {
+                if (_grammar.PreprocessorSeparatedLexerAndParser != value)
+                {
+                    _grammar.PreprocessorSeparatedLexerAndParser = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
 
-        public bool PreprocessorCaseInsensitive { get; set; }
+        public bool PreprocessorCaseInsensitive
+        {
+            get
+            {
+                return _grammar.PreprocessorCaseInsensitive;
+            }
+            set
+            {
+                if (_grammar.PreprocessorCaseInsensitive != value)
+                {
+                    _grammar.PreprocessorCaseInsensitive = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
     }
 }
