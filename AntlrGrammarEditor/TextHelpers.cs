@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AntlrGrammarEditor
 {
@@ -96,37 +97,18 @@ namespace AntlrGrammarEditor
             }
         }
 
-        public static int GetLinesCount(string text)
-        {
-            int result = 1;
-            int length = text.Length;
-            int i = 0;
-            while (i < length)
-            {
-                if (text[i] == '\r')
-                {
-                    result++;
-                    if (i + 1 < length && text[i + 1] == '\n')
-                    {
-                        i++;
-                    }
-                }
-                else if (text[i] == '\n')
-                {
-                    result++;
-                }
-                i++;
-            }
-            return result;
-        }
-
-        public static List<TextSpanMapping> Map(List<TextSpanAndText> source, string destination)
+        public static List<TextSpanMapping> Map(List<CodeInsertion> source, string destination)
         {
             var result = new List<TextSpanMapping>();
             int destInd = 0;
-            foreach (var s in source)
+            var sortedSource = source.OrderBy(s => s.Predicate).ToArray();
+            foreach (var s in sortedSource)
             {
                 destInd = destination.IgnoreWhitespaceIndexOf(s.Text, destInd);
+                /*if (!s.Predicate)
+                {
+                    destInd = SelectIndexWithBoundaryNewlines(destination, destInd, s.Text);
+                }*/
                 int beginLine, beginColumn;
                 int endLine, endColumn;
                 LinearToLineColumn(destInd, destination, out beginLine, out beginColumn);
@@ -145,9 +127,45 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        public static TextSpan GetSourceTextSpanForLine(List<TextSpanMapping> map, int destinationLine)
+        private static int SelectIndexWithBoundaryNewlines(string destination, int destInd, string source)
         {
-            foreach (var m in map)
+            do
+            {
+                int ind = FirstNotWhitespaceCharIndexLeft(destination, destInd - 1);
+                if (ind <= 0)
+                {
+                    ind = 0;
+                }
+                if (ind == 0 || destination[ind] == '\r' || destination[ind] == '\n')
+                {
+                    break;
+                }
+                else
+                {
+                    destInd = destination.IgnoreWhitespaceIndexOf(source, destInd + source.Length);
+                }
+            }
+            while (true);
+
+            do
+            {
+                int ind = FirstNotWhitespaceCharIndexRight(destination, destInd + source.Length);
+                if (ind == destination.Length - 1 || destination[ind] == '\r' || destination[ind] == '\n')
+                {
+                    break;
+                }
+                else
+                {
+                    destInd = destination.IgnoreWhitespaceIndexOf(source, destInd + source.Length);
+                }
+            }
+            while (true);
+            return destInd;
+        }
+
+        public static TextSpan GetSourceTextSpanForLine(List<TextSpanMapping> mapping, int destinationLine)
+        {
+            foreach (var m in mapping)
             {
                 if (destinationLine >= m.DestinationTextSpan.BeginLine && destinationLine <= m.DestinationTextSpan.EndLine)
                 {
@@ -157,12 +175,11 @@ namespace AntlrGrammarEditor
             return null;
         }
 
-        public static TextSpan GetSourceTextSpanForLineColumn(List<TextSpanMapping> map, int destLine, int destColumn)
+        public static TextSpan GetSourceTextSpanForLineColumn(List<TextSpanMapping> mapping, int destLine, int destColumn)
         {
-            foreach (var m in map)
+            foreach (var m in mapping)
             {
-                if (destLine >= m.DestinationTextSpan.BeginLine && destLine <= m.DestinationTextSpan.EndLine &&
-                    destColumn >= m.DestinationTextSpan.BeginChar && destColumn <= m.DestinationTextSpan.EndChar)
+                if (destLine >= m.DestinationTextSpan.BeginLine && destLine <= m.DestinationTextSpan.EndLine)
                 {
                     return m.SourceTextSpan;
                 }
@@ -209,6 +226,26 @@ namespace AntlrGrammarEditor
                 sourceIndex++;
             }
             return -1;
+        }
+
+        private static int FirstNotWhitespaceCharIndexLeft(string text, int index)
+        {
+            while (index >= 0 && (text[index] == ' ' || text[index] == '\t'))
+            {
+                index--;
+            }
+
+            return index;
+        }
+
+        private static int FirstNotWhitespaceCharIndexRight(string text, int index)
+        {
+            while (index < text.Length && (text[index] == ' ' || text[index] == '\t'))
+            {
+                index++;
+            }
+
+            return index;
         }
     }
 }

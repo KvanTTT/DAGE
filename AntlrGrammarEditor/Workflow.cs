@@ -47,7 +47,7 @@ namespace AntlrGrammarEditor
         private object _lockObj = new object();
         private string _currentFileName;
         private Dictionary<string, string> _grammarFilesData = new Dictionary<string, string>();
-        private Dictionary<string, List<TextSpanAndText>> _grammarActionsTextSpan = new Dictionary<string, List<TextSpanAndText>>();
+        private Dictionary<string, List<CodeInsertion>> _grammarActionsTextSpan = new Dictionary<string, List<CodeInsertion>>();
         private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping = new Dictionary<string, List<TextSpanMapping>>();
         private string _currentFileData;
 
@@ -282,13 +282,10 @@ namespace AntlrGrammarEditor
             {
                 if (CurrentState.Stage <= WorkflowStage.TextParsed)
                 {
-                    OutputTree = "";
-                    ClearErrors(WorkflowStage.TextParsed);
-                }
-                if (CurrentState.Stage <= WorkflowStage.TextTokenized)
-                {
                     OutputTokens = "";
+                    OutputTree = "";
                     ClearErrors(WorkflowStage.TextTokenized);
+                    ClearErrors(WorkflowStage.TextParsed);
                 }
                 if (CurrentState.Stage <= WorkflowStage.ParserCompilied)
                 {
@@ -329,13 +326,14 @@ namespace AntlrGrammarEditor
         {
             var result = new GrammarCheckedState
             {
-                Grammar = Grammar,
+                Grammar = _grammar,
                 InputState = _inputState,
                 Rules = new List<string>()
             };
             try
             {
-                foreach (var grammarFileName in Grammar.Files)
+                _grammarActionsTextSpan.Clear();
+                foreach (var grammarFileName in _grammar.Files)
                 {
                     _antlrErrorListener.CurrentFileName = grammarFileName;
                     var inputStream = new AntlrFileStream(Path.Combine(_grammar.GrammarPath, grammarFileName));
@@ -362,16 +360,18 @@ namespace AntlrGrammarEditor
                     var shortFileName = Path.GetFileNameWithoutExtension(grammarFileName);
                     if (shortFileName.Contains(GrammarFactory.LexerPostfix))
                     {
-                        _grammarActionsTextSpan[grammarFileName] = grammarInfoCollectorListener.LexerActionsAndPredicates;
+                        _grammarActionsTextSpan[grammarFileName] = grammarInfoCollectorListener.CodeInsertions.Where(insertion => insertion.Lexer).ToList();
                     }
                     else if (shortFileName.Contains(GrammarFactory.ParserPostfix))
                     {
-                        _grammarActionsTextSpan[grammarFileName] = grammarInfoCollectorListener.ParserActionsAndPredicates;
+                        _grammarActionsTextSpan[grammarFileName] = grammarInfoCollectorListener.CodeInsertions.Where(insertion => !insertion.Lexer).ToList();
                     }
                     else
                     {
-                        _grammarActionsTextSpan[shortFileName + GrammarFactory.LexerPostfix + ".g4"] = grammarInfoCollectorListener.LexerActionsAndPredicates;
-                        _grammarActionsTextSpan[shortFileName + GrammarFactory.ParserPostfix + ".g4"] = grammarInfoCollectorListener.ParserActionsAndPredicates;
+                        _grammarActionsTextSpan[shortFileName + GrammarFactory.LexerPostfix + ".g4"] =
+                            grammarInfoCollectorListener.CodeInsertions.Where(insertion => insertion.Lexer).ToList();
+                        _grammarActionsTextSpan[shortFileName + GrammarFactory.ParserPostfix + ".g4"] =
+                            grammarInfoCollectorListener.CodeInsertions.Where(insertion => !insertion.Lexer).ToList();
                     }
 
                     if (!shortFileName.Contains(GrammarFactory.LexerPostfix))
@@ -441,10 +441,6 @@ namespace AntlrGrammarEditor
 
                 string extension = GetExtension(Runtime);
                 var runtimeExtensionFiles = Directory.GetFiles(HelperDirectoryName, "*." + extension);
-                foreach (var file in runtimeExtensionFiles)
-                {
-                    File.Delete(file);
-                }
 
                 foreach (var grammarFileName in state.Grammar.Files)
                 {
@@ -497,10 +493,14 @@ namespace AntlrGrammarEditor
                 string templateName = "";
                 string workingDirectory = HelperDirectoryName;
                 string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), GetLibraryName(Runtime));
-
                 string extension = GetExtension(Runtime);
-                var generatedFiles = Directory.GetFiles(HelperDirectoryName, "*." + extension);
+
+                List<string> generatedFiles = new List<string>();
+                generatedFiles.Add(_grammar.Name + GrammarFactory.LexerPostfix + "." + extension);
+                generatedFiles.Add(_grammar.Name + GrammarFactory.ParserPostfix + "." + extension);
+                generatedFiles = generatedFiles.Select(file => Path.Combine(HelperDirectoryName, file)).ToList();
                 var compiliedFiles = new StringBuilder();
+                _grammarCodeMapping.Clear();
                 foreach (var codeFileName in generatedFiles)
                 {
                     compiliedFiles.Append('"' + Path.GetFileName(codeFileName) + "\" ");
@@ -529,7 +529,7 @@ namespace AntlrGrammarEditor
                     if (_grammar.CaseInsensitive)
                     {
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
-                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.java"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.java"));
+                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.java"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.java"), true);
                     }
                     compilatorPath = JavaCompilerPath;
                     arguments = $@"-cp ""..\{runtimeLibraryPath}"" " + compiliedFiles.ToString();
@@ -538,7 +538,7 @@ namespace AntlrGrammarEditor
                 var templateFile = Path.Combine(HelperDirectoryName, templateName);
                 var code = File.ReadAllText(Path.Combine("Runtimes", Runtime.ToString(), templateName));
                 code = code.Replace(TemplateGrammarName, state.GrammarCheckedState.Grammar.Name);
-                code = code.Replace(TemplateGrammarRoot, Grammar.Root);
+                code = code.Replace(TemplateGrammarRoot, _grammar.Root);
                 if (_grammar.CaseInsensitive)
                 {
                     var inputStreamStr = Runtime == Runtime.Java ? "ANTLRInputStream" : "AntlrInputStream";
@@ -554,8 +554,8 @@ namespace AntlrGrammarEditor
                     CancelOperationIfRequired(CompileParserCancelMessage);
                 }
 
-                result.Root = Grammar.Root;
-                result.PreprocessorRoot = Grammar.PreprocessorRoot;
+                result.Root = _grammar.Root;
+                result.PreprocessorRoot = _grammar.PreprocessorRoot;
 
                 CancelOperationIfRequired(CompileParserCancelMessage);
             }
@@ -684,22 +684,32 @@ namespace AntlrGrammarEditor
                 if (Runtime == Runtime.Java && e.Data.Contains(": error:"))
                 {
                     ParsingError error;
+                    string grammarFileName = "";
                     try
                     {
+                        // Format: Lexer.java:98: error: cannot find symbol
                         var strs = e.Data.Split(':');
-                        string grammarFileName = strs[0].Remove(strs[0].Length - "java".Length) + "g4";
+                        grammarFileName = strs[0].Remove(strs[0].Length - "java".Length) + "g4";
                         int codeLine = int.Parse(strs[1]);
-                        var grammarTextSpan = TextHelpers.GetSourceTextSpanForLine(_grammarCodeMapping[grammarFileName], codeLine);
                         string rest = string.Join(":", strs.Skip(2));
+                        var grammarTextSpan = TextHelpers.GetSourceTextSpanForLine(_grammarCodeMapping[grammarFileName], codeLine);
                         if (!_grammar.SeparatedLexerAndParser)
                         {
                             grammarFileName = grammarFileName.Replace(GrammarFactory.ParserPostfix, "").Replace(GrammarFactory.LexerPostfix, "");
                         }
-                        error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName);
+                        if (grammarTextSpan != null)
+                        {
+                            error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName);
+                        }
+                        else
+                        {
+                            // error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName);
+                            return; // duplicated error.
+                        }
                     }
                     catch
                     {
-                        error = new ParsingError(0, 0, e.Data, "");
+                        error = new ParsingError(0, 0, e.Data, grammarFileName);
                     }
                     AddError(WorkflowStage.ParserCompilied, error);
                 }
@@ -714,15 +724,38 @@ namespace AntlrGrammarEditor
                 {
                     var errorString = FixEncoding(e.Data);
                     ParsingError error;
+                    string grammarFileName = "";
                     try
                     {
-                        var words = errorString.Split(' ');
-                        var strs = words[1].Split(':');
-                        error = new ParsingError(int.Parse(strs[0]), int.Parse(strs[1]), errorString, "");  // TODO: fix fileName
+                        // Format: Lexer.cs(106,11): error CS0103: The name 'a' does not exist in the current context
+                        var strs = errorString.Split(':');
+                        int leftParenInd = strs[0].IndexOf('(');
+                        grammarFileName = strs[0].Remove(leftParenInd);
+                        grammarFileName = grammarFileName.Remove(grammarFileName.Length - "cs".Length) + "g4";
+                        string lineColumnString = strs[0].Substring(leftParenInd);
+                        lineColumnString = lineColumnString.Substring(1, lineColumnString.Length - 2); // Remove parenthesis.
+                        var strs2 = lineColumnString.Split(',');
+                        int line = int.Parse(strs2[0]);
+                        int column = int.Parse(strs2[1]);
+                        string rest = string.Join(":", strs.Skip(1));
+                        var grammarTextSpan = TextHelpers.GetSourceTextSpanForLineColumn(_grammarCodeMapping[grammarFileName], line, column);
+                        if (!_grammar.SeparatedLexerAndParser)
+                        {
+                            grammarFileName = grammarFileName.Replace(GrammarFactory.ParserPostfix, "").Replace(GrammarFactory.LexerPostfix, "");
+                        }
+                        if (grammarTextSpan != null)
+                        {
+                            error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName);
+                        }
+                        else
+                        {
+                            // error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName);
+                            return; // duplicated error.
+                        }
                     }
                     catch
                     {
-                        error = new ParsingError(0, 0, errorString, "");  // TODO: fix fileName
+                        error = new ParsingError(0, 0, errorString, grammarFileName);
                     }
                     AddError(WorkflowStage.ParserCompilied, error);
                 }
@@ -739,11 +772,11 @@ namespace AntlrGrammarEditor
                 {
                     var words = errorString.Split(' ');
                     var strs = words[1].Split(':');
-                    error = new ParsingError(int.Parse(strs[0]), int.Parse(strs[1]), errorString, "");  // TODO: fix fileName
+                    error = new ParsingError(int.Parse(strs[0]), int.Parse(strs[1]), errorString, "", _text);  // TODO: fix fileName
                 }
                 catch
                 {
-                    error = new ParsingError(0, 0, errorString, "");  // TODO: fix fileName
+                    error = new ParsingError(0, 0, errorString, "", _text);  // TODO: fix fileName
                 }
                 AddError(WorkflowStage.TextParsed, error);
             }
@@ -807,14 +840,12 @@ namespace AntlrGrammarEditor
             switch (stage)
             {
                 case WorkflowStage.GrammarChecked:
-                    _grammarActionsTextSpan.Clear();
                     _grammarCheckErrors.Clear();
                     break;
                 case WorkflowStage.ParserGenerated:
                     _parserGenerationErrors.Clear();
                     break;
                 case WorkflowStage.ParserCompilied:
-                    _grammarCodeMapping.Clear();
                     _parserCompilationErrors.Clear();
                     break;
                 case WorkflowStage.TextTokenized:

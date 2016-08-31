@@ -9,32 +9,11 @@ namespace AntlrGrammarEditor
         private bool _question;
         private bool _lexer, _parser;
         private List<string> _rules = new List<string>();
-        private List<TextSpanAndText> _lexerActions = new List<TextSpanAndText>();
-        private List<TextSpanAndText> _lexerPredicates = new List<TextSpanAndText>();
-        private List<TextSpanAndText> _parserActions = new List<TextSpanAndText>();
-        private List<TextSpanAndText> _parserPredicates = new List<TextSpanAndText>();
+        private List<CodeInsertion> _codeInsertions = new List<CodeInsertion>();
 
         public List<string> Rules => _rules;
 
-        public List<TextSpanAndText> LexerActionsAndPredicates
-        {
-            get
-            {
-                var result = new List<TextSpanAndText>(_lexerActions);
-                result.AddRange(_lexerPredicates);
-                return result;
-            }
-        }
-
-        public List<TextSpanAndText> ParserActionsAndPredicates
-        {
-            get
-            {
-                var result = new List<TextSpanAndText>(_parserActions);
-                result.AddRange(_parserPredicates);
-                return result;
-            }
-        }
+        public List<CodeInsertion> CodeInsertions => _codeInsertions;
 
         public string GrammarName { get; private set; }
 
@@ -141,32 +120,16 @@ namespace AntlrGrammarEditor
             textSpan.Start++;
             textSpan.Length -= 2;
 
-            var textSpanAndText = new TextSpanAndText
+            if (_lexer || _parser)
             {
-                Text = text,
-                TextSpan = textSpan
-            };
-            if (!_question)
-            {
-                if (_lexer)
+                var codeInsertion = new CodeInsertion
                 {
-                    _lexerActions.Add(textSpanAndText);
-                }
-                else if (_parser)
-                {
-                    _parserActions.Add(textSpanAndText);
-                }
-            }
-            else
-            {
-                if (_lexer)
-                {
-                    _lexerPredicates.Add(textSpanAndText);
-                }
-                else if (_parser)
-                {
-                    _parserPredicates.Add(textSpanAndText);
-                }
+                    TextSpan = textSpan,
+                    Text = text,
+                    Lexer = _lexer,
+                    Predicate = _question
+                };
+                _codeInsertions.Add(codeInsertion);
             }
         }
     }

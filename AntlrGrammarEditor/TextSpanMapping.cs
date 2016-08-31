@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace AntlrGrammarEditor
+﻿namespace AntlrGrammarEditor
 {
     public class TextSpanMapping
     {
@@ -20,6 +14,11 @@ namespace AntlrGrammarEditor
         {
             SourceTextSpan = sourceTextSpan;
             DestinationTextSpan = destinationTextSpan;
+        }
+
+        public override string ToString()
+        {
+            return $"Source: {SourceTextSpan}; Dest: {DestinationTextSpan}";
         }
     }
 }

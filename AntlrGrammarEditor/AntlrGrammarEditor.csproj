@@ -210,7 +210,7 @@
     </Content>
     <Compile Include="TextParsedOutput.cs" />
     <Compile Include="TextSpan.cs" />
-    <Compile Include="TextSpanAndText.cs" />
+    <Compile Include="CodeInsertion.cs" />
     <Compile Include="TextSpanMapping.cs" />
     <Compile Include="TextHelpers.cs" />
     <Compile Include="Workflow.cs" />

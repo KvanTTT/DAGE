@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using System.Linq;
 
 namespace AntlrGrammarEditor.Tests
 {
@@ -19,7 +20,7 @@ namespace AntlrGrammarEditor.Tests
         }
         
         [Test]
-        public void GrammarCheckedStage()
+        public void GrammarCheckedStageErrors()
         {
             var workflow = new Workflow();
             var grammarText = @"grammar test;
@@ -43,7 +44,7 @@ namespace AntlrGrammarEditor.Tests
         }
 
         [Test]
-        public void SeparatedLexerAndParser()
+        public void SeparatedLexerAndParserErrors()
         {
             var workflow = new Workflow();
             var lexerText = @"lexer grammar test;
@@ -70,7 +71,7 @@ namespace AntlrGrammarEditor.Tests
         }
 
         [Test]
-        public void ParserGeneratedStage()
+        public void ParserGeneratedStageErrors()
         {
             var workflow = CreateWorkflow();
             var grammarText =
@@ -96,12 +97,12 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
-        public void ParserCompiliedStage(Runtime runtime)
+        public void ParserCompiliedStageErrors(Runtime runtime)
         {
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;
-                start:  DIGIT+ { i++; };
+                start:  DIGIT+ {i++;};
                 CHAR:   [a-z]+;
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
@@ -114,14 +115,14 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage);
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
-            // TODO: correct line & column error handling
             Assert.AreEqual(1, parserGeneratedState.Errors.Count);
+            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.BeginLine);
         }
 
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
-        public void TextParsedStage(Runtime runtime)
+        public void TextParsedStageErrors(Runtime runtime)
         {
             var workflow = CreateWorkflow();
             var grammarText =
@@ -173,6 +174,39 @@ namespace AntlrGrammarEditor.Tests
             TextParsedState textParsedState = state as TextParsedState;
             Assert.AreEqual(0, textParsedState.TextErrors.Count);
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
+        }
+
+        [TestCase(Runtime.CSharpSharwell)]
+        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.Java)]
+        public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
+        {
+            var workflow = CreateWorkflow();
+            var grammarText =
+                @"grammar test;
+                  rootRule
+                      : {a==0}? tokensOrRules* EOF {a++;}
+                      ;
+                  tokensOrRules
+                      : {a==0}? TOKEN+ {a++;}
+                      ;
+                  TOKEN: {b==0}? [a-z]+ {b++;};
+                  DIGIT: {b==0}? [0-9]+ {b++;};";
+            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
+            grammar.Runtimes.Clear();
+            grammar.Runtimes.Add(runtime);
+            workflow.Grammar = grammar;
+
+            var state = workflow.Process();
+            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage);
+
+            ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
+            var errors = parserGeneratedState.Errors;
+            Assert.AreEqual(8, errors.Count);
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.BeginLine == 3).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.BeginLine == 6).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.BeginLine == 8).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.BeginLine == 9).Count());
         }
 
         private Workflow CreateWorkflow()

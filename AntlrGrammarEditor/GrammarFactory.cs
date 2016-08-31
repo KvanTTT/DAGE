@@ -76,7 +76,7 @@ namespace AntlrGrammarEditor
         public static void FillGrammarFiles(Grammar grammar, string directory, bool overwriteFiles)
         {
             InitFiles(grammar);
-            
+
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);

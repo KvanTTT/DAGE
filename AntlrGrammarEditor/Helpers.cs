@@ -11,36 +11,31 @@ namespace AntlrGrammarEditor
     {
         public static string GetJavaExePath(string exeName)
         {
-            string result = null;
-            var javaInstallationPath = GetJavaInstallationPath();
-            if (javaInstallationPath != null)
-            {
-                result = Path.Combine(javaInstallationPath, exeName);
-                if (!File.Exists(result))
-                {
-                    result = null;
-                }
-            }
+            string result = CheckFile(Environment.SpecialFolder.ProgramFiles, true, exeName) ??
+                            CheckFile(Environment.SpecialFolder.ProgramFiles, false, exeName) ??
+                            CheckFile(Environment.SpecialFolder.ProgramFilesX86, true, exeName) ??
+                            CheckFile(Environment.SpecialFolder.ProgramFilesX86, false, exeName);
+
             return result;
         }
 
-        public static string GetJavaInstallationPath()
+        private static string CheckFile(Environment.SpecialFolder specialFolder, bool jdk, string exeName)
         {
-            string environmentPath = Environment.GetEnvironmentVariable("JAVA_HOME");
-            if (!string.IsNullOrEmpty(environmentPath))
-            {
-                return environmentPath;
-            }
+            var javaFilesDir = Path.Combine(Environment.GetFolderPath(specialFolder), "java");
+            var dirs = Directory.GetDirectories(javaFilesDir);
 
-            string javaKey = "SOFTWARE\\JavaSoft\\Java Runtime Environment\\";
-            using (Microsoft.Win32.RegistryKey rk = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(javaKey))
+            string result = null;
+            var jdkDir = dirs.FirstOrDefault(dir => Path.GetFileName(dir).StartsWith(jdk ? "jdk" : "jre"));
+            if (jdkDir != null)
             {
-                string currentVersion = rk.GetValue("CurrentVersion").ToString();
-                using (Microsoft.Win32.RegistryKey key = rk.OpenSubKey(currentVersion))
+                result = Path.Combine(jdkDir, exeName);
+                if (File.Exists(result))
                 {
-                    return key.GetValue("JavaHome").ToString();
+                    return result;
                 }
             }
+
+            return result;
         }
     }
 }
