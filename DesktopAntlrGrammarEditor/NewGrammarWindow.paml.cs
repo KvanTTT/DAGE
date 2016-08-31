@@ -10,6 +10,7 @@ namespace DesktopAntlrGrammarEditor
             this.InitializeComponent();
             DataContext = new NewGrammarWindowViewModel(this);
             App.AttachDevTools(this);
+            Activate();
         }
 
         private void InitializeComponent()

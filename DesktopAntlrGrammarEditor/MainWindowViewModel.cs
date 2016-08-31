@@ -554,7 +554,10 @@ namespace DesktopAntlrGrammarEditor
             if (parsingError != null)
             {
                 TextBox textBox = listBox == _grammarErrorsListBox ? _grammarTextBox : _textTextBox;
-                OpenedGrammarFile = parsingError.FileName;
+                if (textBox == _grammarTextBox)
+                {
+                    OpenedGrammarFile = parsingError.FileName;
+                }
                 textBox.SelectionStart = parsingError.TextSpan.Start;
                 textBox.SelectionEnd = parsingError.TextSpan.Start + parsingError.TextSpan.Length;
             }

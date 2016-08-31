@@ -21,7 +21,7 @@ namespace DesktopAntlrGrammarEditor
             
             OkCommand.Subscribe(_ =>
             {
-                GrammarFactory.FillGrammarFiles(_grammar, GrammarDirectory, true);
+                GrammarFactory.FillGrammarFiles(_grammar, Path.Combine(GrammarDirectory, _grammar.Name), true);
                 _window.Close(_grammar);
             });
 
