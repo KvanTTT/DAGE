@@ -23,19 +23,18 @@ namespace AntlrGrammarEditor
         {
             var javaFilesDir = Path.Combine(Environment.GetFolderPath(specialFolder), "java");
             var dirs = Directory.GetDirectories(javaFilesDir);
-
-            string result = null;
-            var jdkDir = dirs.FirstOrDefault(dir => Path.GetFileName(dir).StartsWith(jdk ? "jdk" : "jre"));
-            if (jdkDir != null)
+            
+            dirs = dirs.Where(dir => Path.GetFileName(dir).StartsWith(jdk ? "jdk" : "jre")).ToArray();
+            foreach (var dir in dirs)
             {
-                result = Path.Combine(jdkDir, exeName);
+                var result = Path.Combine(dir, exeName);
                 if (File.Exists(result))
                 {
                     return result;
                 }
             }
 
-            return result;
+            return null;
         }
     }
 }

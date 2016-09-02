@@ -12,7 +12,6 @@ namespace AntlrGrammarEditor
         public const string PreprocessorPostfix = "Preprocessor";
         public const string LexerPostfix = "Lexer";
         public const string ParserPostfix = "Parser";
-        public const string Extension = ".g4";
 
         public static Grammar CreateDefault()
         {
@@ -46,7 +45,7 @@ namespace AntlrGrammarEditor
                 File.WriteAllText(Path.Combine(directory, file), grammarText);
             }
 
-            result.AgeFileName = Path.Combine(directory, grammarName) + ".age";
+            result.AgeFileName = Path.Combine(directory, grammarName) + Grammar.ProjectDotExt;
             result.Save();
             return result;
         }
@@ -68,7 +67,7 @@ namespace AntlrGrammarEditor
                 File.WriteAllText(Path.Combine(directory, file), text);
             }
 
-            result.AgeFileName = Path.Combine(directory, grammarName) + ".age";
+            result.AgeFileName = Path.Combine(directory, grammarName) + Grammar.ProjectDotExt;
             result.Save();
             return result;
         }
@@ -128,7 +127,7 @@ namespace AntlrGrammarEditor
                 }
             }
 
-            grammar.AgeFileName = Path.Combine(directory, grammar.Name) + ".age";
+            grammar.AgeFileName = Path.Combine(directory, grammar.Name) + Grammar.ProjectDotExt;
             grammar.Save();
         }
 
@@ -139,22 +138,22 @@ namespace AntlrGrammarEditor
             {
                 if (grammar.PreprocessorSeparatedLexerAndParser)
                 {
-                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + LexerPostfix + Extension);
-                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + ParserPostfix + Extension);
+                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + LexerPostfix + Grammar.AntlrDotExt);
+                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + ParserPostfix + Grammar.AntlrDotExt);
                 }
                 else
                 {
-                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + Extension);
+                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + Grammar.AntlrDotExt);
                 }
             }
             if (grammar.SeparatedLexerAndParser)
             {
-                grammar.Files.Add(grammar.Name + LexerPostfix + Extension);
-                grammar.Files.Add(grammar.Name + ParserPostfix + Extension);
+                grammar.Files.Add(grammar.Name + LexerPostfix + Grammar.AntlrDotExt);
+                grammar.Files.Add(grammar.Name + ParserPostfix + Grammar.AntlrDotExt);
             }
             else
             {
-                grammar.Files.Add(grammar.Name + Extension);
+                grammar.Files.Add(grammar.Name + Grammar.AntlrDotExt);
             }
         }
     }

@@ -11,6 +11,9 @@ namespace AntlrGrammarEditor
 {
     public class Grammar
     {
+        public const string AntlrDotExt = ".g4";
+        public const string ProjectDotExt = ".age";
+
         private static JsonConverter[] _jsonConverter = new JsonConverter[] { new StringEnumConverter() };
         private string _ageFileName;
 

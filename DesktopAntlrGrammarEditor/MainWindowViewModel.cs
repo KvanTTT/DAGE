@@ -444,12 +444,13 @@ namespace DesktopAntlrGrammarEditor
                 {
                     OpenGrammar(grammar);
                 }
+                _window.Activate();
             });
 
             OpenGrammarCommand.Subscribe(async _ =>
             {
                 var openDialog = new OpenFileDialog();
-                openDialog.Filters.Add(new FileDialogFilter() { Name = "Antlr Grammar Editor", Extensions = new List<string>() { "age" } });
+                openDialog.Filters.Add(new FileDialogFilter() { Name = "Antlr Grammar Editor", Extensions = new List<string>() { Grammar.ProjectDotExt.Substring(1) } });
                 string[] fileNames = await openDialog.ShowAsync();
                 if (fileNames != null)
                 {

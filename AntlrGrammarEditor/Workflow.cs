@@ -217,9 +217,6 @@ namespace AntlrGrammarEditor
 
         static Workflow()
         {
-            var tempDir = Path.GetTempPath();
-            //GeneratedDirectoryName = Path.Combine(tempDir, GeneratedDirectoryName);
-            //ParserDirectoryName = Path.Combine(tempDir, ParserDirectoryName);
         }
 
         public Workflow()
@@ -368,9 +365,9 @@ namespace AntlrGrammarEditor
                     }
                     else
                     {
-                        _grammarActionsTextSpan[shortFileName + GrammarFactory.LexerPostfix + ".g4"] =
+                        _grammarActionsTextSpan[shortFileName + GrammarFactory.LexerPostfix + Grammar.AntlrDotExt] =
                             grammarInfoCollectorListener.CodeInsertions.Where(insertion => insertion.Lexer).ToList();
-                        _grammarActionsTextSpan[shortFileName + GrammarFactory.ParserPostfix + ".g4"] =
+                        _grammarActionsTextSpan[shortFileName + GrammarFactory.ParserPostfix + Grammar.AntlrDotExt] =
                             grammarInfoCollectorListener.CodeInsertions.Where(insertion => !insertion.Lexer).ToList();
                     }
 
@@ -505,7 +502,7 @@ namespace AntlrGrammarEditor
                 {
                     compiliedFiles.Append('"' + Path.GetFileName(codeFileName) + "\" ");
 
-                    var grammarFileName = codeFileName.Replace("." + extension, ".g4");
+                    var grammarFileName = codeFileName.Replace("." + extension, Grammar.AntlrDotExt);
                     var text = File.ReadAllText(codeFileName);
                     var shortGrammarFileName = Path.GetFileName(grammarFileName);
                     _grammarCodeMapping[shortGrammarFileName] = TextHelpers.Map(_grammarActionsTextSpan[shortGrammarFileName], text);
@@ -689,7 +686,7 @@ namespace AntlrGrammarEditor
                     {
                         // Format: Lexer.java:98: error: cannot find symbol
                         var strs = e.Data.Split(':');
-                        grammarFileName = strs[0].Remove(strs[0].Length - "java".Length) + "g4";
+                        grammarFileName = strs[0].Remove(strs[0].Length - ".java".Length) + Grammar.AntlrDotExt;
                         int codeLine = int.Parse(strs[1]);
                         string rest = string.Join(":", strs.Skip(2));
                         var grammarTextSpan = TextHelpers.GetSourceTextSpanForLine(_grammarCodeMapping[grammarFileName], codeLine);
@@ -731,7 +728,7 @@ namespace AntlrGrammarEditor
                         var strs = errorString.Split(':');
                         int leftParenInd = strs[0].IndexOf('(');
                         grammarFileName = strs[0].Remove(leftParenInd);
-                        grammarFileName = grammarFileName.Remove(grammarFileName.Length - "cs".Length) + "g4";
+                        grammarFileName = grammarFileName.Remove(grammarFileName.Length - ".cs".Length) + Grammar.AntlrDotExt;
                         string lineColumnString = strs[0].Substring(leftParenInd);
                         lineColumnString = lineColumnString.Substring(1, lineColumnString.Length - 2); // Remove parenthesis.
                         var strs2 = lineColumnString.Split(',');
