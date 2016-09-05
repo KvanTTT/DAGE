@@ -94,10 +94,13 @@ namespace AntlrGrammarEditor
             }
             set
             {
-                StopIfRequired();
-                Grammar.Runtimes.Clear();
-                Grammar.Runtimes.Add(value);
-                RollbackToStage(WorkflowStage.GrammarChecked);
+                if (Grammar.Runtimes.First() != value)
+                {
+                    StopIfRequired();
+                    Grammar.Runtimes.Clear();
+                    Grammar.Runtimes.Add(value);
+                    RollbackToStage(WorkflowStage.GrammarChecked);
+                }
             }
         }
 
@@ -109,9 +112,12 @@ namespace AntlrGrammarEditor
             }
             set
             {
-                StopIfRequired();
-                _grammar.Root = value;
-                RollbackToStage(WorkflowStage.ParserCompilied);
+                if (_grammar.Root != value)
+                {
+                    StopIfRequired();
+                    _grammar.Root = value;
+                    RollbackToStage(WorkflowStage.ParserCompilied);
+                }
             }
         }
 
@@ -123,9 +129,12 @@ namespace AntlrGrammarEditor
             }
             set
             {
-                StopIfRequired();
-                _grammar.PreprocessorRoot = value;
-                RollbackToStage(WorkflowStage.ParserGenerated);
+                if (_grammar.PreprocessorRoot != value)
+                {
+                    StopIfRequired();
+                    _grammar.PreprocessorRoot = value;
+                    RollbackToStage(WorkflowStage.ParserGenerated);
+                }
             }
         }
 
@@ -137,9 +146,12 @@ namespace AntlrGrammarEditor
             }
             set
             {
-                StopIfRequired();
-                _text = value;
-                RollbackToStage(WorkflowStage.ParserCompilied);
+                if (_text != value)
+                {
+                    StopIfRequired();
+                    _text = value;
+                    RollbackToStage(WorkflowStage.ParserCompilied);
+                }
             }
         }
 

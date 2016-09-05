@@ -21,7 +21,7 @@
         </StackPanel>
       </Grid>
       <TextBox Grid.Row="1" Name="GrammarTextBox" AcceptsReturn="true" />
-      <Expander Grid.Row="2" Header="{Binding GrammarErrorsText}" IsExpanded="false">
+      <Expander Grid.Row="2" Header="{Binding GrammarErrorsText}" IsExpanded="{Binding GrammarErrorsExpanded}">
         <ListBox Name="GrammarErrorsListBox" MinHeight="120" Items="{Binding GrammarErrors}" />
       </Expander>
       <Grid Grid.Row="3" ColumnDefinitions="100,100,150,*">
@@ -45,7 +45,7 @@
           <TextBox MinHeight="120" Text="{Binding Tree, Mode=TwoWay}" IsReadOnly="true" TextWrapping="Wrap" />
         </Grid>
       </Expander>
-      <Expander Grid.Row="4" Header="{Binding TextErrorsText}" IsExpanded="false">
+      <Expander Grid.Row="4" Header="{Binding TextErrorsText}" IsExpanded="{Binding TextErrorsExpanded}">
         <Grid RowDefinitions="120" >
           <ListBox Name="TextErrorsListBox" MinHeight="120" Items="{Binding TextErrors}" />
         </Grid>

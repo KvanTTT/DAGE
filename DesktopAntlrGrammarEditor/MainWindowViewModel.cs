@@ -22,8 +22,6 @@ namespace DesktopAntlrGrammarEditor
         private string _openedGrammarFile = "";
         private FileState _grammarFileState, _textFileState;
         private TextBox _grammarTextBox, _textTextBox;
-        private string _grammarErrorsText = "Grammar Errors (0)";
-        private string _textErrorsText = "Text Errors (0)";
         private ListBox _grammarErrorsListBox, _textErrorsListBox;
         private string _tokens, _tree;
         private bool _autoprocessing;
@@ -105,6 +103,8 @@ namespace DesktopAntlrGrammarEditor
             SetupWorkflowSubscriptions();
             SetupTextBoxSubscriptions();
             SetupCommandSubscriptions();
+
+            AutoProcessing = _settings.Autoprocessing;
         }
 
         public string OpenedGrammarFile
@@ -216,33 +216,17 @@ namespace DesktopAntlrGrammarEditor
 
         public ObservableCollection<Runtime> Runtimes { get; } = new ObservableCollection<Runtime>((Runtime[])Enum.GetValues(typeof(Runtime)));
 
-        public string GrammarErrorsText
-        {
-            get
-            {
-                return _grammarErrorsText;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _grammarErrorsText, value);
-            }
-        }
+        public string GrammarErrorsText => $"Grammar Errors ({GrammarErrors.Count})";
+
+        public bool GrammarErrorsExpanded => GrammarErrors.Count > 0;
 
         public ObservableCollection<object> GrammarErrors { get; } = new ObservableCollection<object>();
 
-        public string TextErrorsText
-        {
-            get
-            {
-                return _textErrorsText;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _textErrorsText, value);
-            }
-        }
+        public string TextErrorsText => $"Text Errors ({TextErrors.Count})";
 
         public ObservableCollection<object> TextErrors { get; } = new ObservableCollection<object>();
+
+        public bool TextErrorsExpanded => TextErrors.Count > 0;
 
         public string Tokens
         {
@@ -361,12 +345,14 @@ namespace DesktopAntlrGrammarEditor
                         case WorkflowStage.ParserGenerated:
                         case WorkflowStage.ParserCompilied:
                             GrammarErrors.Add(ev.EventArgs);
-                            GrammarErrorsText = $"Grammar Errors ({GrammarErrors.Count})";
+                            this.RaisePropertyChanged(nameof(GrammarErrorsText));
+                            this.RaisePropertyChanged(nameof(GrammarErrorsExpanded));
                             break;
                         case WorkflowStage.TextTokenized:
                         case WorkflowStage.TextParsed:
                             TextErrors.Add(ev.EventArgs);
-                            TextErrorsText = $"Text Errors ({TextErrors.Count})";
+                            this.RaisePropertyChanged(nameof(TextErrorsText));
+                            this.RaisePropertyChanged(nameof(TextErrorsExpanded));
                             break;
                     }
                 });
@@ -569,11 +555,13 @@ namespace DesktopAntlrGrammarEditor
                     }
                     if (grammarErrors)
                     {
-                        GrammarErrorsText = $"Grammar Errors ({GrammarErrors.Count})";
+                        this.RaisePropertyChanged(nameof(GrammarErrorsText));
+                        this.RaisePropertyChanged(nameof(GrammarErrorsExpanded));
                     }
                     else
                     {
-                        TextErrorsText = $"Text Errors ({TextErrors.Count})";
+                        this.RaisePropertyChanged(nameof(TextErrorsText));
+                        this.RaisePropertyChanged(nameof(TextErrorsExpanded));
                     }
                 });
             }
