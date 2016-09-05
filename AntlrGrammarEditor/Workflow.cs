@@ -51,6 +51,8 @@ namespace AntlrGrammarEditor
         private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping = new Dictionary<string, List<TextSpanMapping>>();
         private string _currentFileData;
 
+        public string CSharpCompilerPath { get; set; }
+
         public string JavaPath { get; set; }
 
         public string JavaCompilerPath { get; set; }
@@ -485,7 +487,7 @@ namespace AntlrGrammarEditor
             Process process = null;
             try
             {
-                string compilatorPath = "";
+                string compilerPath = "";
                 string arguments = "";
                 string templateName = "";
                 string workingDirectory = HelperDirectoryName;
@@ -516,7 +518,7 @@ namespace AntlrGrammarEditor
                     {
                         compiliedFiles.Append(" \"..\\" + Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.cs"));
                     }
-                    compilatorPath = Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "csc.exe");
+                    compilerPath = CSharpCompilerPath;
                     arguments = $@"/reference:""..\{runtimeLibraryPath}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
                 }
                 else if (Runtime == Runtime.Java)
@@ -528,7 +530,7 @@ namespace AntlrGrammarEditor
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
                         File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.java"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.java"), true);
                     }
-                    compilatorPath = JavaCompilerPath;
+                    compilerPath = JavaCompilerPath;
                     arguments = $@"-cp ""..\{runtimeLibraryPath}"" " + compiliedFiles.ToString();
                 }
 
@@ -543,7 +545,7 @@ namespace AntlrGrammarEditor
                 }
                 File.WriteAllText(templateFile, code);
 
-                process = SetupHiddenProcessAndStart(compilatorPath, arguments, workingDirectory, ParserCompilation_ErrorDataReceived, ParserCompilation_OutputDataReceived);
+                process = SetupHiddenProcessAndStart(compilerPath, arguments, workingDirectory, ParserCompilation_ErrorDataReceived, ParserCompilation_OutputDataReceived);
 
                 while (!process.HasExited)
                 {

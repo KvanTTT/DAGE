@@ -1,5 +1,4 @@
 ﻿<Window xmlns="https://github.com/avaloniaui" 
-        xmlns:DAGE="clr-namespace:DesktopAntlrGrammarEditor;assembly=DesktopAntlrGrammarEditor"
         Title="New Grammar" SizeToContent="WidthAndHeight" >
   <Window.Styles>
     <Style Selector="TextBlock">

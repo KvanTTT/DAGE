@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 
 namespace DesktopAntlrGrammarEditor
 {
@@ -18,7 +19,7 @@ namespace DesktopAntlrGrammarEditor
         private Settings _settings;
         private Grammar _grammar;
         private Workflow _workflow;
-        private string _openedGrammarFile;
+        private string _openedGrammarFile = "";
         private FileState _grammarFileState, _textFileState;
         private TextBox _grammarTextBox, _textTextBox;
         private string _grammarErrorsText = "Grammar Errors (0)";
@@ -53,19 +54,36 @@ namespace DesktopAntlrGrammarEditor
             }
 
             _workflow = new Workflow();
+            _workflow.CSharpCompilerPath = _settings.CSharpCompilerPath;
             _workflow.JavaPath = _settings.JavaPath;
             _workflow.JavaCompilerPath = _settings.JavaCompilerPath;
 
+            bool openDefaultGrammar = false;
             if (string.IsNullOrEmpty(_settings.AgeFileName))
+            {
+                openDefaultGrammar = true;
+            }
+            else
+            {
+                try
+                {
+                    _grammar = Grammar.Load(_settings.AgeFileName);
+                }
+                catch (Exception ex)
+                {
+                    ShowOpenFileErrorMessage(_settings.AgeFileName, ex.Message);
+
+                    _settings.OpenedGrammarFile = "";
+                    openDefaultGrammar = true;
+                }
+            }
+
+            if (openDefaultGrammar)
             {
                 _grammar = GrammarFactory.CreateDefault();
                 GrammarFactory.FillGrammarFiles(_grammar, Settings.Directory, false);
                 _settings.AgeFileName = _grammar.AgeFileName;
                 _settings.Save();
-            }
-            else
-            {
-                _grammar = Grammar.Load(_settings.AgeFileName);
             }
 
             _workflow.Grammar = _grammar;
@@ -100,28 +118,36 @@ namespace DesktopAntlrGrammarEditor
                 SaveGrammarFileIfRequired();
                 if (value != null && !value.Equals(_openedGrammarFile))
                 {
-                    _openedGrammarFile = value;
-                    _grammarFileState = FileState.Opened;
-                    _grammarTextBox.Text = File.ReadAllText(GetFullGrammarFileName(_openedGrammarFile));
-
-                    if (IsParserOpened)
+                    try
                     {
-                        if (_workflow.CurrentState.Stage == WorkflowStage.Input)
+                        _grammarTextBox.Text = File.ReadAllText(GetFullGrammarFileName(value));
+
+                        _openedGrammarFile = value;
+                        _grammarFileState = FileState.Opened;
+
+                        if (IsParserOpened)
                         {
-                            _workflow.Grammar = _grammar;
-                            _workflow.EndStage = WorkflowStage.GrammarChecked;
-                            _workflow.Process();
-                            _workflow.EndStage = EndStage;
+                            if (_workflow.CurrentState.Stage == WorkflowStage.Input)
+                            {
+                                _workflow.Grammar = _grammar;
+                                _workflow.EndStage = WorkflowStage.GrammarChecked;
+                                _workflow.Process();
+                                _workflow.EndStage = EndStage;
+                            }
+                            UpdateRules();
                         }
-                        UpdateRules();
+
+                        _settings.OpenedGrammarFile = value;
+                        _settings.Save();
+
+                        this.RaisePropertyChanged(nameof(IsParserOpened));
+                        this.RaisePropertyChanged(nameof(IsPreprocessor));
+                        this.RaisePropertyChanged();
                     }
-
-                    _settings.OpenedGrammarFile = value;
-                    _settings.Save();
-
-                    this.RaisePropertyChanged(nameof(IsParserOpened));
-                    this.RaisePropertyChanged(nameof(IsPreprocessor));
-                    this.RaisePropertyChanged();
+                    catch (Exception ex)
+                    {
+                        ShowOpenFileErrorMessage(_openedGrammarFile, ex.Message).Wait();
+                    }
                 }
             }
         }
@@ -454,8 +480,15 @@ namespace DesktopAntlrGrammarEditor
                 string[] fileNames = await openDialog.ShowAsync();
                 if (fileNames != null)
                 {
-                    var grammar = Grammar.Load(fileNames.First());
-                    OpenGrammar(grammar);
+                    try
+                    {
+                        var grammar = Grammar.Load(fileNames.First());
+                        OpenGrammar(grammar);
+                    }
+                    catch (Exception ex)
+                    {
+                        await ShowOpenFileErrorMessage(fileNames.First(), ex.Message);
+                    }
                 }
             });
 
@@ -603,18 +636,34 @@ namespace DesktopAntlrGrammarEditor
                 }
             }
 
-            if (EndStage >= WorkflowStage.ParserCompilied && string.IsNullOrEmpty(_settings.JavaCompilerPath) &&
-                SelectedRuntime == Runtime.Java)
+            if (EndStage >= WorkflowStage.ParserCompilied)
             {
-                var javaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe") ?? "";
-
-                var window = new SelectPathDialog("Select Java Compiler Path (javac)", javaCompilerPath);
-                var selectResult = await window.ShowDialog<string>();
-                if (selectResult != null)
+                if (string.IsNullOrEmpty(_settings.CSharpCompilerPath) && (
+                    SelectedRuntime == Runtime.CSharpSharwell || SelectedRuntime == Runtime.CSharp))
                 {
-                    _workflow.JavaCompilerPath = selectResult;
-                    _settings.JavaCompilerPath = selectResult;
-                    _settings.Save();
+                    var cSharpCompilerPath = Helpers.GetCSharpCompilerPath();
+
+                    var window = new SelectPathDialog("Select CSharp Compiler Path (csc)", cSharpCompilerPath);
+                    var selectResult = await window.ShowDialog<string>();
+                    if (selectResult != null)
+                    {
+                        _workflow.CSharpCompilerPath = selectResult;
+                        _settings.CSharpCompilerPath = selectResult;
+                        _settings.Save();
+                    }
+                }
+                else if (string.IsNullOrEmpty(_settings.JavaCompilerPath) && SelectedRuntime == Runtime.Java)
+                {
+                    var javaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe") ?? "";
+
+                    var window = new SelectPathDialog("Select Java Compiler Path (javac)", javaCompilerPath);
+                    var selectResult = await window.ShowDialog<string>();
+                    if (selectResult != null)
+                    {
+                        _workflow.JavaCompilerPath = selectResult;
+                        _settings.JavaCompilerPath = selectResult;
+                        _settings.Save();
+                    }
                 }
             }
 
@@ -642,5 +691,12 @@ namespace DesktopAntlrGrammarEditor
         }
 
         private string GetFullGrammarFileName(string fileName) => Path.Combine(_grammar.GrammarPath, fileName);
+
+        private async Task ShowOpenFileErrorMessage(string fileName, string exceptionMessage)
+        {
+            var messageBox = new MessageBox($"Error while opening {fileName} file: {exceptionMessage}", "Error");
+            await messageBox.ShowDialog();
+            _window.Activate();
+        }
     }
 }

@@ -35,6 +35,8 @@ namespace DesktopAntlrGrammarEditor
 
         public bool Autoprocessing { get; set; } = false;
 
+        public string CSharpCompilerPath { get; set; }
+
         public string JavaPath { get; set; }
 
         public string JavaCompilerPath { get; set; }

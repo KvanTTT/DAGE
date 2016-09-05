@@ -9,6 +9,11 @@ namespace AntlrGrammarEditor
 {
     public static class Helpers
     {
+        public static string GetCSharpCompilerPath()
+        {
+            return Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "csc.exe");
+        }
+
         public static string GetJavaExePath(string exeName)
         {
             string result = CheckFile(Environment.SpecialFolder.ProgramFiles, true, exeName) ??

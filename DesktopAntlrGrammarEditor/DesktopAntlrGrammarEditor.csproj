@@ -178,6 +178,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FileState.cs" />
+    <Compile Include="MessageBox.paml.cs">
+      <DependentUpon>MessageBox.paml</DependentUpon>
+    </Compile>
+    <Compile Include="MessageBoxViewModel.cs" />
     <Compile Include="NewGrammarWindow.paml.cs">
       <DependentUpon>NewGrammarWindow.paml</DependentUpon>
     </Compile>
@@ -205,6 +209,9 @@
   <ItemGroup>
     <None Include="app.config" />
     <EmbeddedResource Include="NewGrammarWindow.paml">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MessageBox.paml">
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="packages.config" />

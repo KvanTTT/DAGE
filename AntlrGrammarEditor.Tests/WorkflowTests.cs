@@ -6,6 +6,7 @@ namespace AntlrGrammarEditor.Tests
     [TestFixture]
     public class WorkflowTests
     {
+        private static string _cSharpCompilerPath;
         private static string _javaPath;
         private static string _javaCompilerPath;
 
@@ -15,6 +16,7 @@ namespace AntlrGrammarEditor.Tests
             var assemblyPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             System.IO.Directory.SetCurrentDirectory(assemblyPath);
 
+            _cSharpCompilerPath = Helpers.GetCSharpCompilerPath();
             _javaPath = Helpers.GetJavaExePath(@"bin\java.exe");
             _javaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe");
         }
@@ -214,7 +216,8 @@ namespace AntlrGrammarEditor.Tests
             var workflow = new Workflow
             {
                 JavaPath = _javaPath,
-                JavaCompilerPath = _javaCompilerPath
+                JavaCompilerPath = _javaCompilerPath,
+                CSharpCompilerPath = _cSharpCompilerPath
             };
             return workflow;
         }
