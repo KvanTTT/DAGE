@@ -450,15 +450,16 @@ namespace AntlrGrammarEditor
                 }
                 CancelOperationIfRequired(GenerateParserCancelMessage);
 
-                string extension = GetExtension(Runtime);
-                var runtimeExtensionFiles = Directory.GetFiles(HelperDirectoryName, "*." + extension);
+                var runtrimeInfo = Runtime.GetRuntimeInfo();
+                string[] extensions = runtrimeInfo.Extensions;
+                var runtimeExtensionFiles = Directory.GetFiles(HelperDirectoryName, string.Join(";", extensions.Select(ext => "*." + ext)));
 
                 foreach (var grammarFileName in state.Grammar.Files)
                 {
                     _currentFileName = grammarFileName;
                     _currentFileData = _grammarFilesData[grammarFileName];
-                    var arguments = $@"-jar ""{GetAntlrGenerator(Runtime)}"" ""{Path.Combine(_grammar.GrammarPath, grammarFileName)}"" -o ""{HelperDirectoryName}"" " +
-                        $"-Dlanguage={GetLanguage(Runtime)} -no-visitor -no-listener";
+                    var arguments = $@"-jar ""Generators\{runtrimeInfo.JarGenerator}"" ""{Path.Combine(_grammar.GrammarPath, grammarFileName)}"" -o ""{HelperDirectoryName}"" " +
+                        $"-Dlanguage={runtrimeInfo.DLanguage} -no-visitor -no-listener";
 
                     process = SetupHiddenProcessAndStart(JavaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
 
@@ -503,8 +504,9 @@ namespace AntlrGrammarEditor
                 string arguments = "";
                 string templateName = "";
                 string workingDirectory = HelperDirectoryName;
-                string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), GetLibraryName(Runtime));
-                string extension = GetExtension(Runtime);
+                var runtimeInfo = Runtime.GetRuntimeInfo();
+                string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), runtimeInfo.RuntimeLibrary);
+                string extension = runtimeInfo.Extensions.First();
 
                 List<string> generatedFiles = new List<string>();
                 generatedFiles.Add(_grammar.Name + GrammarFactory.LexerPostfix + "." + extension);
@@ -522,9 +524,9 @@ namespace AntlrGrammarEditor
                     _grammarCodeMapping[shortGrammarFileName] = TextHelpers.Map(_grammarActionsTextSpan[shortGrammarFileName], text);
                 }
 
+                templateName = runtimeInfo.MainFile;
                 if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
                 {
-                    templateName = "Program.cs";
                     compiliedFiles.Append('"' + templateName + '"');
                     if (_grammar.CaseInsensitive)
                     {
@@ -535,7 +537,6 @@ namespace AntlrGrammarEditor
                 }
                 else if (Runtime == Runtime.Java)
                 {
-                    templateName = "Main.java";
                     compiliedFiles.Append('"' + templateName + '"');
                     if (_grammar.CaseInsensitive)
                     {
@@ -552,8 +553,7 @@ namespace AntlrGrammarEditor
                 code = code.Replace(TemplateGrammarRoot, _grammar.Root);
                 if (_grammar.CaseInsensitive)
                 {
-                    var inputStreamStr = Runtime == Runtime.Java ? "ANTLRInputStream" : "AntlrInputStream";
-                    code = code.Replace(inputStreamStr, "AntlrCaseInsensitiveInputStream");
+                    code = code.Replace(runtimeInfo.AntlrInputStream, "AntlrCaseInsensitiveInputStream");
                 }
                 File.WriteAllText(templateFile, code);
 
@@ -605,13 +605,14 @@ namespace AntlrGrammarEditor
             {
                 File.WriteAllText(Path.Combine(HelperDirectoryName, TextFileName), result.Text);
 
-                string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), GetLibraryName(Runtime));
+                var runtimeInfo = Runtime.GetRuntimeInfo();
+                string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), runtimeInfo.RuntimeLibrary);
                 string parserFileName = "";
                 string arguments = "";
                 string workingDirectory = HelperDirectoryName;
                 if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
                 {
-                    var antlrRuntimeDir = Path.Combine(HelperDirectoryName, GetLibraryName(Runtime));
+                    var antlrRuntimeDir = Path.Combine(HelperDirectoryName, runtimeInfo.RuntimeLibrary);
                     //if (!File.Exists(antlrRuntimeDir))
                     {
                         File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
@@ -733,7 +734,7 @@ namespace AntlrGrammarEditor
             {
                 if ((Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp) && e.Data.Contains(": error CS"))
                 {
-                    var errorString = FixEncoding(e.Data);
+                    var errorString = Helpers.FixEncoding(e.Data);
                     ParsingError error;
                     string grammarFileName = "";
                     try
@@ -777,7 +778,7 @@ namespace AntlrGrammarEditor
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
-                var errorString = FixEncoding(e.Data);
+                var errorString = Helpers.FixEncoding(e.Data);
                 ParsingError error;
                 try
                 {
@@ -865,77 +866,6 @@ namespace AntlrGrammarEditor
                     break;
             }
             ClearErrorsEvent?.Invoke(this, stage);
-        }
-
-        private string FixEncoding(string str)
-        {
-            string result = str;
-            var bytes = Encoding.Default.GetBytes(result);
-            using (var stream = new MemoryStream(bytes))
-            {
-                Ude.CharsetDetector charsetDetector = new Ude.CharsetDetector();
-                charsetDetector.Feed(stream);
-                charsetDetector.DataEnd();
-                if (charsetDetector.Charset != null)
-                {
-                    var detectedEncoding = Encoding.GetEncoding(charsetDetector.Charset);
-                    result = detectedEncoding.GetString(bytes);
-                }
-            }
-            return result;
-        }
-
-        private static string GetAntlrGenerator(Runtime runtime)
-        {
-            if (runtime == Runtime.CSharpSharwell)
-            {
-                return "antlr4-csharp-4.5.3-complete.jar";
-            }
-            else
-            {
-                return "antlr-4.5.3-complete.jar";
-            }
-        }
-
-        private static string GetLanguage(Runtime runtime)
-        {
-            if (runtime == Runtime.CSharpSharwell)
-            {
-                return "CSharp_v4_5";
-            }
-            else
-            {
-                return runtime.ToString();
-            }
-        }
-
-        private static string GetLibraryName(Runtime runtime)
-        {
-            switch (runtime)
-            {
-                case Runtime.CSharp:
-                    return "Antlr4.Runtime.dll";
-                case Runtime.CSharpSharwell:
-                    return "Antlr4.Runtime.dll";
-                case Runtime.Java:
-                    return "antlr-runtime-4.5.3.jar";
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-        
-        private static string GetExtension(Runtime runtime)
-        {
-            switch (runtime)
-            {
-                case Runtime.CSharp:
-                case Runtime.CSharpSharwell:
-                    return "cs";
-                case Runtime.Java:
-                    return "java";
-                default:
-                    throw new NotImplementedException();
-            }
         }
 
         private void CancelOperationIfRequired(string message)

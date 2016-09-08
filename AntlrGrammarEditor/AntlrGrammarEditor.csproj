@@ -37,7 +37,16 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
-    <Content Include="antlr4-csharp-4.5.3-complete.jar">
+    <Content Include="Generators\antlr-4.5.3.jar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Generators\antlr-4.5.4-cpp.jar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Generators\antlr-4.5.3-csharpsharwell.jar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Generators\antlr-4.5.2-go.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Runtimes\CSharpSharwell\Antlr4.Runtime.dll">
@@ -221,9 +230,6 @@
     <Compile Include="WorkflowState\ParserGeneratedState.cs" />
     <Compile Include="WorkflowState\TextParsedState.cs" />
     <Compile Include="WorkflowState\WorkflowState.cs" />
-    <Content Include="antlr-4.5.3-complete.jar">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="Runtimes\CSharpSharwell\Program.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -264,7 +270,9 @@
       <Private>True</Private>
     </Reference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Runtimes\CPlusPlus\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

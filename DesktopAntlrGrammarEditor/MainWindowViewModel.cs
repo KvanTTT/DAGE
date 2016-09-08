@@ -87,7 +87,7 @@ namespace DesktopAntlrGrammarEditor
             _workflow.Grammar = _grammar;
             _workflow.Text = _settings.Text;
             _textTextBox.Text = _settings.Text;
-            SelectedRuntime = _grammar.Runtimes.First();
+            SelectedRuntime = _grammar.Runtimes.First().GetRuntimeInfo();
 
             InitFiles();
             if (string.IsNullOrEmpty(_settings.OpenedGrammarFile))
@@ -189,19 +189,19 @@ namespace DesktopAntlrGrammarEditor
 
         public ObservableCollection<string> Rules { get; } = new ObservableCollection<string>();
 
-        public Runtime SelectedRuntime
+        public RuntimeInfo SelectedRuntime
         {
             get
             {
-                return _grammar.Runtimes.First();
+                return _grammar.Runtimes.First().GetRuntimeInfo();
             }
             set
             {
-                if (_grammar.Runtimes.First() != value)
+                if (_grammar.Runtimes.First().GetRuntimeInfo() != value)
                 {
-                    _workflow.Runtime = value;
+                    _workflow.Runtime = value.Runtime;
                     _grammar.Runtimes.Clear();
-                    _grammar.Runtimes.Add(value);
+                    _grammar.Runtimes.Add(value.Runtime);
                     _grammar.Save();
                     this.RaisePropertyChanged();
                     if (AutoProcessing)
@@ -214,7 +214,7 @@ namespace DesktopAntlrGrammarEditor
 
         public string CurrentState => _workflow.CurrentState.Stage.ToString();
 
-        public ObservableCollection<Runtime> Runtimes { get; } = new ObservableCollection<Runtime>((Runtime[])Enum.GetValues(typeof(Runtime)));
+        public ObservableCollection<RuntimeInfo> Runtimes { get; } = new ObservableCollection<RuntimeInfo>(RuntimeInfo.Runtimes.Select(r => r.Value).ToList());
 
         public string GrammarErrorsText => $"Grammar Errors ({GrammarErrors.Count})";
 
@@ -626,8 +626,9 @@ namespace DesktopAntlrGrammarEditor
 
             if (EndStage >= WorkflowStage.ParserCompilied)
             {
+                var selectedRuntime = SelectedRuntime.Runtime;
                 if (string.IsNullOrEmpty(_settings.CSharpCompilerPath) && (
-                    SelectedRuntime == Runtime.CSharpSharwell || SelectedRuntime == Runtime.CSharp))
+                    selectedRuntime == Runtime.CSharpSharwell || selectedRuntime == Runtime.CSharp))
                 {
                     var cSharpCompilerPath = Helpers.GetCSharpCompilerPath();
 
@@ -640,7 +641,7 @@ namespace DesktopAntlrGrammarEditor
                         _settings.Save();
                     }
                 }
-                else if (string.IsNullOrEmpty(_settings.JavaCompilerPath) && SelectedRuntime == Runtime.Java)
+                else if (string.IsNullOrEmpty(_settings.JavaCompilerPath) && selectedRuntime == Runtime.Java)
                 {
                     var javaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe") ?? "";
 

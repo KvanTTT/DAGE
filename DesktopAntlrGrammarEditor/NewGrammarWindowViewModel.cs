@@ -69,24 +69,24 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public Runtime Runtime
+        public RuntimeInfo Runtime
         {
             get
             {
-                return _grammar.Runtimes.First();
+                return _grammar.Runtimes.First().GetRuntimeInfo();
             }
             set
             {
-                if (_grammar.Runtimes.First() != value)
+                if (_grammar.Runtimes.First().GetRuntimeInfo() != value)
                 {
                     _grammar.Runtimes.Clear();
-                    _grammar.Runtimes.Add(value);
+                    _grammar.Runtimes.Add(value.Runtime);
                     this.RaisePropertyChanged();
                 }
             }
         }
 
-        public ObservableCollection<Runtime> Runtimes { get; } = new ObservableCollection<Runtime>((Runtime[])Enum.GetValues(typeof(Runtime)));
+        public ObservableCollection<RuntimeInfo> Runtimes { get; } = new ObservableCollection<RuntimeInfo>(RuntimeInfo.Runtimes.Select(r => r.Value).ToList());
 
         public bool SeparatedLexerAndParser
         {

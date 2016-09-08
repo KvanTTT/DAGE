@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using System;
 using System.Linq;
 
 namespace AntlrGrammarEditor.Tests
@@ -19,6 +20,36 @@ namespace AntlrGrammarEditor.Tests
             _cSharpCompilerPath = Helpers.GetCSharpCompilerPath();
             _javaPath = Helpers.GetJavaExePath(@"bin\java.exe");
             _javaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe");
+        }
+
+        [Test]
+        public void RuntimeInfosFilled()
+        {
+            var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
+            foreach (var runtime in runtimes)
+            {
+                Assert.IsTrue(RuntimeInfo.Runtimes.ContainsKey(runtime));
+            }
+        }
+
+        [Test]
+        public void AllGeneratorsExists()
+        {
+            var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
+            var workflow = CreateWorkflow();
+            var grammarText = @"grammar test;
+                start: DIGIT+;
+                CHAR:  [a-z]+;
+                DIGIT: [0-9]+;
+                WS:    [ \r\n\t]+ -> skip;";
+            workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
+            workflow.EndStage = WorkflowStage.ParserGenerated;
+            foreach (var runtime in runtimes)
+            {
+                workflow.Runtime = runtime;
+                var state = (ParserGeneratedState)workflow.Process();
+                Assert.IsFalse(state.HasErrors);
+            }
         }
         
         [Test]
