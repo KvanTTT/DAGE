@@ -71,9 +71,9 @@ namespace AntlrGrammarEditor.Tests
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(3, 25, "error: test.g4:3:25: token recognition error at: '-z'", "test.g4"),
-                    new ParsingError(3, 27, "error: test.g4:3:27: token recognition error at: ']'", "test.g4"),
-                    new ParsingError(3, 28, "error: test.g4:3:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", "test.g4")
+                    new ParsingError(3, 25, "error: test.g4:3:25: token recognition error at: '-z'", "test.g4", WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 27, "error: test.g4:3:27: token recognition error at: ']'", "test.g4", WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 28, "error: test.g4:3:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", "test.g4", WorkflowStage.GrammarChecked)
                 },
                 grammarCheckedState.Errors);
         }
@@ -97,10 +97,10 @@ namespace AntlrGrammarEditor.Tests
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(2, 25, "error: testLexer.g4:2:25: token recognition error at: '-z'", "testLexer.g4"),
-                    new ParsingError(2, 27, "error: testLexer.g4:2:27: token recognition error at: ']'", "testLexer.g4"),
-                    new ParsingError(2, 28, "error: testLexer.g4:2:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", "testLexer.g4"),
-                    new ParsingError(3, 16, "error: testParser.g4:3:16: extraneous input '#' expecting {<EOF>, TOKEN_REF, RULE_REF, DOC_COMMENT, 'fragment', 'protected', 'public', 'private', 'catch', 'finally', 'mode'}", "testParser.g4")
+                    new ParsingError(2, 25, "error: testLexer.g4:2:25: token recognition error at: '-z'", "testLexer.g4", WorkflowStage.GrammarChecked),
+                    new ParsingError(2, 27, "error: testLexer.g4:2:27: token recognition error at: ']'", "testLexer.g4", WorkflowStage.GrammarChecked),
+                    new ParsingError(2, 28, "error: testLexer.g4:2:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", "testLexer.g4", WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 16, "error: testParser.g4:3:16: extraneous input '#' expecting {<EOF>, TOKEN_REF, RULE_REF, DOC_COMMENT, 'fragment', 'protected', 'public', 'private', 'catch', 'finally', 'mode'}", "testParser.g4", WorkflowStage.GrammarChecked)
                 },
                 grammarCheckedState.Errors);
         }
@@ -124,7 +124,7 @@ namespace AntlrGrammarEditor.Tests
             ParserGeneratedState parserGeneratedState = state as ParserGeneratedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(2, 24, "error(56): test.g4:2:24: reference to undefined rule: rule1", "test.g4"),
+                    new ParsingError(2, 24, "error(56): test.g4:2:24: reference to undefined rule: rule1", "test.g4", WorkflowStage.ParserGenerated),
                 },
                 parserGeneratedState.Errors);
         }
@@ -181,8 +181,8 @@ namespace AntlrGrammarEditor.Tests
             TextParsedState textParsedState = state as TextParsedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(1, 0, "line 1:0 token recognition error at: '!'", ""),
-                    new ParsingError(1, 3, "line 1:3 extraneous input 'asdf' expecting DIGIT", "")
+                    new ParsingError(1, 0, "line 1:0 token recognition error at: '!'", "", WorkflowStage.TextParsed),
+                    new ParsingError(1, 3, "line 1:3 extraneous input 'asdf' expecting DIGIT", "", WorkflowStage.TextParsed)
                 },
                 textParsedState.TextErrors);
             Assert.AreEqual("(start asdf 1234)", textParsedState.Tree);

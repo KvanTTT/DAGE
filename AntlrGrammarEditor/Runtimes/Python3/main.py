@@ -2,7 +2,7 @@ import sys;
 from antlr4 import *
 from AntlrGrammarName42Lexer import AntlrGrammarName42Lexer
 from AntlrGrammarName42Parser import AntlrGrammarName42Parser
- 
+
 def main(argv):
     input = FileStream("Text")
     lexer = AntlrGrammarName42Lexer(input)

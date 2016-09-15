@@ -432,7 +432,7 @@ namespace AntlrGrammarEditor
                 result.Exception = ex;
                 if (!(ex is OperationCanceledException))
                 {
-                    AddError(WorkflowStage.GrammarChecked, new ParsingError(ex));
+                    AddError(new ParsingError(ex, WorkflowStage.GrammarChecked));
                 }
             }
             GrammarCheckedState = result;
@@ -483,7 +483,7 @@ namespace AntlrGrammarEditor
                 result.Exception = ex;
                 if (!(ex is OperationCanceledException))
                 {
-                    AddError(WorkflowStage.ParserGenerated, new ParsingError(ex));
+                    AddError(new ParsingError(ex, WorkflowStage.ParserGenerated));
                 }
             }
             finally
@@ -607,7 +607,7 @@ namespace AntlrGrammarEditor
                 result.Exception = ex;
                 if (!(ex is OperationCanceledException))
                 {
-                    AddError(WorkflowStage.ParserCompilied, new ParsingError(ex));
+                    AddError(new ParsingError(ex, WorkflowStage.ParserCompilied));
                 }
             }
             finally
@@ -684,7 +684,7 @@ namespace AntlrGrammarEditor
                 result.Exception = ex;
                 if (!(ex is OperationCanceledException))
                 {
-                    AddError(WorkflowStage.TextParsed, new ParsingError(ex));
+                    AddError(new ParsingError(ex, WorkflowStage.TextParsed));
                 }
             }
             finally
@@ -713,13 +713,13 @@ namespace AntlrGrammarEditor
                     ParsingError error;
                     if (strs.Length >= 4)
                     {
-                        error = new ParsingError(int.Parse(strs[2]), int.Parse(strs[3]), e.Data, _currentFileName, _currentFileData);
+                        error = new ParsingError(int.Parse(strs[2]), int.Parse(strs[3]), e.Data, _currentFileName, _currentFileData, WorkflowStage.ParserGenerated);
                     }
                     else
                     {
-                        error = new ParsingError(0, 0, e.Data, _currentFileName, _currentFileData);
+                        error = new ParsingError(0, 0, e.Data, _currentFileName, _currentFileData, WorkflowStage.ParserGenerated);
                     }
-                    AddError(WorkflowStage.ParserGenerated, error);
+                    AddError(error);
                 }
             }
             finally
@@ -765,7 +765,7 @@ namespace AntlrGrammarEditor
                             }
                             if (grammarTextSpan != null)
                             {
-                                error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName);
+                                error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
                             }
                             else
                             {
@@ -775,9 +775,9 @@ namespace AntlrGrammarEditor
                         }
                         catch
                         {
-                            error = new ParsingError(0, 0, e.Data, grammarFileName);
+                            error = new ParsingError(0, 0, e.Data, grammarFileName, WorkflowStage.ParserCompilied);
                         }
-                        AddError(WorkflowStage.ParserCompilied, error);
+                        AddError(error);
                     }
                     else if (Runtime == Runtime.Python3)
                     {
@@ -813,7 +813,7 @@ namespace AntlrGrammarEditor
                                         }
                                         if (grammarTextSpan != null)
                                         {
-                                            error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}", grammarFileName);
+                                            error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}", grammarFileName, WorkflowStage.ParserCompilied);
                                         }
                                         else
                                         {
@@ -823,9 +823,9 @@ namespace AntlrGrammarEditor
                                     }
                                     catch
                                     {
-                                        error = new ParsingError(0, 0, e.Data, grammarFileName);
+                                        error = new ParsingError(0, 0, e.Data, grammarFileName, WorkflowStage.ParserCompilied);
                                     }
-                                    AddError(WorkflowStage.ParserCompilied, error);
+                                    AddError(error);
                                 }
                             }
                             _buffer.AppendLine(e.Data);
@@ -872,7 +872,7 @@ namespace AntlrGrammarEditor
                             }
                             if (grammarTextSpan != null)
                             {
-                                error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName);
+                                error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
                             }
                             else
                             {
@@ -882,9 +882,9 @@ namespace AntlrGrammarEditor
                         }
                         catch
                         {
-                            error = new ParsingError(0, 0, errorString, grammarFileName);
+                            error = new ParsingError(0, 0, errorString, grammarFileName, WorkflowStage.ParserCompilied);
                         }
-                        AddError(WorkflowStage.ParserCompilied, error);
+                        AddError(error);
                     }
                 }
             }
@@ -908,13 +908,13 @@ namespace AntlrGrammarEditor
                     {
                         var words = errorString.Split(' ');
                         var strs = words[1].Split(':');
-                        error = new ParsingError(int.Parse(strs[0]), int.Parse(strs[1]), errorString, "", _text);  // TODO: fix fileName
+                        error = new ParsingError(int.Parse(strs[0]), int.Parse(strs[1]), errorString, "", _text, WorkflowStage.TextParsed);  // TODO: fix fileName
                     }
                     catch
                     {
-                        error = new ParsingError(0, 0, errorString, "", _text);  // TODO: fix fileName
+                        error = new ParsingError(0, 0, errorString, "", _text, WorkflowStage.TextParsed);  // TODO: fix fileName
                     }
-                    AddError(WorkflowStage.TextParsed, error);
+                    AddError(error);
                 }
             }
             finally
@@ -957,10 +957,9 @@ namespace AntlrGrammarEditor
             }
         }
 
-        private void AddError(WorkflowStage stage, ParsingError error)
+        private void AddError(ParsingError error)
         {
-            error.WorkflowStage = stage;
-            switch (stage)
+            switch (error.WorkflowStage)
             {
                 case WorkflowStage.GrammarChecked:
                     _grammarCheckErrors.Add(error);
