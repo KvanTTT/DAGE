@@ -41,6 +41,8 @@ namespace DesktopAntlrGrammarEditor
 
         public string JavaCompilerPath { get; set; }
 
+        public string Python3Path { get; set; }
+
         static Settings()
         {
             Directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DAGE");

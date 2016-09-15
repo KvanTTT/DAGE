@@ -55,6 +55,7 @@ namespace DesktopAntlrGrammarEditor
             _workflow.CSharpCompilerPath = _settings.CSharpCompilerPath;
             _workflow.JavaPath = _settings.JavaPath;
             _workflow.JavaCompilerPath = _settings.JavaCompilerPath;
+            _workflow.Python3Path = _settings.Python3Path;
 
             bool openDefaultGrammar = false;
             if (string.IsNullOrEmpty(_settings.AgeFileName))
@@ -612,7 +613,12 @@ namespace DesktopAntlrGrammarEditor
 
             if (EndStage >= WorkflowStage.ParserGenerated && string.IsNullOrEmpty(_settings.JavaPath))
             {
-                var javaPath = Helpers.GetJavaExePath(@"bin\java.exe") ?? "";
+                var javaPath = "java";
+                bool successExecution = ProcessHelpers.DoesProcessCanBeExecuted(javaPath, "-version");
+                if (!successExecution)
+                {
+                    javaPath = Helpers.GetJavaExePath(@"bin\java.exe") ?? "";
+                }
 
                 var window = new SelectPathDialog("Select Java Path (java)", javaPath);
                 var selectResult = await window.ShowDialog<string>();
@@ -651,6 +657,33 @@ namespace DesktopAntlrGrammarEditor
                     {
                         _workflow.JavaCompilerPath = selectResult;
                         _settings.JavaCompilerPath = selectResult;
+                        _settings.Save();
+                    }
+                }
+                else if (string.IsNullOrEmpty(_settings.Python3Path) && (selectedRuntime == Runtime.Python2 || selectedRuntime == Runtime.Python3))
+                {
+                    string pythonPath = "python";
+                    try
+                    {
+                        var process = ProcessHelpers.SetupHiddenProcessStartAndWait("python", "-V");
+                        var output = process.StandardOutput.ReadToEnd();
+                        if ((selectedRuntime == Runtime.Python2 && output.Contains("3.")) ||
+                            ((selectedRuntime == Runtime.Python3 && output.Contains("2."))))
+                        {
+                            pythonPath = "";
+                        }
+                    }
+                    catch
+                    {
+                        pythonPath = "";
+                    }
+
+                    var window = new SelectPathDialog("Select Python3 Interpreter (python)", pythonPath);
+                    var selectResult = await window.ShowDialog<string>();
+                    if (selectResult != null)
+                    {
+                        _workflow.Python3Path = selectResult;
+                        _settings.Python3Path = selectResult;
                         _settings.Save();
                     }
                 }

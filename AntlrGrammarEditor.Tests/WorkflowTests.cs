@@ -10,6 +10,7 @@ namespace AntlrGrammarEditor.Tests
         private static string _cSharpCompilerPath;
         private static string _javaPath;
         private static string _javaCompilerPath;
+        private static string _pythonInterpreterPath;
 
         [SetUp]
         public void Init()
@@ -20,6 +21,7 @@ namespace AntlrGrammarEditor.Tests
             _cSharpCompilerPath = Helpers.GetCSharpCompilerPath();
             _javaPath = Helpers.GetJavaExePath(@"bin\java.exe");
             _javaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe");
+            _pythonInterpreterPath = "python";
         }
 
         [Test]
@@ -130,6 +132,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
+        [TestCase(Runtime.Python3)]
         public void ParserCompiliedStageErrors(Runtime runtime)
         {
             var workflow = CreateWorkflow();
@@ -155,6 +158,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
+        [TestCase(Runtime.Python3)]
         public void TextParsedStageErrors(Runtime runtime)
         {
             var workflow = CreateWorkflow();
@@ -212,6 +216,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
+        //[TestCase(Runtime.Python3)]
         public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
         {
             var workflow = CreateWorkflow();
@@ -248,7 +253,8 @@ namespace AntlrGrammarEditor.Tests
             {
                 JavaPath = _javaPath,
                 JavaCompilerPath = _javaCompilerPath,
-                CSharpCompilerPath = _cSharpCompilerPath
+                CSharpCompilerPath = _cSharpCompilerPath,
+                Python3Path = _pythonInterpreterPath
             };
             return workflow;
         }
