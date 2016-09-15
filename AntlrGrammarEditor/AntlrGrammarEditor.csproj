@@ -37,6 +37,9 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
+    <Content Include="Runtimes\Python3\main.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Generators\antlr-4.5.3.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -53,138 +56,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Runtimes\CSharp\Antlr4.Runtime.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\ATN.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\ATNConfig.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\ATNConfigSet.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\ATNDeserializationOptions.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\ATNDeserializer.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\ATNSimulator.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\ATNState.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\ATNType.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\index.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\LexerAction.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\LexerActionExecutor.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\LexerATNSimulator.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\ParserATNSimulator.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\PredictionMode.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\SemanticContext.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\atn\Transition.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\BufferedTokenStream.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\CommonTokenFactory.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\CommonTokenStream.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\dfa\DFA.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\dfa\DFASerializer.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\dfa\DFAState.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\dfa\index.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\error\DiagnosticErrorListener.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\error\ErrorListener.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\error\Errors.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\error\ErrorStrategy.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\error\index.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\FileStream.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\index.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\InputStream.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\IntervalSet.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\Lexer.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\LL1Analyzer.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\Parser.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\ParserRuleContext.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\PredictionContext.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\Recognizer.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\RuleContext.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\Token.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\tree\index.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\tree\Tree.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\tree\Trees.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\Utils.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Runtimes\Java\antlr-runtime-4.5.3.jar">
@@ -205,6 +76,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="LexerAdaptor.cs" />
     <Compile Include="ParsingError.cs" />
+    <Compile Include="ProcessHelpers.cs" />
     <Compile Include="RulesCollectorListener.cs" />
     <Compile Include="Runtime.cs" />
     <Compile Include="RuntimeInfo.cs" />
@@ -222,6 +94,7 @@
     <Compile Include="CodeInsertion.cs" />
     <Compile Include="TextSpanMapping.cs" />
     <Compile Include="TextHelpers.cs" />
+    <Compile Include="WinHelpers.cs" />
     <Compile Include="Workflow.cs" />
     <Compile Include="WorkflowStage.cs" />
     <Compile Include="WorkflowState\GrammarCheckedState.cs" />
@@ -244,12 +117,6 @@
     <None Include="ANTLRv4Parser.g4" />
     <None Include="Generated\ANTLRv4Lexer.tokens" />
     <None Include="Generated\ANTLRv4Parser.tokens" />
-    <None Include="Runtimes\JavaScript\package.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Runtimes\JavaScript\README.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="LexBasic.g4" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
@@ -270,9 +137,7 @@
       <Private>True</Private>
     </Reference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Runtimes\CPlusPlus\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
