@@ -56,6 +56,7 @@ namespace DesktopAntlrGrammarEditor
             _workflow.JavaPath = _settings.JavaPath;
             _workflow.JavaCompilerPath = _settings.JavaCompilerPath;
             _workflow.Python3Path = _settings.Python3Path;
+            _workflow.NodeJsPath = _settings.NodeJsPath;
 
             bool openDefaultGrammar = false;
             if (string.IsNullOrEmpty(_settings.AgeFileName))
@@ -684,6 +685,24 @@ namespace DesktopAntlrGrammarEditor
                     {
                         _workflow.Python3Path = selectResult;
                         _settings.Python3Path = selectResult;
+                        _settings.Save();
+                    }
+                }
+                else if (string.IsNullOrEmpty(_settings.NodeJsPath) && selectedRuntime == Runtime.JavaScript)
+                {
+                    var nodeJsPath = "node";
+                    bool successExecution = ProcessHelpers.DoesProcessCanBeExecuted(nodeJsPath, "-v");
+                    if (!successExecution)
+                    {
+                        nodeJsPath = "";
+                    }
+
+                    var window = new SelectPathDialog("Select Java Path (node)", nodeJsPath);
+                    var selectResult = await window.ShowDialog<string>();
+                    if (selectResult != null)
+                    {
+                        _workflow.NodeJsPath = selectResult;
+                        _settings.NodeJsPath = selectResult;
                         _settings.Save();
                     }
                 }

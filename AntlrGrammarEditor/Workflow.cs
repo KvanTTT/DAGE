@@ -14,6 +14,7 @@ namespace AntlrGrammarEditor
     {
         private static string HelperDirectoryName = "AntlrGrammarEditorHelperDirectory42";
         private const string PythonHelperFileName = "AntlrPythonCompileTest.py";
+        private const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
         private const string TextFileName = "Text";
 
         private const string TemplateGrammarName = "AntlrGrammarName42";
@@ -42,7 +43,7 @@ namespace AntlrGrammarEditor
         private TimeSpan _outputParserTime;
         private AntlrErrorListener _antlrErrorListener;
         private event EventHandler<ParsingError> _newErrorEvent;
-        private StringBuilder _buffer = new StringBuilder();
+        private List<string> _buffer = new List<string>();
         private int _eventInvokeCounter;
 
         private CancellationTokenSource _cancellationTokenSource;
@@ -61,6 +62,8 @@ namespace AntlrGrammarEditor
         public string JavaCompilerPath { get; set; }
 
         public string Python3Path { get; set; }
+
+        public string NodeJsPath { get; set; }
 
         public GrammarCheckedState GrammarCheckedState { get; private set; }
 
@@ -571,17 +574,35 @@ namespace AntlrGrammarEditor
                         var shortFileName = Path.GetFileNameWithoutExtension(file);
                         stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
                     }
-                    if (_grammar.CaseInsensitive)
-                    {
-                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.py"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.py"), true);
-                    }
                     stringBuilder.AppendLine();
                     stringBuilder.AppendLine("if __name__ == '__main__':");
                     stringBuilder.AppendLine("    pass");
                     File.WriteAllText(Path.Combine(HelperDirectoryName, PythonHelperFileName), stringBuilder.ToString());
 
+                    if (_grammar.CaseInsensitive)
+                    {
+                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.py"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.py"), true);
+                    }
+
                     compilerPath = Python3Path;
                     arguments = $"{PythonHelperFileName}";
+                }
+                else if (Runtime == Runtime.JavaScript)
+                {
+                    var stringBuilder = new StringBuilder();
+                    foreach (var file in generatedFiles)
+                    {
+                        var shortFileName = Path.GetFileNameWithoutExtension(file);
+                        stringBuilder.AppendLine($"var {shortFileName} = require('./{shortFileName}');");
+                    }
+                    File.WriteAllText(Path.Combine(HelperDirectoryName, JavaScriptHelperFileName), stringBuilder.ToString());
+                    if (_grammar.CaseInsensitive)
+                    {
+                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.js"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.js"), true);
+                    }
+
+                    compilerPath = NodeJsPath;
+                    arguments = $"{JavaScriptHelperFileName}";
                 }
 
                 var templateFile = Path.Combine(HelperDirectoryName, templateName);
@@ -678,6 +699,11 @@ namespace AntlrGrammarEditor
                     parserFileName = Python3Path;
                     arguments = $@"{runtimeInfo.MainFile}";
                 }
+                else if (Runtime == Runtime.JavaScript)
+                {
+                    parserFileName = NodeJsPath;
+                    arguments = $@"{runtimeInfo.MainFile}";
+                }
 
                 _eventInvokeCounter = 0;
                 process = ProcessHelpers.SetupHiddenProcessAndStart(parserFileName, arguments, workingDirectory, TextParsing_ErrorDataReceived, TextParsing_OutputDataReceived);
@@ -769,7 +795,8 @@ namespace AntlrGrammarEditor
                     {
                         try
                         {
-                            // Format: Lexer.java:98: error: cannot find symbol
+                            // Format:
+                            // Lexer.java:98: error: cannot find symbol
                             var strs = e.Data.Split(':');
                             grammarFileName = Path.ChangeExtension(strs[0], Grammar.AntlrDotExt);
                             int codeLine = int.Parse(strs[1]);
@@ -799,8 +826,11 @@ namespace AntlrGrammarEditor
                     {
                         lock (_buffer)
                         {
-                            // Format: File "NewGrammarParser.py", line 136
+                            // Format:
+                            // File "NewGrammarParser.py", line 136
+
                             // TODO: improve error messages.
+                            _buffer.Add(e.Data);
                             if (e.Data.TrimStart().StartsWith("File"))
                             {
                                 grammarFileName = e.Data;
@@ -844,7 +874,50 @@ namespace AntlrGrammarEditor
                                     AddError(error);
                                 }
                             }
-                            _buffer.AppendLine(e.Data);
+                        }
+                    }
+                    else if (Runtime == Runtime.JavaScript)
+                    {
+                        // Format:
+                        // Absolute\Path\To\Parser.js:103
+
+                        if (!e.Data.StartsWith("    at"))
+                        {
+                            _buffer.Add(e.Data);
+                        }
+                        if (_buffer.Count == 4)
+                        {
+                            int semicolonLastIndex = _buffer[0].LastIndexOf(':');
+                            grammarFileName = Path.GetFileName(_buffer[0].Remove(semicolonLastIndex));
+                            grammarFileName = Path.ChangeExtension(grammarFileName, Grammar.AntlrDotExt);
+                            List<TextSpanMapping> mapping;
+                            if (_grammarCodeMapping.TryGetValue(grammarFileName, out mapping))
+                            {
+                                try
+                                {
+                                    int codeLine = int.Parse(_buffer[0].Substring(semicolonLastIndex + 1));
+                                    var grammarTextSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine);
+                                    if (!_grammar.SeparatedLexerAndParser)
+                                    {
+                                        grammarFileName = grammarFileName.Replace(GrammarFactory.ParserPostfix, "").Replace(GrammarFactory.LexerPostfix, "");
+                                    }
+                                    if (grammarTextSpan != null)
+                                    {
+                                        error = new ParsingError(grammarTextSpan, _buffer[3], grammarFileName, WorkflowStage.ParserCompilied);
+                                    }
+                                    else
+                                    {
+                                        // error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName);
+                                        return; // duplicated error.
+                                    }
+                                }
+                                catch
+                                {
+                                    error = new ParsingError(0, 0, e.Data, grammarFileName, WorkflowStage.ParserCompilied);
+                                }
+                                AddError(error);
+                            }
+                            _buffer.Clear();
                         }
                     }
                 }

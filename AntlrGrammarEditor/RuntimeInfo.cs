@@ -72,8 +72,8 @@ namespace AntlrGrammarEditor
                 DLanguage = "JavaScript",
                 RuntimeLibrary = "",
                 Extensions = new[] { "js" },
-                MainFile = "",
-                AntlrInputStream = "",
+                MainFile = "main.js",
+                AntlrInputStream = "antlr4.InputStream",
                 Interpreted = true
             },
             [Runtime.CPlusPlus] = new RuntimeInfo

@@ -43,6 +43,8 @@ namespace DesktopAntlrGrammarEditor
 
         public string Python3Path { get; set; }
 
+        public string NodeJsPath { get; set; }
+
         static Settings()
         {
             Directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DAGE");

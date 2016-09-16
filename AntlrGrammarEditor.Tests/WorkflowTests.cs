@@ -11,6 +11,7 @@ namespace AntlrGrammarEditor.Tests
         private static string _javaPath;
         private static string _javaCompilerPath;
         private static string _pythonInterpreterPath;
+        private static string _nodeJsInterpreterPath;
 
         [SetUp]
         public void Init()
@@ -19,9 +20,10 @@ namespace AntlrGrammarEditor.Tests
             System.IO.Directory.SetCurrentDirectory(assemblyPath);
 
             _cSharpCompilerPath = Helpers.GetCSharpCompilerPath();
-            _javaPath = Helpers.GetJavaExePath(@"bin\java.exe");
+            _javaPath = "java";
             _javaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe");
             _pythonInterpreterPath = "python";
+            _nodeJsInterpreterPath = "node";
         }
 
         [Test]
@@ -133,12 +135,13 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python3)]
+        [TestCase(Runtime.JavaScript)]
         public void ParserCompiliedStageErrors(Runtime runtime)
         {
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;
-                start:  DIGIT+ {i++;};
+                start:  DIGIT+ {i^;};
                 CHAR:   [a-z]+;
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
@@ -151,7 +154,7 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage);
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
-            Assert.AreEqual(1, parserGeneratedState.Errors.Count);
+            Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
             Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.BeginLine);
         }
 
@@ -159,6 +162,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python3)]
+        [TestCase(Runtime.JavaScript)]
         public void TextParsedStageErrors(Runtime runtime)
         {
             var workflow = CreateWorkflow();
@@ -218,6 +222,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
         //[TestCase(Runtime.Python3)]
+        //[TestCase(Runtime.JavaScript)]
         public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
         {
             var workflow = CreateWorkflow();
@@ -255,7 +260,8 @@ namespace AntlrGrammarEditor.Tests
                 JavaPath = _javaPath,
                 JavaCompilerPath = _javaCompilerPath,
                 CSharpCompilerPath = _cSharpCompilerPath,
-                Python3Path = _pythonInterpreterPath
+                Python3Path = _pythonInterpreterPath,
+                NodeJsPath = _nodeJsInterpreterPath
             };
             return workflow;
         }
