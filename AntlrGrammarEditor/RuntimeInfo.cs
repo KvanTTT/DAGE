@@ -48,9 +48,9 @@ namespace AntlrGrammarEditor
                 DLanguage = "Python2",
                 RuntimeLibrary = "",
                 Extensions = new[] { "py" },
-                MainFile = "",
-                AntlrInputStream = "",
-                IgnoreCompilation = true
+                MainFile = "main.py",
+                AntlrInputStream = "InputStream",
+                Interpreted = true
             },
             [Runtime.Python3] = new RuntimeInfo
             {
@@ -61,8 +61,8 @@ namespace AntlrGrammarEditor
                 RuntimeLibrary = "",
                 Extensions = new[] { "py" },
                 MainFile = "main.py",
-                AntlrInputStream = "",
-                IgnoreCompilation = true
+                AntlrInputStream = "InputStream",
+                Interpreted = true
             },
             [Runtime.JavaScript] = new RuntimeInfo
             {
@@ -74,7 +74,7 @@ namespace AntlrGrammarEditor
                 Extensions = new[] { "js" },
                 MainFile = "",
                 AntlrInputStream = "",
-                IgnoreCompilation = true
+                Interpreted = true
             },
             [Runtime.CPlusPlus] = new RuntimeInfo
             {
@@ -104,7 +104,7 @@ namespace AntlrGrammarEditor
         public string[] Extensions { get; set; }
         public string MainFile { get; set; }
         public string AntlrInputStream { get; set; }
-        public bool IgnoreCompilation { get; set; } = false;
+        public bool Interpreted { get; set; } = false;
 
         public override string ToString()
         {

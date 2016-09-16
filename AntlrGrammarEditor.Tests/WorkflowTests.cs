@@ -191,6 +191,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
+        [TestCase(Runtime.Python3)]
         public void CaseInsensitive(Runtime runtime)
         {
             var workflow = CreateWorkflow();

@@ -37,7 +37,7 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            if(reader !=null) {
+            if(reader != null) {
                 reader.close();
             }
         }
