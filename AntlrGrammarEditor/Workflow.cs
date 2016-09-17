@@ -617,12 +617,21 @@ namespace AntlrGrammarEditor
                         code = code.Replace("'''AntlrCaseInsensitive'''",
                             "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
                     }
+                    else if (Runtime == Runtime.JavaScript)
+                    {
+                        code = code.Replace("/*AntlrCaseInsensitive*/",
+                            "var AntlrCaseInsensitiveInputStream = require('./AntlrCaseInsensitiveInputStream').AntlrCaseInsensitiveInputStream;");
+                    }
                 }
                 else
                 {
                     if (Runtime == Runtime.Python3)
                     {
                         code = code.Replace("'''AntlrCaseInsensitive'''", "");
+                    }
+                    else if (Runtime == Runtime.JavaScript)
+                    {
+                        code = code.Replace("/*AntlrCaseInsensitive*/", "");
                     }
                 }
                 File.WriteAllText(templateFile, code);
