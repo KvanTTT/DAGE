@@ -16,6 +16,8 @@ namespace AntlrGrammarEditor
 
         public int Length { get;  set; }
 
+        public bool IsEmpty => BeginLine == -1;
+
         public static readonly TextSpan Empty = new TextSpan(-1, -1, -1, -1) { Start = -1, Length = 0 };
 
         public TextSpan()
