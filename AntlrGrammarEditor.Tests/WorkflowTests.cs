@@ -145,7 +145,7 @@ namespace AntlrGrammarEditor.Tests
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
-            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.BeginLine);
+            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.BeginLine, string.Join(Environment.NewLine, parserGeneratedState.Errors));
         }
 
         [TestCase(Runtime.CSharpSharwell)]
@@ -206,6 +206,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Text = @"A a 1234";
 
             var state = workflow.Process();
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
             TextParsedState textParsedState = state as TextParsedState;
             Assert.AreEqual(0, textParsedState.TextErrors.Count);
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
