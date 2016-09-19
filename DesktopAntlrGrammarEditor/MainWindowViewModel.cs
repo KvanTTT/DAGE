@@ -637,24 +637,6 @@ namespace DesktopAntlrGrammarEditor
                     var compilerPath = runtimeInfo.DefaultCompilerPath;
                     var compilerFileName = Path.GetFileNameWithoutExtension(compilerPath);
 
-                    if (selectedRuntime == Runtime.Python2 || selectedRuntime == Runtime.Python3)
-                    {
-                        try
-                        {
-                            var process = ProcessHelpers.SetupHiddenProcessStartAndWait("python", "-V");
-                            var output = process.StandardOutput.ReadToEnd();
-                            if ((selectedRuntime == Runtime.Python2 && output.Contains("3.")) ||
-                                ((selectedRuntime == Runtime.Python3 && output.Contains("2."))))
-                            {
-                                compilerPath = "";
-                            }
-                        }
-                        catch
-                        {
-                            compilerPath = "";
-                        }
-                    }
-
                     var compilied = !runtimeInfo.Interpreted ? "Compiler " : "";
                     var window = new SelectPathDialog($"Select {runtimeInfo.Name} ({compilerFileName}) {compilied}Path (csc)", compilerPath);
                     var selectResult = await window.ShowDialog<string>();

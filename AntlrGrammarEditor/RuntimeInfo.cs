@@ -53,7 +53,7 @@ namespace AntlrGrammarEditor
                 MainFile = "main.py",
                 AntlrInputStream = "InputStream",
                 Interpreted = true,
-                DefaultCompilerPath = "python"
+                DefaultCompilerPath = "C:\\Python27\\python.exe"
             },
             [Runtime.Python3] = new RuntimeInfo
             {

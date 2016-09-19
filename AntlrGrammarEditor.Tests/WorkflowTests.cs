@@ -123,6 +123,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
+        //[TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         public void ParserCompiliedStageErrors(Runtime runtime)
@@ -150,6 +151,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
+        //[TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         public void TextParsedStageErrors(Runtime runtime)
@@ -184,6 +186,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
+        //[TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         public void CaseInsensitive(Runtime runtime)
@@ -208,13 +211,15 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
         }
 
-        //[TestCase(Runtime.CSharpSharwell)]
-        //[TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.CSharpSharwell)]
+        [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
-        //[TestCase(Runtime.Python3)]
-        //[TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python3)]
+        [TestCase(Runtime.JavaScript)]
         public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
         {
+            Assert.Ignore();
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;

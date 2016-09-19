@@ -507,10 +507,6 @@ namespace AntlrGrammarEditor
                 PreprocessorRoot = _grammar.PreprocessorRoot
             };
             var runtimeInfo = Runtime.GetRuntimeInfo();
-            /*if (runtimeInfo.IgnoreCompilation)
-            {
-                return result;
-            }*/
 
             Process process = null;
             try
@@ -559,7 +555,7 @@ namespace AntlrGrammarEditor
                     }
                     arguments = $@"-cp ""..\{runtimeLibraryPath}"" " + compiliedFiles.ToString();
                 }
-                else if (Runtime == Runtime.Python3)
+                else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
                     var stringBuilder = new StringBuilder();
                     foreach (var file in generatedFiles)
@@ -603,7 +599,7 @@ namespace AntlrGrammarEditor
                 if (_grammar.CaseInsensitive)
                 {
                     code = code.Replace(runtimeInfo.AntlrInputStream, "AntlrCaseInsensitiveInputStream");
-                    if (Runtime == Runtime.Python3)
+                    if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                     {
                         code = code.Replace("'''AntlrCaseInsensitive'''",
                             "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
@@ -616,7 +612,7 @@ namespace AntlrGrammarEditor
                 }
                 else
                 {
-                    if (Runtime == Runtime.Python3)
+                    if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                     {
                         code = code.Replace("'''AntlrCaseInsensitive'''", "");
                     }
@@ -812,8 +808,7 @@ namespace AntlrGrammarEditor
                             }
                             else
                             {
-                                // error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName);
-                                return; // duplicated error.
+                                error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
                             }
                         }
                         catch
@@ -822,7 +817,7 @@ namespace AntlrGrammarEditor
                         }
                         AddError(error);
                     }
-                    else if (Runtime == Runtime.Python3)
+                    else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                     {
                         lock (_buffer)
                         {
@@ -863,8 +858,7 @@ namespace AntlrGrammarEditor
                                         }
                                         else
                                         {
-                                            // error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName);
-                                            return; // duplicated error.
+                                            error = new ParsingError(0, 0, $"{grammarFileName}", grammarFileName, WorkflowStage.ParserCompilied);
                                         }
                                     }
                                     catch

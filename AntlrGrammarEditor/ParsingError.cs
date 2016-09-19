@@ -74,7 +74,7 @@ namespace AntlrGrammarEditor
 
         public override string ToString()
         {
-            return Message;
+            return WorkflowStage + ":" + Message;
         }
     }
 }
