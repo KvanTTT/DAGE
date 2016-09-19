@@ -52,11 +52,8 @@ namespace DesktopAntlrGrammarEditor
             }
 
             _workflow = new Workflow();
-            _workflow.CSharpCompilerPath = _settings.CSharpCompilerPath;
             _workflow.JavaPath = _settings.JavaPath;
-            _workflow.JavaCompilerPath = _settings.JavaCompilerPath;
-            _workflow.Python3Path = _settings.Python3Path;
-            _workflow.NodeJsPath = _settings.NodeJsPath;
+            _workflow.CompilerPaths = _settings.CompilerPaths;
 
             bool openDefaultGrammar = false;
             if (string.IsNullOrEmpty(_settings.AgeFileName))
@@ -634,75 +631,37 @@ namespace DesktopAntlrGrammarEditor
             if (EndStage >= WorkflowStage.ParserCompilied)
             {
                 var selectedRuntime = SelectedRuntime.Runtime;
-                if (string.IsNullOrEmpty(_settings.CSharpCompilerPath) && (
-                    selectedRuntime == Runtime.CSharpSharwell || selectedRuntime == Runtime.CSharp))
+                if (!_settings.CompilerPaths.ContainsKey(selectedRuntime))
                 {
-                    var cSharpCompilerPath = Helpers.GetCSharpCompilerPath();
+                    var runtimeInfo = selectedRuntime.GetRuntimeInfo();
+                    var compilerPath = runtimeInfo.DefaultCompilerPath;
+                    var compilerFileName = Path.GetFileNameWithoutExtension(compilerPath);
 
-                    var window = new SelectPathDialog("Select CSharp Compiler Path (csc)", cSharpCompilerPath);
-                    var selectResult = await window.ShowDialog<string>();
-                    if (selectResult != null)
+                    if (selectedRuntime == Runtime.Python2 || selectedRuntime == Runtime.Python3)
                     {
-                        _workflow.CSharpCompilerPath = selectResult;
-                        _settings.CSharpCompilerPath = selectResult;
-                        _settings.Save();
-                    }
-                }
-                else if (string.IsNullOrEmpty(_settings.JavaCompilerPath) && selectedRuntime == Runtime.Java)
-                {
-                    var javaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe") ?? "";
-
-                    var window = new SelectPathDialog("Select Java Compiler Path (javac)", javaCompilerPath);
-                    var selectResult = await window.ShowDialog<string>();
-                    if (selectResult != null)
-                    {
-                        _workflow.JavaCompilerPath = selectResult;
-                        _settings.JavaCompilerPath = selectResult;
-                        _settings.Save();
-                    }
-                }
-                else if (string.IsNullOrEmpty(_settings.Python3Path) && (selectedRuntime == Runtime.Python2 || selectedRuntime == Runtime.Python3))
-                {
-                    string pythonPath = "python";
-                    try
-                    {
-                        var process = ProcessHelpers.SetupHiddenProcessStartAndWait("python", "-V");
-                        var output = process.StandardOutput.ReadToEnd();
-                        if ((selectedRuntime == Runtime.Python2 && output.Contains("3.")) ||
-                            ((selectedRuntime == Runtime.Python3 && output.Contains("2."))))
+                        try
                         {
-                            pythonPath = "";
+                            var process = ProcessHelpers.SetupHiddenProcessStartAndWait("python", "-V");
+                            var output = process.StandardOutput.ReadToEnd();
+                            if ((selectedRuntime == Runtime.Python2 && output.Contains("3.")) ||
+                                ((selectedRuntime == Runtime.Python3 && output.Contains("2."))))
+                            {
+                                compilerPath = "";
+                            }
+                        }
+                        catch
+                        {
+                            compilerPath = "";
                         }
                     }
-                    catch
-                    {
-                        pythonPath = "";
-                    }
 
-                    var window = new SelectPathDialog("Select Python3 Interpreter (python)", pythonPath);
+                    var compilied = !runtimeInfo.Interpreted ? "Compiler " : "";
+                    var window = new SelectPathDialog($"Select {runtimeInfo.Name} ({compilerFileName}) {compilied}Path (csc)", compilerPath);
                     var selectResult = await window.ShowDialog<string>();
                     if (selectResult != null)
                     {
-                        _workflow.Python3Path = selectResult;
-                        _settings.Python3Path = selectResult;
-                        _settings.Save();
-                    }
-                }
-                else if (string.IsNullOrEmpty(_settings.NodeJsPath) && selectedRuntime == Runtime.JavaScript)
-                {
-                    var nodeJsPath = "node";
-                    bool successExecution = ProcessHelpers.DoesProcessCanBeExecuted(nodeJsPath, "-v");
-                    if (!successExecution)
-                    {
-                        nodeJsPath = "";
-                    }
-
-                    var window = new SelectPathDialog("Select Java Path (node)", nodeJsPath);
-                    var selectResult = await window.ShowDialog<string>();
-                    if (selectResult != null)
-                    {
-                        _workflow.NodeJsPath = selectResult;
-                        _settings.NodeJsPath = selectResult;
+                        _workflow.CompilerPaths[selectedRuntime] = selectResult;
+                        _settings.CompilerPaths[selectedRuntime] = selectResult;
                         _settings.Save();
                     }
                 }

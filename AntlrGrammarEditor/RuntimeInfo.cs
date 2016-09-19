@@ -15,8 +15,8 @@ namespace AntlrGrammarEditor
                 RuntimeLibrary = "Antlr4.Runtime.dll",
                 Extensions = new [] { "cs" },
                 MainFile = "Program.cs",
-                AntlrInputStream = "AntlrInputStream"
-
+                AntlrInputStream = "AntlrInputStream",
+                DefaultCompilerPath = Helpers.GetCSharpCompilerPath()
             },
             [Runtime.CSharp] = new RuntimeInfo
             {
@@ -27,7 +27,8 @@ namespace AntlrGrammarEditor
                 RuntimeLibrary = "Antlr4.Runtime.dll",
                 Extensions = new[] { "cs" },
                 MainFile = "Program.cs",
-                AntlrInputStream = "AntlrInputStream"
+                AntlrInputStream = "AntlrInputStream",
+                DefaultCompilerPath = Helpers.GetCSharpCompilerPath()
             },
             [Runtime.Java] = new RuntimeInfo
             {
@@ -38,7 +39,8 @@ namespace AntlrGrammarEditor
                 RuntimeLibrary = "antlr-runtime-4.5.3.jar",
                 Extensions = new[] { "java" },
                 MainFile = "Main.java",
-                AntlrInputStream = "ANTLRInputStream"
+                AntlrInputStream = "ANTLRInputStream",
+                DefaultCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe") ?? ""
             },
             [Runtime.Python2] = new RuntimeInfo
             {
@@ -50,7 +52,8 @@ namespace AntlrGrammarEditor
                 Extensions = new[] { "py" },
                 MainFile = "main.py",
                 AntlrInputStream = "InputStream",
-                Interpreted = true
+                Interpreted = true,
+                DefaultCompilerPath = "python"
             },
             [Runtime.Python3] = new RuntimeInfo
             {
@@ -62,7 +65,8 @@ namespace AntlrGrammarEditor
                 Extensions = new[] { "py" },
                 MainFile = "main.py",
                 AntlrInputStream = "InputStream",
-                Interpreted = true
+                Interpreted = true,
+                DefaultCompilerPath = "python"
             },
             [Runtime.JavaScript] = new RuntimeInfo
             {
@@ -74,7 +78,8 @@ namespace AntlrGrammarEditor
                 Extensions = new[] { "js" },
                 MainFile = "main.js",
                 AntlrInputStream = "antlr4.InputStream",
-                Interpreted = true
+                Interpreted = true,
+                DefaultCompilerPath = "node"
             },
             [Runtime.CPlusPlus] = new RuntimeInfo
             {
@@ -96,6 +101,11 @@ namespace AntlrGrammarEditor
             }
         };
 
+        static RuntimeInfo()
+        {
+
+        }
+
         public Runtime Runtime { get; set; }
         public string Name { get; set; }
         public string JarGenerator { get; set; }
@@ -105,6 +115,7 @@ namespace AntlrGrammarEditor
         public string MainFile { get; set; }
         public string AntlrInputStream { get; set; }
         public bool Interpreted { get; set; } = false;
+        public string DefaultCompilerPath { get; set; }
 
         public override string ToString()
         {

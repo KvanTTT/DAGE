@@ -55,15 +55,9 @@ namespace AntlrGrammarEditor
         private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping = new Dictionary<string, List<TextSpanMapping>>();
         private string _currentFileData;
 
-        public string CSharpCompilerPath { get; set; }
-
         public string JavaPath { get; set; }
 
-        public string JavaCompilerPath { get; set; }
-
-        public string Python3Path { get; set; }
-
-        public string NodeJsPath { get; set; }
+        public Dictionary<Runtime, string> CompilerPaths { get; set; } = new Dictionary<Runtime, string>();
 
         public GrammarCheckedState GrammarCheckedState { get; private set; }
 
@@ -545,14 +539,14 @@ namespace AntlrGrammarEditor
                 }
 
                 templateName = runtimeInfo.MainFile;
+                compilerPath = CompilerPaths[Runtime];
                 if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
                 {
                     compiliedFiles.Append('"' + templateName + '"');
                     if (_grammar.CaseInsensitive)
                     {
-                        compiliedFiles.Append(" \"..\\" + Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.cs"));
+                        compiliedFiles.Append(" \"..\\" + Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.cs") + "\"");
                     }
-                    compilerPath = CSharpCompilerPath;
                     arguments = $@"/reference:""..\{runtimeLibraryPath}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
                 }
                 else if (Runtime == Runtime.Java)
@@ -563,7 +557,6 @@ namespace AntlrGrammarEditor
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
                         File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.java"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.java"), true);
                     }
-                    compilerPath = JavaCompilerPath;
                     arguments = $@"-cp ""..\{runtimeLibraryPath}"" " + compiliedFiles.ToString();
                 }
                 else if (Runtime == Runtime.Python3)
@@ -583,8 +576,7 @@ namespace AntlrGrammarEditor
                     {
                         File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.py"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.py"), true);
                     }
-
-                    compilerPath = Python3Path;
+                    
                     arguments = $"{PythonHelperFileName}";
                 }
                 else if (Runtime == Runtime.JavaScript)
@@ -600,8 +592,7 @@ namespace AntlrGrammarEditor
                     {
                         File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.js"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.js"), true);
                     }
-
-                    compilerPath = NodeJsPath;
+                    
                     arguments = $"{JavaScriptHelperFileName}";
                 }
 
@@ -705,12 +696,12 @@ namespace AntlrGrammarEditor
                 }
                 else if (Runtime == Runtime.Python3)
                 {
-                    parserFileName = Python3Path;
+                    parserFileName = CompilerPaths[Runtime];
                     arguments = $@"{runtimeInfo.MainFile}";
                 }
                 else if (Runtime == Runtime.JavaScript)
                 {
-                    parserFileName = NodeJsPath;
+                    parserFileName = CompilerPaths[Runtime];
                     arguments = $@"{runtimeInfo.MainFile}";
                 }
 
@@ -916,8 +907,7 @@ namespace AntlrGrammarEditor
                                     }
                                     else
                                     {
-                                        // error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName);
-                                        return; // duplicated error.
+                                        error = new ParsingError(0, 0, $"{grammarFileName}:{_buffer[3]}", grammarFileName, WorkflowStage.ParserCompilied);
                                     }
                                 }
                                 catch
@@ -974,8 +964,7 @@ namespace AntlrGrammarEditor
                             }
                             else
                             {
-                                // error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName);
-                                return; // duplicated error.
+                                error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
                             }
                         }
                         catch

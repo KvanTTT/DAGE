@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace AntlrGrammarEditor.Tests
@@ -7,23 +8,11 @@ namespace AntlrGrammarEditor.Tests
     [TestFixture]
     public class WorkflowTests
     {
-        private static string _cSharpCompilerPath;
-        private static string _javaPath;
-        private static string _javaCompilerPath;
-        private static string _pythonInterpreterPath;
-        private static string _nodeJsInterpreterPath;
-
         [SetUp]
         public void Init()
         {
             var assemblyPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             System.IO.Directory.SetCurrentDirectory(assemblyPath);
-
-            _cSharpCompilerPath = Helpers.GetCSharpCompilerPath();
-            _javaPath = "java";
-            _javaCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe");
-            _pythonInterpreterPath = "python";
-            _nodeJsInterpreterPath = "node";
         }
 
         [Test]
@@ -219,8 +208,8 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
         }
 
-        [TestCase(Runtime.CSharpSharwell)]
-        [TestCase(Runtime.CSharp)]
+        //[TestCase(Runtime.CSharpSharwell)]
+        //[TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
         //[TestCase(Runtime.Python3)]
         //[TestCase(Runtime.JavaScript)]
@@ -258,11 +247,16 @@ namespace AntlrGrammarEditor.Tests
         {
             var workflow = new Workflow
             {
-                JavaPath = _javaPath,
-                JavaCompilerPath = _javaCompilerPath,
-                CSharpCompilerPath = _cSharpCompilerPath,
-                Python3Path = _pythonInterpreterPath,
-                NodeJsPath = _nodeJsInterpreterPath
+                JavaPath = "java",
+                CompilerPaths = new Dictionary<Runtime, string>()
+                {
+                    [Runtime.CSharp] = RuntimeInfo.Runtimes[Runtime.CSharp].DefaultCompilerPath,
+                    [Runtime.CSharpSharwell] = RuntimeInfo.Runtimes[Runtime.CSharpSharwell].DefaultCompilerPath,
+                    [Runtime.Java] = RuntimeInfo.Runtimes[Runtime.Java].DefaultCompilerPath,
+                    [Runtime.Python2] = RuntimeInfo.Runtimes[Runtime.Python2].DefaultCompilerPath,
+                    [Runtime.Python3] = RuntimeInfo.Runtimes[Runtime.Python3].DefaultCompilerPath,
+                    [Runtime.JavaScript] = RuntimeInfo.Runtimes[Runtime.JavaScript].DefaultCompilerPath,
+                }
             };
             return workflow;
         }
