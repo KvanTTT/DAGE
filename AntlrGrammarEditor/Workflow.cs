@@ -1027,7 +1027,7 @@ namespace AntlrGrammarEditor
 
         private void AddJavaError(string data)
         {
-            if (data.Contains(": error:"))
+            if (data.Count(c => c == ':') >= 2)
             {
                 ParsingError error;
                 string grammarFileName = "";
