@@ -215,7 +215,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python2)]
+        //[TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)

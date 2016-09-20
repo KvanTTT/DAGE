@@ -805,37 +805,10 @@ namespace AntlrGrammarEditor
             {
                 if (!string.IsNullOrEmpty(e.Data))
                 {
-                    ParsingError error;
-                    string grammarFileName = "";
-                    if (Runtime == Runtime.Java && e.Data.Contains(": error:"))
+                    Console.WriteLine(e.Data);
+                    if (Runtime == Runtime.Java)
                     {
-                        try
-                        {
-                            // Format:
-                            // Lexer.java:98: error: cannot find symbol
-                            var strs = e.Data.Split(':');
-                            grammarFileName = Path.ChangeExtension(strs[0], Grammar.AntlrDotExt);
-                            int codeLine = int.Parse(strs[1]);
-                            string rest = string.Join(":", strs.Skip(2));
-                            var grammarTextSpan = TextHelpers.GetSourceTextSpanForLine(_grammarCodeMapping[grammarFileName], codeLine);
-                            if (!_grammar.SeparatedLexerAndParser)
-                            {
-                                grammarFileName = grammarFileName.Replace(GrammarFactory.ParserPostfix, "").Replace(GrammarFactory.LexerPostfix, "");
-                            }
-                            if (grammarTextSpan != null)
-                            {
-                                error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
-                            }
-                            else
-                            {
-                                error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
-                            }
-                        }
-                        catch
-                        {
-                            error = new ParsingError(0, 0, e.Data, grammarFileName, WorkflowStage.ParserCompilied);
-                        }
-                        AddError(error);
+                        AddJavaError(e.Data);
                     }
                     else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3 || Runtime == Runtime.JavaScript)
                     {
@@ -860,43 +833,10 @@ namespace AntlrGrammarEditor
             {
                 if (!string.IsNullOrEmpty(e.Data))
                 {
-                    if ((Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp) && e.Data.Contains(": error CS"))
+                    Console.WriteLine(e.Data);
+                    if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
                     {
-                        var errorString = Helpers.FixEncoding(e.Data);
-                        ParsingError error;
-                        string grammarFileName = "";
-                        try
-                        {
-                            // Format: Lexer.cs(106,11): error CS0103: The name 'a' does not exist in the current context
-                            var strs = errorString.Split(':');
-                            int leftParenInd = strs[0].IndexOf('(');
-                            grammarFileName = strs[0].Remove(leftParenInd);
-                            grammarFileName = Path.ChangeExtension(grammarFileName, Grammar.AntlrDotExt);
-                            string lineColumnString = strs[0].Substring(leftParenInd);
-                            lineColumnString = lineColumnString.Substring(1, lineColumnString.Length - 2); // Remove parenthesis.
-                            var strs2 = lineColumnString.Split(',');
-                            int line = int.Parse(strs2[0]);
-                            int column = int.Parse(strs2[1]);
-                            string rest = string.Join(":", strs.Skip(1));
-                            var grammarTextSpan = TextHelpers.GetSourceTextSpanForLineColumn(_grammarCodeMapping[grammarFileName], line, column);
-                            if (!_grammar.SeparatedLexerAndParser)
-                            {
-                                grammarFileName = grammarFileName.Replace(GrammarFactory.ParserPostfix, "").Replace(GrammarFactory.LexerPostfix, "");
-                            }
-                            if (grammarTextSpan != null)
-                            {
-                                error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
-                            }
-                            else
-                            {
-                                error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
-                            }
-                        }
-                        catch
-                        {
-                            error = new ParsingError(0, 0, errorString, grammarFileName, WorkflowStage.ParserCompilied);
-                        }
-                        AddError(error);
+                        AddCSharpError(e.Data);
                     }
                 }
             }
@@ -1040,6 +980,84 @@ namespace AntlrGrammarEditor
             if (_cancellationTokenSource.IsCancellationRequested)
             {
                 throw new OperationCanceledException(message, _cancellationTokenSource.Token);
+            }
+        }
+
+        private void AddCSharpError(string data)
+        {
+            if (data.Contains(": error CS"))
+            {
+                var errorString = Helpers.FixEncoding(data);
+                ParsingError error;
+                string grammarFileName = "";
+                try
+                {
+                    // Format: Lexer.cs(106,11): error CS0103: The name 'a' does not exist in the current context
+                    var strs = errorString.Split(':');
+                    int leftParenInd = strs[0].IndexOf('(');
+                    grammarFileName = strs[0].Remove(leftParenInd);
+                    grammarFileName = Path.ChangeExtension(grammarFileName, Grammar.AntlrDotExt);
+                    string lineColumnString = strs[0].Substring(leftParenInd);
+                    lineColumnString = lineColumnString.Substring(1, lineColumnString.Length - 2); // Remove parenthesis.
+                    var strs2 = lineColumnString.Split(',');
+                    int line = int.Parse(strs2[0]);
+                    int column = int.Parse(strs2[1]);
+                    string rest = string.Join(":", strs.Skip(1));
+                    var grammarTextSpan = TextHelpers.GetSourceTextSpanForLineColumn(_grammarCodeMapping[grammarFileName], line, column);
+                    if (!_grammar.SeparatedLexerAndParser)
+                    {
+                        grammarFileName = grammarFileName.Replace(GrammarFactory.ParserPostfix, "").Replace(GrammarFactory.LexerPostfix, "");
+                    }
+                    if (grammarTextSpan != null)
+                    {
+                        error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
+                    }
+                    else
+                    {
+                        error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
+                    }
+                }
+                catch
+                {
+                    error = new ParsingError(0, 0, errorString, grammarFileName, WorkflowStage.ParserCompilied);
+                }
+                AddError(error);
+            }
+        }
+
+        private void AddJavaError(string data)
+        {
+            if (data.Contains(": error:"))
+            {
+                ParsingError error;
+                string grammarFileName = "";
+                try
+                {
+                    // Format:
+                    // Lexer.java:98: error: cannot find symbol
+                    var strs = data.Split(':');
+                    grammarFileName = Path.ChangeExtension(strs[0], Grammar.AntlrDotExt);
+                    int codeLine = int.Parse(strs[1]);
+                    string rest = string.Join(":", strs.Skip(2));
+                    var grammarTextSpan = TextHelpers.GetSourceTextSpanForLine(_grammarCodeMapping[grammarFileName], codeLine);
+                    if (!_grammar.SeparatedLexerAndParser)
+                    {
+                        grammarFileName = grammarFileName.Replace(GrammarFactory.ParserPostfix, "").Replace(GrammarFactory.LexerPostfix, "");
+                    }
+                    if (grammarTextSpan != null)
+                    {
+                        error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.BeginLine}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
+                    }
+                    else
+                    {
+                        error = new ParsingError(0, 0, $"{grammarFileName}:{rest}", grammarFileName, WorkflowStage.ParserCompilied);
+                    }
+                }
+                catch
+                {
+                    error = new ParsingError(0, 0, data, grammarFileName, WorkflowStage.ParserCompilied);
+                }
+                AddError(error);
             }
         }
 
