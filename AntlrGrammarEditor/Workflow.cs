@@ -573,7 +573,11 @@ namespace AntlrGrammarEditor
                         File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.py"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.py"), true);
                     }
                     
-                    arguments = PythonHelperFileName;
+                    if (runtimeInfo.DefaultCompilerPath == "py")
+                    {
+                        arguments += Runtime == Runtime.Python2 ? "-2 " : "-3 ";
+                    }
+                    arguments += PythonHelperFileName;
                 }
                 else if (Runtime == Runtime.JavaScript)
                 {
@@ -705,7 +709,11 @@ namespace AntlrGrammarEditor
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
                     parserFileName = CompilerPaths[Runtime];
-                    arguments = runtimeInfo.MainFile;
+                    if (parserFileName == "py")
+                    {
+                        arguments += Runtime == Runtime.Python2 ? "-2 " : "-3 ";
+                    }
+                    arguments += runtimeInfo.MainFile;
                 }
                 else if (Runtime == Runtime.JavaScript)
                 {

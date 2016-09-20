@@ -53,7 +53,7 @@ namespace AntlrGrammarEditor
                 MainFile = "main.py",
                 AntlrInputStream = "InputStream",
                 Interpreted = true,
-                DefaultCompilerPath = "C:\\Python27\\python.exe"
+                DefaultCompilerPath = "py"
             },
             [Runtime.Python3] = new RuntimeInfo
             {
@@ -66,7 +66,7 @@ namespace AntlrGrammarEditor
                 MainFile = "main.py",
                 AntlrInputStream = "InputStream",
                 Interpreted = true,
-                DefaultCompilerPath = "python"
+                DefaultCompilerPath = "py"
             },
             [Runtime.JavaScript] = new RuntimeInfo
             {
@@ -97,13 +97,13 @@ namespace AntlrGrammarEditor
                 JarGenerator = "antlr-4.5.2-go.jar",
                 DLanguage = "Go",
                 RuntimeLibrary = "",
-                Extensions = new[] { "go" }
+                Extensions = new[] { "go" },
+                DefaultCompilerPath = "go"
             }
         };
 
         static RuntimeInfo()
         {
-
         }
 
         public Runtime Runtime { get; set; }

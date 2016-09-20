@@ -145,7 +145,7 @@ namespace AntlrGrammarEditor.Tests
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
-            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.BeginLine, string.Join(Environment.NewLine, parserGeneratedState.Errors));
+            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.BeginLine);
         }
 
         [TestCase(Runtime.CSharpSharwell)]

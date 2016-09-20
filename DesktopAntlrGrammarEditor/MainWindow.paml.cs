@@ -8,9 +8,7 @@ namespace DesktopAntlrGrammarEditor
         public MainWindow()
         {
             this.InitializeComponent();
-
             DataContext = new MainWindowViewModel(this);
-
             App.AttachDevTools(this);
         }
 
