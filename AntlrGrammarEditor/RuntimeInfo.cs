@@ -40,7 +40,7 @@ namespace AntlrGrammarEditor
                 Extensions = new[] { "java" },
                 MainFile = "Main.java",
                 AntlrInputStream = "ANTLRInputStream",
-                DefaultCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe") ?? ""
+                DefaultCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe") ?? "javac"
             },
             [Runtime.Python2] = new RuntimeInfo
             {
@@ -98,7 +98,11 @@ namespace AntlrGrammarEditor
                 DLanguage = "Go",
                 RuntimeLibrary = "",
                 Extensions = new[] { "go" },
-                DefaultCompilerPath = "go"
+                MainFile = "main.go",
+                AntlrInputStream = "antlr.NewInputStream",
+                DefaultCompilerPath = "go",
+                LexerPostfix = "_lexer",
+                ParserPostfix = "_parser"
             }
         };
 
@@ -116,6 +120,8 @@ namespace AntlrGrammarEditor
         public string AntlrInputStream { get; set; }
         public bool Interpreted { get; set; } = false;
         public string DefaultCompilerPath { get; set; }
+        public string LexerPostfix { get; set; } = "Lexer";
+        public string ParserPostfix { get; set; } = "Parser";
 
         public override string ToString()
         {

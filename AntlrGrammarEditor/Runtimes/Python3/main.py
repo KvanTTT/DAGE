@@ -8,7 +8,7 @@ def main(argv):
     code = open('Text', 'r').read()
     codeStream = InputStream(code)
     lexer = AntlrGrammarName42Lexer(codeStream)
-    '''not working due to bug in runtime:
+    '''not working due to the bug in runtime:
     tokens = lexer.getAllTokens()
     tokensSource = ListTokenSource(tokens)
     tokensStream = CommonTokenStream(tokensSource)'''

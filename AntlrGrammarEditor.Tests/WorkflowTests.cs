@@ -154,6 +154,7 @@ namespace AntlrGrammarEditor.Tests
         //[TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Go)]
         public void TextParsedStageErrors(Runtime runtime)
         {
             var workflow = CreateWorkflow();
@@ -262,6 +263,7 @@ namespace AntlrGrammarEditor.Tests
                     [Runtime.Python2] = RuntimeInfo.Runtimes[Runtime.Python2].DefaultCompilerPath,
                     [Runtime.Python3] = RuntimeInfo.Runtimes[Runtime.Python3].DefaultCompilerPath,
                     [Runtime.JavaScript] = RuntimeInfo.Runtimes[Runtime.JavaScript].DefaultCompilerPath,
+                    [Runtime.Go] = RuntimeInfo.Runtimes[Runtime.Go].DefaultCompilerPath
                 }
             };
             return workflow;
