@@ -51,7 +51,9 @@ namespace AntlrGrammarEditor
 
         public static string GetCSharpCompilerPath()
         {
-            return Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "csc.exe");
+            return IsRunningOnMono
+                   ? "mcs"
+                   : Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "csc.exe");
         }
 
         public static string GetJavaExePath(string exeName)
