@@ -467,7 +467,7 @@ namespace AntlrGrammarEditor
                     }
 
                     _eventInvokeCounter = 0;
-                    process = ProcessHelpers.SetupHiddenProcessAndStart(JavaPath, arguments, null, ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
+                    process = ProcessHelpers.SetupHiddenProcessAndStart(JavaPath, arguments, ".", ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
 
                     while (!process.HasExited || _eventInvokeCounter > 0)
                     {
@@ -730,8 +730,13 @@ namespace AntlrGrammarEditor
                     {
                         File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
                     }
-                    parserFileName = Path.Combine(HelperDirectoryName, $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.Grammar.Name}Parser.exe");
                     arguments = $"{Root} \"\" {(EndStage == WorkflowStage.TextParsed ? false : true)}";
+                    parserFileName = Path.Combine(HelperDirectoryName, $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.Grammar.Name}Parser.exe");
+                    if (Helpers.IsRunningOnMono)
+                    {
+                        arguments = parserFileName + " " + arguments;
+                        parserFileName = "mono";
+                    }
                 }
                 else if (Runtime == Runtime.Java)
                 {

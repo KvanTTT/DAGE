@@ -9,6 +9,23 @@ namespace AntlrGrammarEditor
 {
     public static class Helpers
     {
+        public static bool IsRunningOnMono
+        {
+            get
+            {
+                return Type.GetType("Mono.Runtime") != null;
+            }
+        }
+
+        public static bool IsLinux
+        {
+            get
+            {
+                int p = (int)Environment.OSVersion.Platform;
+                return (p == 4) || (p == 6) || (p == 128);
+            }
+        }
+
         public static string FixEncoding(string str)
         {
             string result = str;
