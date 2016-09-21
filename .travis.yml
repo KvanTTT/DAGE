@@ -6,6 +6,7 @@ before_install:
     - sudo apt-get install nunit-console
     - sudo pip install antlr4-python3-runtime
     - sudo $(which npm) install antlr4
+    - export GOPATH=$HOME/gopath:$GOPATH
     - go get github.com/pboyer/antlr4/runtime/Go/antlr
 install:
     - nuget sources add -Name Avalonia -Source https://www.myget.org/F/avalonia-ci/api/v2
