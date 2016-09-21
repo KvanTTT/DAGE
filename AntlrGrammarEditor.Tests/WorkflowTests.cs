@@ -126,6 +126,7 @@ namespace AntlrGrammarEditor.Tests
         //[TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Go)]
         public void ParserCompiliedStageErrors(Runtime runtime)
         {
             var workflow = CreateWorkflow();

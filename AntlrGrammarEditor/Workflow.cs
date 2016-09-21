@@ -749,7 +749,8 @@ namespace AntlrGrammarEditor
                 else if (Runtime == Runtime.Go)
                 {
                     parserFileName = Path.Combine(HelperDirectoryName, Path.ChangeExtension(runtimeInfo.MainFile, ".exe"));
-                    /*parserFileName = CompilerPaths[Runtime];
+                    /* Another way of starting.
+                    parserFileName = CompilerPaths[Runtime];
                     var extension = runtimeInfo.Extensions.First();
                     var compiliedFiles = new StringBuilder();
                     compiliedFiles.Append('"' + runtimeInfo.MainFile + "\" ");
@@ -853,6 +854,10 @@ namespace AntlrGrammarEditor
                         {
                             _buffer.Add(e.Data);
                         }
+                    }
+                    else if (Runtime == Runtime.Go)
+                    {
+                        AddGoError(e.Data);
                     }
                 }
             }
@@ -1029,11 +1034,12 @@ namespace AntlrGrammarEditor
                 string grammarFileName = "";
                 try
                 {
-                    // Format: Lexer.cs(106,11): error CS0103: The name 'a' does not exist in the current context
+                    // Format:
+                    // Lexer.cs(106,11): error CS0103: The name 'a' does not exist in the current context
                     var strs = errorString.Split(':');
                     int leftParenInd = strs[0].IndexOf('(');
                     string codeFileName = strs[0].Remove(leftParenInd);
-                    grammarFileName = Path.ChangeExtension(grammarFileName, Grammar.AntlrDotExt);
+                    grammarFileName = Path.ChangeExtension(codeFileName, Grammar.AntlrDotExt);
                     string lineColumnString = strs[0].Substring(leftParenInd);
                     lineColumnString = lineColumnString.Substring(1, lineColumnString.Length - 2); // Remove parenthesis.
                     var strs2 = lineColumnString.Split(',');
@@ -1197,7 +1203,7 @@ namespace AntlrGrammarEditor
             {
                 int semicolonLastIndex = _buffer[0].LastIndexOf(':');
                 string codeFileName = Path.GetFileName(_buffer[0].Remove(semicolonLastIndex));
-                grammarFileName = Path.ChangeExtension(grammarFileName, Grammar.AntlrDotExt);
+                grammarFileName = Path.ChangeExtension(codeFileName, Grammar.AntlrDotExt);
                 List<TextSpanMapping> mapping;
                 if (_grammarCodeMapping.TryGetValue(codeFileName, out mapping))
                 {
@@ -1231,6 +1237,56 @@ namespace AntlrGrammarEditor
             }
             finalMessage += message == "" ? "Unknown Error" : message;
             AddError(new ParsingError(errorSpan, finalMessage, grammarFileName, WorkflowStage.ParserCompilied));
+        }
+
+        private void AddGoError(string data)
+        {
+            if (data.Contains(": syntax error:"))
+            {
+                // Format:
+                // .\newgrammar_parser.go:169: syntax error: unexpected semicolon or newline, expecting expression
+                string grammarFileName = "";
+                TextSpan errorSpan = TextSpan.Empty;
+                string message = "";
+                var strs = data.Split(':');
+                try
+                {
+                    var runtimeInfo = RuntimeInfo.Runtimes[Runtime.Go];
+                    string codeFileName = strs[0].Substring(2);
+                    grammarFileName = Path.ChangeExtension(codeFileName, Grammar.AntlrDotExt)
+                        .Replace(runtimeInfo.LexerPostfix, GrammarFactory.LexerPostfix)
+                        .Replace(runtimeInfo.ParserPostfix, GrammarFactory.ParserPostfix);
+                    List<TextSpanMapping> mapping;
+                    if (_grammarCodeMapping.TryGetValue(codeFileName, out mapping))
+                    {
+                        int codeLine = int.Parse(strs[1]);
+                        errorSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine) ?? TextSpan.Empty;
+                        if (!_grammar.SeparatedLexerAndParser)
+                        {
+                            grammarFileName = grammarFileName.Replace(GrammarFactory.ParserPostfix, "").Replace(GrammarFactory.LexerPostfix, "");
+                        }
+                    }
+                    else
+                    {
+                        grammarFileName = "";
+                    }
+                    message = strs[3];
+                }
+                catch
+                {
+                }
+                string finalMessage = "";
+                if (grammarFileName != "")
+                {
+                    finalMessage = grammarFileName + ":";
+                }
+                if (!errorSpan.IsEmpty)
+                {
+                    finalMessage += errorSpan.BeginLine + ":";
+                }
+                finalMessage += message == "" ? "Unknown Error" : message;
+                AddError(new ParsingError(errorSpan, finalMessage, grammarFileName, WorkflowStage.ParserCompilied));
+            }
         }
     }
 }
