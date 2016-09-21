@@ -552,9 +552,9 @@ namespace AntlrGrammarEditor
                     compiliedFiles.Append('"' + templateName + '"');
                     if (_grammar.CaseInsensitive)
                     {
-                        compiliedFiles.Append(" \"..\\" + Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.cs") + "\"");
+                        compiliedFiles.Append(" \"" + Path.Combine("..", "Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.cs") + "\"");
                     }
-                    arguments = $@"/reference:""..\{runtimeLibraryPath}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
+                    arguments = $@"/reference:""{(Path.Combine("..", runtimeLibraryPath))}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
                 }
                 else if (Runtime == Runtime.Java)
                 {
@@ -564,7 +564,7 @@ namespace AntlrGrammarEditor
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
                         File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.java"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.java"), true);
                     }
-                    arguments = $@"-cp ""..\{runtimeLibraryPath}"" " + compiliedFiles.ToString();
+                    arguments = $@"-cp ""{(Path.Combine("..", runtimeLibraryPath))}"" " + compiliedFiles.ToString();
                 }
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
@@ -735,14 +735,14 @@ namespace AntlrGrammarEditor
                     parserFileName = Path.Combine(HelperDirectoryName, $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.Grammar.Name}Parser.exe");
                     if (Helpers.IsRunningOnMono)
                     {
-                        arguments = parserFileName + " " + arguments;
+                        arguments = "\"" + parserFileName + "\" " + arguments;
                         parserFileName = "mono";
                     }
                 }
                 else if (Runtime == Runtime.Java)
                 {
                     parserFileName = JavaPath;
-                    arguments = $@"-cp ""..\{runtimeLibraryPath}"";. " + "Main " + TextFileName;
+                    arguments = $@"-cp ""{(Path.Combine("..", runtimeLibraryPath))}"";. " + "Main " + TextFileName;
                 }
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
