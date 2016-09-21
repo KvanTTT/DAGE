@@ -1,10 +1,7 @@
 language: csharp
 solution: AntlrGrammarEditor.sln
 before_install:
-    - sudo apt-get install nunit-console
-    - pip install antlr4-python3-runtime
-    - npm install antlr4
-    - go get github.com/pboyer/antlr4/runtime/Go/antlr
+    - apt-get install nunit-console
 install:
     - nuget sources add -Name Avalonia -Source https://www.myget.org/F/avalonia-ci/api/v2
     - nuget restore
