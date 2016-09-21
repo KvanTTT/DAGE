@@ -614,6 +614,12 @@ namespace AntlrGrammarEditor
                         }
                     }
                     compiliedFiles.Insert(0, '"' + templateName + "\" ");
+                    if (_grammar.CaseInsensitive)
+                    {
+                        compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
+                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.go"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.go"), true);
+                    }
+
                     arguments = "build " + compiliedFiles.ToString();
                 }
 
@@ -628,7 +634,7 @@ namespace AntlrGrammarEditor
                 code = code.Replace(TemplateGrammarRoot, root);
                 if (_grammar.CaseInsensitive)
                 {
-                    code = code.Replace(runtimeInfo.AntlrInputStream, "AntlrCaseInsensitiveInputStream");
+                    code = code.Replace(runtimeInfo.AntlrInputStream, (Runtime == Runtime.Go ? "New" : "") + "AntlrCaseInsensitiveInputStream");
                     if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                     {
                         code = code.Replace("'''AntlrCaseInsensitive'''",

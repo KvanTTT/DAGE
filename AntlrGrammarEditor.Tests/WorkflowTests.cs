@@ -191,6 +191,7 @@ namespace AntlrGrammarEditor.Tests
         //[TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Go)]
         public void CaseInsensitive(Runtime runtime)
         {
             var workflow = CreateWorkflow();
@@ -220,6 +221,7 @@ namespace AntlrGrammarEditor.Tests
         //[TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Go)]
         public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
         {
             Assert.Ignore();

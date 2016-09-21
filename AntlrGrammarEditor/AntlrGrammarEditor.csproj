@@ -136,6 +136,9 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Runtimes\Go\AntlrCaseInsensitiveInputStream.go">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Runtimes\Go\main.go">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
