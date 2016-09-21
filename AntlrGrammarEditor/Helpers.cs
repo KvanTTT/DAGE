@@ -50,15 +50,18 @@ namespace AntlrGrammarEditor
         private static string CheckFile(Environment.SpecialFolder specialFolder, bool jdk, string exeName)
         {
             var javaFilesDir = Path.Combine(Environment.GetFolderPath(specialFolder), "java");
-            var dirs = Directory.GetDirectories(javaFilesDir);
-            
-            dirs = dirs.Where(dir => Path.GetFileName(dir).StartsWith(jdk ? "jdk" : "jre")).ToArray();
-            foreach (var dir in dirs)
+
+            if (Directory.Exists(javaFilesDir))
             {
-                var result = Path.Combine(dir, exeName);
-                if (File.Exists(result))
+                var dirs = Directory.GetDirectories(javaFilesDir);
+                dirs = dirs.Where(dir => Path.GetFileName(dir).StartsWith(jdk ? "jdk" : "jre")).ToArray();
+                foreach (var dir in dirs)
                 {
-                    return result;
+                    var result = Path.Combine(dir, exeName);
+                    if (File.Exists(result))
+                    {
+                        return result;
+                    }
                 }
             }
 
