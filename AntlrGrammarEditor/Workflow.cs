@@ -455,11 +455,12 @@ namespace AntlrGrammarEditor
                 var runtrimeInfo = Runtime.GetRuntimeInfo();
                 string[] extensions = runtrimeInfo.Extensions;
 
+                var jarGenerator = Path.Combine("Generators", runtrimeInfo.JarGenerator);
                 foreach (var grammarFileName in state.Grammar.Files)
                 {
                     _currentFileName = grammarFileName;
                     _currentFileData = _grammarFilesData[grammarFileName];
-                    var arguments = $@"-jar ""Generators\{runtrimeInfo.JarGenerator}"" ""{Path.Combine(_grammar.GrammarPath, grammarFileName)}"" -o ""{HelperDirectoryName}"" " +
+                    var arguments = $@"-jar ""{jarGenerator}"" ""{Path.Combine(_grammar.GrammarPath, grammarFileName)}"" -o ""{HelperDirectoryName}"" " +
                         $"-Dlanguage={runtrimeInfo.DLanguage} -no-visitor -no-listener";
                     if (Runtime == Runtime.Go)
                     {
