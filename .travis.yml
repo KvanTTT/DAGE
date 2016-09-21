@@ -1,4 +1,6 @@
 language: csharp
+node_js:
+    - "6.1"
 solution: AntlrGrammarEditor.sln
 before_install:
     - sudo apt-get install nunit-console
