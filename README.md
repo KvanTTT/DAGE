@@ -34,3 +34,4 @@
 ## Tests
 * AppVeyor (Windows):
  [![Build status](https://ci.appveyor.com/api/projects/status/afkuyda7k1hr6uw4?svg=true)](https://ci.appveyor.com/project/KvanTTT/dage)
+* Travis CI (Linux): [![Build status](https://travis-ci.org/KvanTTT/DAGE.svg)](https://travis-ci.org/KvanTTT/DAGE)
