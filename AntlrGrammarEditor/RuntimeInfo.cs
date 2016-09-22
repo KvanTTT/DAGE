@@ -79,7 +79,7 @@ namespace AntlrGrammarEditor
                 MainFile = "main.js",
                 AntlrInputStream = "antlr4.InputStream",
                 Interpreted = true,
-                DefaultCompilerPath = Helpers.IsLinux ? "nodejs" : "node"
+                DefaultCompilerPath = "node"
             },
             [Runtime.CPlusPlus] = new RuntimeInfo
             {

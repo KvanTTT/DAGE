@@ -1,6 +1,4 @@
 language: csharp
-node_js:
-    - "6.1"
 solution: AntlrGrammarEditor.sln
 before_install:
     - sudo apt-get install nunit-console
@@ -8,6 +6,8 @@ before_install:
     - sudo $(which npm) install antlr4
     - export GOPATH=$HOME/gopath:$GOPATH
     - go get github.com/pboyer/antlr4/runtime/Go/antlr
+    - node -v
+    - go version
 install:
     - nuget sources add -Name Avalonia -Source https://www.myget.org/F/avalonia-ci/api/v2
     - nuget restore
