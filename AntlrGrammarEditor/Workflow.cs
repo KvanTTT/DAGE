@@ -533,7 +533,7 @@ namespace AntlrGrammarEditor
                     compiliedFiles.Append('"' + Path.GetFileName(codeFileName) + "\" ");
                     var text = File.ReadAllText(codeFileName);
                     var shortCodeFileName = Path.GetFileName(codeFileName);
-                    var shortGrammarFileName = shortCodeFileName.Replace("." + extension, Grammar.AntlrDotExt);
+                    var shortGrammarFileName = Path.ChangeExtension(shortCodeFileName, Grammar.AntlrDotExt);
                     if (codeFileName.Contains(runtimeInfo.LexerPostfix))
                     {
                         shortGrammarFileName = shortGrammarFileName.Replace(runtimeInfo.LexerPostfix, GrammarFactory.LexerPostfix);
@@ -607,7 +607,7 @@ namespace AntlrGrammarEditor
                 {
                     foreach (var generatedFile in generatedFiles)
                     {
-                        var fileText = File.ReadAllText(generatedFile); // TODO: bug in golang runtime.
+                        var fileText = File.ReadAllText(generatedFile); // bug in golang runtime.
                         if (fileText.Contains("package parser"))
                         {
                             fileText = fileText.Replace("package parser", "package main");
@@ -773,7 +773,14 @@ namespace AntlrGrammarEditor
                 }
                 else if (Runtime == Runtime.Go)
                 {
-                    parserFileName = Path.Combine(HelperDirectoryName, Path.ChangeExtension(runtimeInfo.MainFile, ".exe"));
+                    if (!Helpers.IsLinux)
+                    {
+                        parserFileName = Path.Combine(HelperDirectoryName, Path.ChangeExtension(runtimeInfo.MainFile, ".exe"));
+                    }
+                    else
+                    {
+                        parserFileName = Path.Combine(HelperDirectoryName, Path.GetFileNameWithoutExtension(runtimeInfo.MainFile));
+                    }
                     /* Another way of starting.
                     parserFileName = CompilerPaths[Runtime];
                     var extension = runtimeInfo.Extensions.First();
