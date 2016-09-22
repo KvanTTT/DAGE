@@ -123,12 +123,17 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
-        //[TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         public void ParserCompiliedStageErrors(Runtime runtime)
         {
+            if (Helpers.IsLinux || runtime == Runtime.Python2)
+            {
+                Assert.Ignore("Python runtime is not completely set");
+            }
+
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;
@@ -152,12 +157,17 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
-        //[TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         public void TextParsedStageErrors(Runtime runtime)
         {
+            if (Helpers.IsLinux || runtime == Runtime.Python2)
+            {
+                Assert.Ignore("Python runtime is not completely set");
+            }
+
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;
@@ -188,12 +198,17 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
-        //[TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         public void CaseInsensitive(Runtime runtime)
         {
+            if (Helpers.IsLinux || runtime == Runtime.Python2)
+            {
+                Assert.Ignore("Python runtime is not completely set");
+            }
+
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;
@@ -218,13 +233,14 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.CSharpSharwell)]
         [TestCase(Runtime.CSharp)]
         [TestCase(Runtime.Java)]
-        //[TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
         {
             Assert.Ignore();
+
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;

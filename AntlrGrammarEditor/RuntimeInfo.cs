@@ -53,7 +53,7 @@ namespace AntlrGrammarEditor
                 MainFile = "main.py",
                 AntlrInputStream = "InputStream",
                 Interpreted = true,
-                DefaultCompilerPath = "py"
+                DefaultCompilerPath = Helpers.IsLinux ? "python2" : "py"
             },
             [Runtime.Python3] = new RuntimeInfo
             {
@@ -66,7 +66,7 @@ namespace AntlrGrammarEditor
                 MainFile = "main.py",
                 AntlrInputStream = "InputStream",
                 Interpreted = true,
-                DefaultCompilerPath = "py"
+                DefaultCompilerPath = Helpers.IsLinux ? "python3" : "py"
             },
             [Runtime.JavaScript] = new RuntimeInfo
             {
@@ -79,7 +79,7 @@ namespace AntlrGrammarEditor
                 MainFile = "main.js",
                 AntlrInputStream = "antlr4.InputStream",
                 Interpreted = true,
-                DefaultCompilerPath = "node"
+                DefaultCompilerPath = Helpers.IsLinux ? "nodejs" : "node"
             },
             [Runtime.CPlusPlus] = new RuntimeInfo
             {

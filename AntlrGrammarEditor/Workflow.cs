@@ -732,17 +732,30 @@ namespace AntlrGrammarEditor
                         File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
                     }
                     arguments = $"{Root} \"\" {(EndStage == WorkflowStage.TextParsed ? false : true)}";
-                    parserFileName = Path.Combine(HelperDirectoryName, $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.Grammar.Name}Parser.exe");
+                    parserFileName = $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.Grammar.Name}Parser.exe";
                     if (Helpers.IsRunningOnMono)
                     {
                         arguments = "\"" + parserFileName + "\" " + arguments;
                         parserFileName = "mono";
                     }
+                    else
+                    {
+                        parserFileName = "\"" + Path.Combine(HelperDirectoryName, parserFileName) + "\"";
+                    }
                 }
                 else if (Runtime == Runtime.Java)
                 {
                     parserFileName = JavaPath;
-                    arguments = $@"-cp ""{(Path.Combine("..", runtimeLibraryPath))}"";. " + "Main " + TextFileName;
+                    string relativeRuntimeLibraryPath = "\"" + Path.Combine("..", runtimeLibraryPath) + "\"";
+                    if (!Helpers.IsLinux)
+                    {
+                        relativeRuntimeLibraryPath += ";.";
+                    }
+                    else
+                    {
+                        relativeRuntimeLibraryPath = ".:" + relativeRuntimeLibraryPath;
+                    }
+                    arguments = $@"-cp {relativeRuntimeLibraryPath} Main " + TextFileName;
                 }
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
@@ -856,7 +869,11 @@ namespace AntlrGrammarEditor
                 if (!string.IsNullOrEmpty(e.Data))
                 {
                     Console.WriteLine(e.Data);
-                    if (Runtime == Runtime.Java)
+                    if (Helpers.IsRunningOnMono && (Runtime == Runtime.CSharp || Runtime == Runtime.CSharpSharwell))
+                    {
+                        AddCSharpError(e.Data);
+                    }
+                    else if (Runtime == Runtime.Java)
                     {
                         AddJavaError(e.Data);
                     }
@@ -888,7 +905,7 @@ namespace AntlrGrammarEditor
                 if (!string.IsNullOrEmpty(e.Data))
                 {
                     Console.WriteLine(e.Data);
-                    if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
+                    if (!Helpers.IsRunningOnMono && (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp))
                     {
                         AddCSharpError(e.Data);
                     }

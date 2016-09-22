@@ -98,9 +98,9 @@
     <Content Include="Runtimes\CSharpSharwell\AntlrCaseInsensitiveInputStream.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Compile Include="Runtimes\CSharp\AntlrCaseInsensitiveInputStream.cs">
+    <Content Include="Runtimes\CSharp\AntlrCaseInsensitiveInputStream.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Compile>
+    </Content>
     <Content Include="Runtimes\Java\AntlrCaseInsensitiveInputStream.java">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -136,12 +136,12 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Runtimes\Go\AntlrCaseInsensitiveInputStream.go">
+    <Content Include="Runtimes\Go\AntlrCaseInsensitiveInputStream.go">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Runtimes\Go\main.go">
+    </Content>
+    <Content Include="Runtimes\Go\main.go">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Antlr4.Runtime, Version=4.5.3.0, Culture=neutral, PublicKeyToken=e78b2c5abd1fcb3f, processorArchitecture=MSIL">
