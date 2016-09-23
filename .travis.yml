@@ -5,10 +5,8 @@ python:
 solution: AntlrGrammarEditor.sln
 before_install:
     - sudo apt-get install nunit-console
-    - sudo wget https://bootstrap.pypa.io/get-pip.py
-    - sudo python3 get-pip.py
     - sudo pip2 install antlr4-python2-runtime
-    - sudo pip3 install antlr4-python3-runtime
+    - sudo python3 -m pip install antlr4-python3-runtime
     - sudo $(which npm) install antlr4
     - export GOPATH=$HOME/gopath:$GOPATH
     - go get github.com/pboyer/antlr4/runtime/Go/antlr
