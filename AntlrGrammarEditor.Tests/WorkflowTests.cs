@@ -129,11 +129,6 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void ParserCompiliedStageErrors(Runtime runtime)
         {
-            if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
-            {
-                Assert.Ignore("Python runtime is not completely set");
-            }
-
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;
@@ -163,11 +158,6 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void TextParsedStageErrors(Runtime runtime)
         {
-            if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
-            {
-                Assert.Ignore("Python runtime is not completely set");
-            }
-
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;
@@ -204,11 +194,6 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void CaseInsensitive(Runtime runtime)
         {
-            if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
-            {
-                Assert.Ignore("Python runtime is not completely set");
-            }
-
             var workflow = CreateWorkflow();
             var grammarText =
                 @"grammar test;

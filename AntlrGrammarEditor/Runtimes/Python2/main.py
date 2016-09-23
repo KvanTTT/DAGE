@@ -15,7 +15,7 @@ def main(argv):
     tokensStream = CommonTokenStream(lexer)
     parser = AntlrGrammarName42Parser(tokensStream)
     tree = parser.AntlrGrammarRoot42()
-    print("Tree ", tree.toStringTree(recog=parser));
+    print "Tree " + tree.toStringTree(recog=parser);
 
 if __name__ == '__main__':
     main(sys.argv)

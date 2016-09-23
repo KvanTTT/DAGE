@@ -2,7 +2,10 @@ language: csharp
 solution: AntlrGrammarEditor.sln
 before_install:
     - sudo apt-get install nunit-console
-    - sudo pip install antlr4-python3-runtime
+    - sudo apt-get install python3-setuptools
+    - sudo easy_install3 pip
+    - sudo pip2 install antlr4-python2-runtime
+    - sudo pip3 install antlr4-python3-runtime
     - sudo $(which npm) install antlr4
     - export GOPATH=$HOME/gopath:$GOPATH
     - go get github.com/pboyer/antlr4/runtime/Go/antlr

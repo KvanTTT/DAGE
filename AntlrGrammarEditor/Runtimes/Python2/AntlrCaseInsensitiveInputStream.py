@@ -2,12 +2,12 @@
 
 class AntlrCaseInsensitiveInputStream(InputStream):
     
-    def __init__(self, input: str):
-        super().__init__(input)
+    def __init__(self, input):
+        super(type(self), self).__init__(input)
         inputLower = input.lower()
         self._lookaheadData = [ord(c) for c in inputLower]
 
-    def LA(self, offset: int):
+    def LA(self, offset):
         if offset == 0:
             return 0 # undefined
         if offset < 0:

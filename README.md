@@ -27,6 +27,7 @@
 * C# Sharwell ([antlr4cs](https://github.com/tunnelvisionlabs/antlr4cs)).
 * C#.
 * Java.
+* Python2.
 * Python3.
 * JavaScript (teting with nodejs).
 * Go ([ANTLR4 Language Target, Runtime for Go](https://github.com/pboyer/antlr4)).

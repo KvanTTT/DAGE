@@ -574,13 +574,12 @@ namespace AntlrGrammarEditor
                         var shortFileName = Path.GetFileNameWithoutExtension(file);
                         stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
                     }
-                    File.WriteAllText(Path.Combine(HelperDirectoryName, PythonHelperFileName), stringBuilder.ToString());
-
                     if (_grammar.CaseInsensitive)
                     {
                         File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.py"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.py"), true);
                     }
-                    
+                    File.WriteAllText(Path.Combine(HelperDirectoryName, PythonHelperFileName), stringBuilder.ToString());
+
                     if (runtimeInfo.DefaultCompilerPath == "py")
                     {
                         arguments += Runtime == Runtime.Python2 ? "-2 " : "-3 ";
@@ -600,7 +599,7 @@ namespace AntlrGrammarEditor
                     {
                         File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.js"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.js"), true);
                     }
-                    
+
                     arguments = JavaScriptHelperFileName;
                 }
                 else if (Runtime == Runtime.Go)
