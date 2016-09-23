@@ -5,7 +5,8 @@ python:
 solution: AntlrGrammarEditor.sln
 before_install:
     - sudo apt-get install nunit-console
-    - sudo -n apt-get install python3-pip
+    - sudo wget https://bootstrap.pypa.io/get-pip.py
+    - sudo python3 get-pip.py
     - sudo pip2 install antlr4-python2-runtime
     - sudo pip3 install antlr4-python3-runtime
     - sudo $(which npm) install antlr4
