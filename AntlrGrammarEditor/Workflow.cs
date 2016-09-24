@@ -554,7 +554,8 @@ namespace AntlrGrammarEditor
                     {
                         compiliedFiles.Append(" \"" + Path.Combine("..", "Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.cs") + "\"");
                     }
-                    arguments = $@"/reference:""{(Path.Combine("..", runtimeLibraryPath))}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
+                    compiliedFiles.Append(" \"" + Path.Combine("..", "Runtimes", Runtime.ToString(), "AssemblyInfo.cs") + "\"");
+                    arguments = $@"/nologo /reference:""{(Path.Combine("..", runtimeLibraryPath))}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
                 }
                 else if (Runtime == Runtime.Java)
                 {
