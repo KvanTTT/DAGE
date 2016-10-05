@@ -605,15 +605,6 @@ namespace AntlrGrammarEditor
                 }
                 else if (Runtime == Runtime.Go)
                 {
-                    foreach (var generatedFile in generatedFiles)
-                    {
-                        var fileText = File.ReadAllText(generatedFile); // bug in golang runtime.
-                        if (fileText.Contains("package parser"))
-                        {
-                            fileText = fileText.Replace("package parser", "package main");
-                            File.WriteAllText(generatedFile, fileText);
-                        }
-                    }
                     compiliedFiles.Insert(0, '"' + templateName + "\" ");
                     if (_grammar.CaseInsensitive)
                     {
