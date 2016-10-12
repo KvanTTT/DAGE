@@ -14,11 +14,12 @@ namespace DesktopAntlrGrammarEditor
     {
         private Window _window;
         private Grammar _grammar = GrammarFactory.CreateDefault();
+        private string _grammarDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DAGE Grammars");
 
         public NewGrammarWindowViewModel(Window window)
         {
             _window = window;
-            
+
             OkCommand.Subscribe(_ =>
             {
                 GrammarFactory.FillGrammarFiles(_grammar, Path.Combine(GrammarDirectory, _grammar.Name), true);
@@ -29,11 +30,26 @@ namespace DesktopAntlrGrammarEditor
             {
                 _window.Close(null);
             });
+
+            SelectGrammarDirectory.Subscribe(async _ =>
+            {
+                var openFolderDialog = new OpenFolderDialog
+                {
+                    InitialDirectory = GrammarDirectory
+                };
+                var folderName = await openFolderDialog.ShowAsync(_window);
+                if (!string.IsNullOrEmpty(folderName))
+                {
+                    GrammarDirectory = folderName;
+                }
+            });
         }
 
         public ReactiveCommand<object> OkCommand { get; } = ReactiveCommand.Create();
 
         public ReactiveCommand<object> CancelCommand { get; } = ReactiveCommand.Create();
+
+        public ReactiveCommand<object> SelectGrammarDirectory { get; } = ReactiveCommand.Create();
 
         public string GrammarName
         {
@@ -51,7 +67,17 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public string GrammarDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DAGE Grammars");
+        public string GrammarDirectory
+        {
+            get
+            {
+                return _grammarDirectory;
+            }
+            set
+            {
+                this.RaiseAndSetIfChanged(ref _grammarDirectory, value);
+            }
+        }
 
         public string GrammarRoot
         {
@@ -64,6 +90,22 @@ namespace DesktopAntlrGrammarEditor
                 if (_grammar.Root != value)
                 {
                     _grammar.Root = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
+
+        public string FileExtension
+        {
+            get
+            {
+                return _grammar.FileExtension;
+            }
+            set
+            {
+                if (_grammar.FileExtension != value)
+                {
+                    _grammar.FileExtension = value;
                     this.RaisePropertyChanged();
                 }
             }

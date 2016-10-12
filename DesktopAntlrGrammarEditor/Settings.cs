@@ -32,7 +32,7 @@ namespace DesktopAntlrGrammarEditor
 
         public string OpenedGrammarFile { get; set; }
 
-        public string Text { get; set; } = "";
+        public string OpenedTextFile { get; set; }
 
         public bool Autoprocessing { get; set; } = false;
 
