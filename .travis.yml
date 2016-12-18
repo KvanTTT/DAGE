@@ -21,6 +21,6 @@ install:
     - java -jar "Generators/antlr-4.5.3-csharpsharwell.jar" "ANTLRv4Parser.g4" -o "Generated" -Dlanguage=CSharp_v4_5 -package AntlrGrammarEditor
     - cd ..
 script:
-    - xbuild /p:Configuration=Release AntlrGrammarEditor.sln /p:TargetFrameworkVersion="v4.5"
+    - xbuild /p:Configuration=Release /p:Platform="x64" AntlrGrammarEditor.sln /p:TargetFrameworkVersion="v4.5"
     - nunit-console ./AntlrGrammarEditor.Tests/bin/Release/AntlrGrammarEditor.Tests.dll
     
