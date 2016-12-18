@@ -605,15 +605,6 @@ namespace AntlrGrammarEditor
                 }
                 else if (Runtime == Runtime.Go)
                 {
-                    foreach (var generatedFile in generatedFiles)
-                    {
-                        var fileText = File.ReadAllText(generatedFile); // bug in golang runtime.
-                        if (fileText.Contains("package parser"))
-                        {
-                            fileText = fileText.Replace("package parser", "package main");
-                            File.WriteAllText(generatedFile, fileText);
-                        }
-                    }
                     compiliedFiles.Insert(0, '"' + templateName + "\" ");
                     if (_grammar.CaseInsensitive)
                     {
@@ -727,7 +718,7 @@ namespace AntlrGrammarEditor
                 if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
                 {
                     var antlrRuntimeDir = Path.Combine(HelperDirectoryName, runtimeInfo.RuntimeLibrary);
-                    //if (!File.Exists(antlrRuntimeDir))
+                    if (!File.Exists(antlrRuntimeDir))
                     {
                         File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
                     }
