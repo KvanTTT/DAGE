@@ -13,7 +13,7 @@ namespace AntlrGrammarEditor
                 JarGenerator = "antlr-4.5.3-csharpsharwell.jar",
                 DLanguage = "CSharp_v4_5",
                 RuntimeLibrary = "Antlr4.Runtime.dll",
-                Extensions = new [] { "cs" },
+                Extensions = new[] { "cs" },
                 MainFile = "Program.cs",
                 AntlrInputStream = "AntlrInputStream",
                 DefaultCompilerPath = Helpers.GetCSharpCompilerPath()
@@ -40,7 +40,9 @@ namespace AntlrGrammarEditor
                 Extensions = new[] { "java" },
                 MainFile = "Main.java",
                 AntlrInputStream = "ANTLRInputStream",
-                DefaultCompilerPath = Helpers.GetJavaExePath(@"bin\javac.exe") ?? "javac"
+                DefaultCompilerPath = (Helpers.IsLinux || ProcessHelpers.IsProcessCanBeExecuted("javac", "-version"))
+                    ? "javac"
+                    : (Helpers.GetJavaExePath(@"bin\javac.exe") ?? "javac")
             },
             [Runtime.Python2] = new RuntimeInfo
             {

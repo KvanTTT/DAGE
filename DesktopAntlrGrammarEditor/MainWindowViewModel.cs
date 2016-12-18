@@ -612,7 +612,7 @@ namespace DesktopAntlrGrammarEditor
             if (EndStage >= WorkflowStage.ParserGenerated && string.IsNullOrEmpty(_settings.JavaPath))
             {
                 var javaPath = "java";
-                bool successExecution = ProcessHelpers.DoesProcessCanBeExecuted(javaPath, "-version");
+                bool successExecution = ProcessHelpers.IsProcessCanBeExecuted(javaPath, "-version");
                 if (!successExecution)
                 {
                     javaPath = Helpers.GetJavaExePath(@"bin\java.exe") ?? "";

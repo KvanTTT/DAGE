@@ -28,7 +28,7 @@ namespace AntlrGrammarEditor
             return process;
         }
 
-        public static bool DoesProcessCanBeExecuted(string fileName, string arguments)
+        public static bool IsProcessCanBeExecuted(string fileName, string arguments = "")
         {
             try
             {
