@@ -13,7 +13,7 @@ class AntlrCaseInsensitiveInputStream : AntlrInputStream
         lookaheadData = lowerCase ? input.ToLower() : input.ToUpper();
     }
 
-    public override int La(int i)
+    public override int LA(int i)
     {
         if (i == 0)
         {
@@ -24,13 +24,13 @@ class AntlrCaseInsensitiveInputStream : AntlrInputStream
             i++; // e.g., translate LA(-1) to use offset i=0; then data[p+0-1]
             if (p + i - 1 < 0)
             {
-                return IntStreamConstants.Eof; // invalid; no char before first char
+                return IntStreamConstants.EOF; // invalid; no char before first char
             }
         }
 
         if (p + i - 1 >= n)
         {
-            return IntStreamConstants.Eof;
+            return IntStreamConstants.EOF;
         }
 
         return lookaheadData[p + i - 1];

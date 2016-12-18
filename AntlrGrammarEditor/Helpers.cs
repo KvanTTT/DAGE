@@ -73,7 +73,8 @@ namespace AntlrGrammarEditor
             if (Directory.Exists(javaFilesDir))
             {
                 var dirs = Directory.GetDirectories(javaFilesDir);
-                dirs = dirs.Where(dir => Path.GetFileName(dir).StartsWith(jdk ? "jdk" : "jre")).ToArray();
+                // Chose the latest version.
+                dirs = dirs.Where(dir => Path.GetFileName(dir).StartsWith(jdk ? "jdk" : "jre")).OrderByDescending(dir => dir).ToArray();
                 foreach (var dir in dirs)
                 {
                     var result = Path.Combine(dir, exeName);
