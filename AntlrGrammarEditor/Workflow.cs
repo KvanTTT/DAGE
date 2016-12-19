@@ -953,22 +953,29 @@ namespace AntlrGrammarEditor
                 if (!string.IsNullOrEmpty(e.Data))
                 {
                     var strs = e.Data.Split(new char[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-                    var outputState = (TextParsedOutput)Enum.Parse(typeof(TextParsedOutput), strs[0]);
-                    var data = strs[1];
-                    switch (outputState)
+                    TextParsedOutput outputState;
+                    if (Enum.TryParse(strs[0], out outputState))
                     {
-                        case TextParsedOutput.LexerTime:
-                            OutputLexerTime = TimeSpan.Parse(data);
-                            break;
-                        case TextParsedOutput.ParserTime:
-                            OutputParserTime = TimeSpan.Parse(data);
-                            break;
-                        case TextParsedOutput.Tokens:
-                            OutputTokens = data;
-                            break;
-                        case TextParsedOutput.Tree:
-                            OutputTree = data;
-                            break;
+                        var data = strs[1];
+                        switch (outputState)
+                        {
+                            case TextParsedOutput.LexerTime:
+                                OutputLexerTime = TimeSpan.Parse(data);
+                                break;
+                            case TextParsedOutput.ParserTime:
+                                OutputParserTime = TimeSpan.Parse(data);
+                                break;
+                            case TextParsedOutput.Tokens:
+                                OutputTokens = data;
+                                break;
+                            case TextParsedOutput.Tree:
+                                OutputTree = data;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        AddError(new ParsingError(TextSpan.Empty, e.Data, _currentFileName, WorkflowStage.TextParsed));
                     }
                 }
             }
