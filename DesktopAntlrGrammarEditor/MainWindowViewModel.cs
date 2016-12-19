@@ -21,7 +21,7 @@ namespace DesktopAntlrGrammarEditor
         private Grammar _grammar;
         private Workflow _workflow;
         private string _openedGrammarFile = "";
-        private string _openedTextFile = "";
+        private FileName _openedTextFile = FileName.Empty;
         private FileState _grammarFileState, _textFileState;
         private TextBox _grammarTextBox, _textTextBox;
         private ListBox _grammarErrorsListBox, _textErrorsListBox;
@@ -104,7 +104,7 @@ namespace DesktopAntlrGrammarEditor
             }
             else
             {
-                OpenedTextFile = _settings.OpenedTextFile;
+                OpenedTextFile = new FileName(_settings.OpenedTextFile);
             }
 
             SetupWindowSubscriptions();
@@ -228,13 +228,13 @@ namespace DesktopAntlrGrammarEditor
 
         public bool GrammarErrorsExpanded => GrammarErrors.Count > 0;
 
-        public bool TextBoxEnabled => !string.IsNullOrEmpty(_openedTextFile);
+        public bool TextBoxEnabled => !string.IsNullOrEmpty(_openedTextFile?.FullFileName);
 
         public ObservableCollection<object> GrammarErrors { get; } = new ObservableCollection<object>();
 
-        public ObservableCollection<string> TextFiles { get; } = new ObservableCollection<string>();
+        public ObservableCollection<FileName> TextFiles { get; } = new ObservableCollection<FileName>();
 
-        public string OpenedTextFile
+        public FileName OpenedTextFile
         {
             get
             {
@@ -243,32 +243,32 @@ namespace DesktopAntlrGrammarEditor
             set
             {
                 SaveTextFileIfRequired();
-                if (!string.IsNullOrEmpty(value) && !value.Equals(_openedTextFile))
+                if (!string.IsNullOrEmpty(value?.FullFileName) && !value.Equals(_openedTextFile))
                 {
                     try
                     {
-                        _textTextBox.Text = File.ReadAllText(value);
+                        _textTextBox.Text = File.ReadAllText(value.FullFileName);
                         _workflow.Text = _textTextBox.Text;
                         _openedTextFile = value;
                         _textFileState = FileState.Opened;
 
-                        _settings.OpenedTextFile = value;
+                        _settings.OpenedTextFile = value.FullFileName;
                         _settings.Save();
 
                         this.RaisePropertyChanged();
                     }
                     catch (Exception ex)
                     {
-                        ShowOpenFileErrorMessage(_openedTextFile, ex.Message);
+                        ShowOpenFileErrorMessage(_openedTextFile.FullFileName, ex.Message);
                     }
                 }
-                if (string.IsNullOrEmpty(value))
+                if (string.IsNullOrEmpty(value?.FullFileName))
                 {
                     _textTextBox.Text = "";
-                    _openedTextFile = "";
+                    _openedTextFile = FileName.Empty;
                     _textFileState = FileState.Opened;
 
-                    _settings.OpenedTextFile = value;
+                    _settings.OpenedTextFile = _openedTextFile.FullFileName;
                     _settings.Save();
 
                     this.RaisePropertyChanged();
@@ -542,9 +542,9 @@ namespace DesktopAntlrGrammarEditor
                     changed = true;
                 }
 
-                if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile))
+                if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile?.FullFileName))
                 {
-                    File.WriteAllText(_openedTextFile, _textTextBox.Text);
+                    File.WriteAllText(_openedTextFile.FullFileName, _textTextBox.Text);
                     _workflow.Text = _textTextBox.Text;
                     _textFileState = FileState.Unchanged;
                     changed = true;
@@ -557,10 +557,25 @@ namespace DesktopAntlrGrammarEditor
                 Process();
             });
 
-            NewText.Subscribe(_ =>
+            NewText.Subscribe(async _ =>
             {
-                TextFiles.Add("New text");
-                OpenedTextFile = TextFiles.Last();
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Title = "Enter file name",
+                    DefaultExtension = _grammar.FileExtension,
+                    InitialDirectory = _grammar.GrammarPath,
+                    InitialFileName = Path.GetFileName(GrammarFactory.GenerateTextFileName(_grammar))
+                };
+                string fileName = await saveFileDialog.ShowAsync(_window);
+                if (fileName != null)
+                {
+                    File.WriteAllText(fileName, "");
+                    var newFile = new FileName(fileName);
+                    TextFiles.Add(newFile);
+                    _grammar.TextFiles.Add(newFile.FullFileName);
+                    _grammar.Save();
+                    OpenedTextFile = TextFiles.Last();
+                }
             });
 
             OpenText.Subscribe(async _ =>
@@ -587,7 +602,7 @@ namespace DesktopAntlrGrammarEditor
             _settings.AgeFileName = grammar.AgeFileName;
             _settings.Save();
             _openedGrammarFile = "";
-            _openedTextFile = "";
+            _openedTextFile = FileName.Empty;
             Rules.Clear();
             InitFiles();
             OpenedGrammarFile = GrammarFiles.First();
@@ -672,7 +687,7 @@ namespace DesktopAntlrGrammarEditor
             TextFiles.Clear();
             foreach (var file in _grammar.TextFiles)
             {
-                TextFiles.Add(file);
+                TextFiles.Add(new FileName(file));
             }
         }
 
@@ -687,9 +702,9 @@ namespace DesktopAntlrGrammarEditor
 
         private void SaveTextFileIfRequired()
         {
-            if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile))
+            if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile?.FullFileName))
             {
-                File.WriteAllText(_openedTextFile, _textTextBox.Text);
+                File.WriteAllText(_openedTextFile.FullFileName, _textTextBox.Text);
                 _textFileState = FileState.Unchanged;
             }
         }

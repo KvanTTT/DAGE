@@ -136,6 +136,11 @@ namespace AntlrGrammarEditor
             grammar.Save();
         }
 
+        public static string GenerateTextFileName(Grammar grammar)
+        {
+            return Path.Combine(grammar.GrammarPath, grammar.Name + "_text" + grammar.FileExtension);
+        }
+
         private static void InitFiles(Grammar grammar)
         {
             grammar.Files.Clear();
@@ -161,7 +166,7 @@ namespace AntlrGrammarEditor
                 grammar.Files.Add(grammar.Name + Grammar.AntlrDotExt);
             }
 
-            grammar.TextFiles.Add(Path.Combine(grammar.GrammarPath, grammar.Name + grammar.FileExtension));
+            grammar.TextFiles.Add(GenerateTextFileName(grammar));
         }
     }
 }

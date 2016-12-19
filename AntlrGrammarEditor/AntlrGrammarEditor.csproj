@@ -86,6 +86,7 @@
     <Content Include="Runtimes\CSharp\Program.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Compile Include="FileName.cs" />
     <Compile Include="Grammar.cs" />
     <Compile Include="GrammarFactory.cs" />
     <Compile Include="Helpers.cs" />
