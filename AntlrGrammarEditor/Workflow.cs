@@ -718,7 +718,7 @@ namespace AntlrGrammarEditor
                 if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
                 {
                     var antlrRuntimeDir = Path.Combine(HelperDirectoryName, runtimeInfo.RuntimeLibrary);
-                    //if (!File.Exists(antlrRuntimeDir))
+                    if (!File.Exists(antlrRuntimeDir))
                     {
                         File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
                     }

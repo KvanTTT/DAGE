@@ -2,7 +2,7 @@ package main
 
 import (
     "io/ioutil"
-    "github.com/pboyer/antlr4/runtime/Go/antlr"
+    "github.com/antlr/antlr4/runtime/Go/antlr"
     "fmt"
 )
 
