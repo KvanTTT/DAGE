@@ -639,29 +639,25 @@ namespace DesktopAntlrGrammarEditor
             {
                 string shortFileName = OpenedTextFile.ShortFileName;
                 string fullFileName = OpenedTextFile.FullFileName;
-                if (await MessageBox.ShowDialog($"Do you want to remove file {shortFileName} from grammar {OpenedGrammarFile}?", 
-                   "", MessageBoxType.YesNo))
+                _grammar.TextFiles.Remove(OpenedTextFile.FullFileName);
+                _grammar.Save();
+                var index = TextFiles.IndexOf(OpenedTextFile);
+                TextFiles.Remove(OpenedTextFile);
+                index = Math.Min(index, TextFiles.Count - 1);
+                if (await MessageBox.ShowDialog($"Do you want to delete file {shortFileName}?", "", MessageBoxType.YesNo))
                 {
-                    _grammar.TextFiles.Remove(OpenedTextFile.FullFileName);
-                    _grammar.Save();
-                    var index = TextFiles.IndexOf(OpenedTextFile);
-                    TextFiles.Remove(OpenedTextFile);
-                    index = Math.Min(index, TextFiles.Count - 1);
-                    if (await MessageBox.ShowDialog($"Do you want to remove file {shortFileName}?", "", MessageBoxType.YesNo))
+                    try
                     {
-                        try
-                        {
-                            File.Delete(fullFileName);
-                        }
-                        catch (Exception ex)
-                        {
-                            await ShowOpenFileErrorMessage(fullFileName, ex.Message);
-                        }
+                        File.Delete(fullFileName);
                     }
-                    if (index >= 0)
+                    catch (Exception ex)
                     {
-                        OpenedTextFile = TextFiles[index];
+                        await ShowOpenFileErrorMessage(fullFileName, ex.Message);
                     }
+                }
+                if (index >= 0)
+                {
+                    OpenedTextFile = TextFiles[index];
                 }
             });
         }
