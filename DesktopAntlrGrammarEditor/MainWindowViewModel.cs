@@ -245,31 +245,39 @@ namespace DesktopAntlrGrammarEditor
                 SaveTextFileIfRequired();
                 if (!string.IsNullOrEmpty(value?.FullFileName) && !value.Equals(_openedTextFile))
                 {
+                    _textTextBox.IsEnabled = true;
+                    _openedTextFile = value;
                     try
                     {
                         _textTextBox.Text = File.ReadAllText(value.FullFileName);
-                        _workflow.Text = _textTextBox.Text;
-                        _openedTextFile = value;
-                        _textFileState = FileState.Opened;
-
-                        _settings.OpenedTextFile = value.FullFileName;
-                        _settings.Save();
-
-                        this.RaisePropertyChanged();
                     }
                     catch (Exception ex)
                     {
+                        _textTextBox.Text = "";
                         ShowOpenFileErrorMessage(_openedTextFile.FullFileName, ex.Message);
                     }
+                    _workflow.Text = _textTextBox.Text;
+                    _textFileState = FileState.Opened;
+
+                    _settings.OpenedTextFile = value.FullFileName;
+                    _settings.Save();
+
+                    ClearParseResult();
+
+                    this.RaisePropertyChanged();
                 }
                 if (string.IsNullOrEmpty(value?.FullFileName))
                 {
-                    _textTextBox.Text = "";
+                    _textTextBox.IsEnabled = false;
                     _openedTextFile = FileName.Empty;
+                    _textTextBox.Text = "";
+                    _workflow.Text = _textTextBox.Text;
                     _textFileState = FileState.Opened;
 
                     _settings.OpenedTextFile = _openedTextFile.FullFileName;
                     _settings.Save();
+
+                    ClearParseResult();
 
                     this.RaisePropertyChanged();
                 }
@@ -312,9 +320,11 @@ namespace DesktopAntlrGrammarEditor
 
         public ReactiveCommand<object> ProcessCommand { get; } = ReactiveCommand.Create();
 
-        public ReactiveCommand<object> NewText { get; } = ReactiveCommand.Create();
+        public ReactiveCommand<object> NewTextFile { get; } = ReactiveCommand.Create();
 
-        public ReactiveCommand<object> OpenText { get; } = ReactiveCommand.Create();
+        public ReactiveCommand<object> OpenTextFile { get; } = ReactiveCommand.Create();
+
+        public ReactiveCommand<object> RemoveTextFile { get; } = ReactiveCommand.Create();
 
         public bool AutoProcessing
         {
@@ -376,6 +386,7 @@ namespace DesktopAntlrGrammarEditor
                 .Subscribe(ev =>
                 {
                     SaveGrammarFileIfRequired();
+                    SaveTextFileIfRequired();
                     _settings.Left = _window.Position.X;
                     _settings.Top = _window.Position.Y;
                     _settings.Save();
@@ -557,12 +568,27 @@ namespace DesktopAntlrGrammarEditor
                 Process();
             });
 
-            NewText.Subscribe(async _ =>
+            NewTextFile.Subscribe(async _ =>
             {
+                var filters = new List<FileDialogFilter>();
+                if (!string.IsNullOrEmpty(_grammar.FileExtension))
+                {
+                    filters.Add(new FileDialogFilter
+                    {
+                        Name = $"{_grammar.Name} parsing file",
+                        Extensions = new List<string>() { _grammar.FileExtension }
+                    });
+                }
+                filters.Add(new FileDialogFilter
+                {
+                    Name = "All files",
+                    Extensions = new List<string>() { "*" }
+                });
                 var saveFileDialog = new SaveFileDialog
                 {
                     Title = "Enter file name",
                     DefaultExtension = _grammar.FileExtension,
+                    Filters = filters,
                     InitialDirectory = _grammar.GrammarPath,
                     InitialFileName = Path.GetFileName(GrammarFactory.GenerateTextFileName(_grammar))
                 };
@@ -571,14 +597,17 @@ namespace DesktopAntlrGrammarEditor
                 {
                     File.WriteAllText(fileName, "");
                     var newFile = new FileName(fileName);
-                    TextFiles.Add(newFile);
-                    _grammar.TextFiles.Add(newFile.FullFileName);
-                    _grammar.Save();
-                    OpenedTextFile = TextFiles.Last();
+                    if (!TextFiles.Contains(newFile))
+                    {
+                        TextFiles.Add(newFile);
+                        _grammar.TextFiles.Add(newFile.FullFileName);
+                        _grammar.Save();
+                        OpenedTextFile = TextFiles.Last();
+                    }
                 }
             });
 
-            OpenText.Subscribe(async _ =>
+            OpenTextFile.Subscribe(async _ =>
             {
                 var openFileDialog = new OpenFileDialog
                 {
@@ -587,9 +616,51 @@ namespace DesktopAntlrGrammarEditor
                 var fileNames = await openFileDialog.ShowAsync(_window);
                 if (fileNames != null)
                 {
+                    bool atLeastOneFileHasBeenAdded = false;
                     foreach (var fileName in fileNames)
                     {
-                        
+                        var openedFile = new FileName(fileName);
+                        if (!TextFiles.Contains(openedFile))
+                        {
+                            atLeastOneFileHasBeenAdded = true;
+                            TextFiles.Add(openedFile);
+                            _grammar.TextFiles.Add(openedFile.FullFileName);
+                        }
+                    }
+                    if (atLeastOneFileHasBeenAdded)
+                    {
+                        _grammar.Save();
+                        OpenedTextFile = TextFiles.Last();
+                    }
+                }
+            });
+
+            RemoveTextFile.Subscribe(async _ =>
+            {
+                string shortFileName = OpenedTextFile.ShortFileName;
+                string fullFileName = OpenedTextFile.FullFileName;
+                if (await MessageBox.ShowDialog($"Do you want to remove file {shortFileName} from grammar {OpenedGrammarFile}?", 
+                   "", MessageBoxType.YesNo))
+                {
+                    _grammar.TextFiles.Remove(OpenedTextFile.FullFileName);
+                    _grammar.Save();
+                    var index = TextFiles.IndexOf(OpenedTextFile);
+                    TextFiles.Remove(OpenedTextFile);
+                    index = Math.Min(index, TextFiles.Count - 1);
+                    if (await MessageBox.ShowDialog($"Do you want to remove file {shortFileName}?", "", MessageBoxType.YesNo))
+                    {
+                        try
+                        {
+                            File.Delete(fullFileName);
+                        }
+                        catch (Exception ex)
+                        {
+                            await ShowOpenFileErrorMessage(fullFileName, ex.Message);
+                        }
+                    }
+                    if (index >= 0)
+                    {
+                        OpenedTextFile = TextFiles[index];
                     }
                 }
             });
@@ -606,7 +677,7 @@ namespace DesktopAntlrGrammarEditor
             Rules.Clear();
             InitFiles();
             OpenedGrammarFile = GrammarFiles.First();
-            OpenedTextFile = TextFiles.First();
+            OpenedTextFile = TextFiles.Count > 0 ? TextFiles.First() : null;
             this.RaisePropertyChanged(nameof(SelectedRuntime));
         }
 
@@ -786,6 +857,13 @@ namespace DesktopAntlrGrammarEditor
             var messageBox = new MessageBox($"Error while opening {fileName} file: {exceptionMessage}", "Error");
             await messageBox.ShowDialog();
             _window.Activate();
+        }
+
+        private void ClearParseResult()
+        {
+            Tokens = "";
+            Tree = "";
+            TextErrors.Clear();
         }
     }
 }

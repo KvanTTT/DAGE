@@ -138,7 +138,7 @@ namespace AntlrGrammarEditor
 
         public static string GenerateTextFileName(Grammar grammar)
         {
-            return Path.Combine(grammar.GrammarPath, grammar.Name + "_text" + grammar.FileExtension);
+            return Path.Combine(grammar.GrammarPath, grammar.Name + "_text." + grammar.FileExtension);
         }
 
         private static void InitFiles(Grammar grammar)

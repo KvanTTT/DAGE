@@ -21,7 +21,7 @@ namespace AntlrGrammarEditor
 
         public string Root { get; set; }
 
-        public string FileExtension { get; set; } = ".txt";
+        public string FileExtension { get; set; } = "txt";
 
         public HashSet<Runtime> Runtimes = new HashSet<Runtime>();
 
