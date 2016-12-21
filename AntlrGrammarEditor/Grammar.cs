@@ -18,8 +18,10 @@ namespace AntlrGrammarEditor
         private string _ageFileName;
 
         public string Name { get; set; }
-        
+
         public string Root { get; set; }
+
+        public string FileExtension { get; set; } = "txt";
 
         public HashSet<Runtime> Runtimes = new HashSet<Runtime>();
 
@@ -37,8 +39,10 @@ namespace AntlrGrammarEditor
 
         public List<string> Files { get; set; } = new List<string>();
 
+        public List<string> TextFiles { get; set; } = new List<string>();
+
         [JsonIgnore]
-        public string GrammarPath { get; private set; }
+        public string GrammarPath { get; private set; } = "";
 
         [JsonIgnore]
         public string AgeFileName

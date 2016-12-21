@@ -206,6 +206,7 @@
     <Compile Include="MessageBox.paml.cs">
       <DependentUpon>MessageBox.paml</DependentUpon>
     </Compile>
+    <Compile Include="MessageBoxType.cs" />
     <Compile Include="MessageBoxViewModel.cs" />
     <Compile Include="NewGrammarWindow.paml.cs">
       <DependentUpon>NewGrammarWindow.paml</DependentUpon>

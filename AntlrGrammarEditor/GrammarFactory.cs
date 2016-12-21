@@ -38,6 +38,7 @@ namespace AntlrGrammarEditor
                 Runtimes = new HashSet<Runtime>() { Runtime.CSharpSharwell },
             };
 
+            result.AgeFileName = Path.Combine(directory, grammarName) + Grammar.ProjectDotExt;
             InitFiles(result);
 
             foreach (var file in result.Files)
@@ -45,7 +46,6 @@ namespace AntlrGrammarEditor
                 File.WriteAllText(Path.Combine(directory, file), grammarText);
             }
 
-            result.AgeFileName = Path.Combine(directory, grammarName) + Grammar.ProjectDotExt;
             result.Save();
             return result;
         }
@@ -59,6 +59,7 @@ namespace AntlrGrammarEditor
                 SeparatedLexerAndParser = true,
             };
 
+            result.AgeFileName = Path.Combine(directory, grammarName) + Grammar.ProjectDotExt;
             InitFiles(result);
 
             foreach (var file in result.Files)
@@ -67,13 +68,13 @@ namespace AntlrGrammarEditor
                 File.WriteAllText(Path.Combine(directory, file), text);
             }
 
-            result.AgeFileName = Path.Combine(directory, grammarName) + Grammar.ProjectDotExt;
             result.Save();
             return result;
         }
 
         public static void FillGrammarFiles(Grammar grammar, string directory, bool overwriteFiles)
         {
+            grammar.AgeFileName = Path.Combine(directory, grammar.Name) + Grammar.ProjectDotExt;
             InitFiles(grammar);
 
             if (!Directory.Exists(directory))
@@ -127,8 +128,17 @@ namespace AntlrGrammarEditor
                 }
             }
 
-            grammar.AgeFileName = Path.Combine(directory, grammar.Name) + Grammar.ProjectDotExt;
+            foreach (var file in grammar.TextFiles)
+            {
+                File.WriteAllText(file, "test");
+            }
+
             grammar.Save();
+        }
+
+        public static string GenerateTextFileName(Grammar grammar)
+        {
+            return Path.Combine(grammar.GrammarPath, grammar.Name + "_text." + grammar.FileExtension);
         }
 
         private static void InitFiles(Grammar grammar)
@@ -155,6 +165,8 @@ namespace AntlrGrammarEditor
             {
                 grammar.Files.Add(grammar.Name + Grammar.AntlrDotExt);
             }
+
+            grammar.TextFiles.Add(GenerateTextFileName(grammar));
         }
     }
 }
