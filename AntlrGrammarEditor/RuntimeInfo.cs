@@ -105,6 +105,20 @@ namespace AntlrGrammarEditor
                 DefaultCompilerPath = "go",
                 LexerPostfix = "_lexer",
                 ParserPostfix = "_parser",
+            },
+            [Runtime.Swift] = new RuntimeInfo
+            {
+                Runtime = Runtime.Swift,
+                Name = "Swift",
+                JarGenerator = "antlr-4.6-complete.jar",
+                DLanguage = "Swift",
+                RuntimeLibrary = "",
+                Extensions = new[] { "swift" },
+                MainFile = "",
+                AntlrInputStream = "",
+                DefaultCompilerPath = "",
+                LexerPostfix = "_lexer",
+                ParserPostfix = "_parser",
             }
         };
 

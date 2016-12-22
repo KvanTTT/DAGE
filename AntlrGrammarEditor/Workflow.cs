@@ -12,7 +12,7 @@ namespace AntlrGrammarEditor
 {
     public class Workflow
     {
-        private static string HelperDirectoryName = "AntlrGrammarEditorHelperDirectory42";
+        public static string HelperDirectoryName = "AntlrGrammarEditorHelperDirectory42";
         private const string PythonHelperFileName = "AntlrPythonCompileTest.py";
         private const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
         private const string TextFileName = "Text";

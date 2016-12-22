@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace AntlrGrammarEditor.Tests
@@ -42,6 +43,13 @@ namespace AntlrGrammarEditor.Tests
                 workflow.Runtime = runtime;
                 var state = (ParserGeneratedState)workflow.Process();
                 Assert.IsFalse(state.HasErrors);
+
+                var extensions = RuntimeInfo.Runtimes[runtime].Extensions;
+                var actualFilesCount = Directory.GetFiles(Workflow.HelperDirectoryName).Where
+                    (file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext))).Count();
+                Assert.Greater(actualFilesCount, 0);
+
+                Directory.Delete(Workflow.HelperDirectoryName, true);
             }
         }
         

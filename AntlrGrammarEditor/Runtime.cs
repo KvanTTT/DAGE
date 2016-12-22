@@ -9,6 +9,7 @@
         Python3,
         JavaScript,
         CPlusPlus,
-        Go
+        Go,
+        Swift
     }
 }
