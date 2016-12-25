@@ -14,9 +14,7 @@ namespace AntlrGrammarEditor
 
         public event EventHandler<ParsingError> NewErrorEvent;
 
-        public string CurrentFileName { get; set; }
-
-        public string CurrentFileData { get; set; }
+        public CodeSource CodeSource { get; set; }
 
         public AntlrErrorListener(List<ParsingError> errorsList)
         {
@@ -25,31 +23,23 @@ namespace AntlrGrammarEditor
 
         public void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
-            var message = FormatErrorMessage(CurrentFileName, line, charPositionInLine, msg);
-            var lexerError = new ParsingError(line, charPositionInLine, message, CurrentFileName, WorkflowStage.GrammarChecked);
-            if (!string.IsNullOrEmpty(CurrentFileData))
-            {
-                lexerError.RecalculatePosition(CurrentFileData);
-            }
+            var message = FormatErrorMessage(line, charPositionInLine, msg);
+            var lexerError = new ParsingError(line, charPositionInLine, message, CodeSource, WorkflowStage.GrammarChecked);
             Errors.Add(lexerError);
             NewErrorEvent?.Invoke(this, lexerError);
         }
 
         public void SyntaxError(IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
-            var message = FormatErrorMessage(CurrentFileName, line, charPositionInLine, msg);
-            var parserError = new ParsingError(line, charPositionInLine, message, CurrentFileName, WorkflowStage.GrammarChecked);
-            if (!string.IsNullOrEmpty(CurrentFileData))
-            {
-                parserError.RecalculatePosition(CurrentFileData);
-            }
+            var message = FormatErrorMessage(line, charPositionInLine, msg);
+            var parserError = new ParsingError(line, charPositionInLine, message, CodeSource, WorkflowStage.GrammarChecked);
             Errors.Add(parserError);
             NewErrorEvent?.Invoke(this, parserError);
         }
 
-        private static string FormatErrorMessage(string fileName, int line, int charPositionInLine, string msg)
+        private string FormatErrorMessage(int line, int charPositionInLine, string msg)
         {
-            return $"error: {Path.GetFileName(fileName)}:{line}:{charPositionInLine}: {msg}";
+            return $"error: {Path.GetFileName(CodeSource.Name)}:{line}:{charPositionInLine}: {msg}";
         }
     }
 }
