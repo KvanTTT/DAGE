@@ -114,7 +114,6 @@
     <Compile Include="CodeInsertion.cs" />
     <Compile Include="TextSpanMapping.cs" />
     <Compile Include="TextHelpers.cs" />
-    <Compile Include="WinHelpers.cs" />
     <Compile Include="Workflow.cs" />
     <Compile Include="WorkflowStage.cs" />
     <Compile Include="WorkflowState\GrammarCheckedState.cs" />
