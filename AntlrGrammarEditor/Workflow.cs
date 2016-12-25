@@ -832,7 +832,10 @@ namespace AntlrGrammarEditor
                     ParsingError error;
                     if (strs.Length >= 4)
                     {
-                        error = new ParsingError(int.Parse(strs[2]), int.Parse(strs[3]), e.Data, _currentFileName, _currentFileData, WorkflowStage.ParserGenerated);
+                        int line = 0, column = 0;
+                        int.TryParse(strs[2], out line);
+                        int.TryParse(strs[3], out column);
+                        error = new ParsingError(line, column, e.Data, _currentFileName, _currentFileData, WorkflowStage.ParserGenerated);
                     }
                     else
                     {
