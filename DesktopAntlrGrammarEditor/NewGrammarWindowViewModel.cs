@@ -20,10 +20,27 @@ namespace DesktopAntlrGrammarEditor
         {
             _window = window;
 
-            OkCommand.Subscribe(_ =>
+            OkCommand.Subscribe(async _ =>
             {
-                GrammarFactory.FillGrammarFiles(_grammar, Path.Combine(GrammarDirectory, _grammar.Name), true);
-                _window.Close(_grammar);
+                string grammarFileName = Path.Combine(GrammarDirectory, _grammar.Name);
+                bool success = false;
+                if (Directory.Exists(grammarFileName))
+                {
+                    if (await MessageBox.ShowDialog($"Do you want to replace existed grammar {_grammar.Name}?", "", MessageBoxType.YesNo))
+                    {
+                        success = true;
+                    }
+                }
+                else
+                {
+                    success = true;
+                }
+
+                if (success)
+                {
+                    GrammarFactory.FillGrammarFiles(_grammar, grammarFileName, true);
+                    _window.Close(_grammar);
+                }
             });
 
             CancelCommand.Subscribe(_ =>
