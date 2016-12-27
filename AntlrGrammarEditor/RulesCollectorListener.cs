@@ -17,8 +17,11 @@ namespace AntlrGrammarEditor
 
         public string GrammarName { get; private set; }
 
-        public void CollectInfo(ANTLRv4Parser.GrammarSpecContext context)
+        public CodeSource GrammarSource { get; private set; }
+
+        public void CollectInfo(CodeSource grammarSource, ANTLRv4Parser.GrammarSpecContext context)
         {
+            GrammarSource = grammarSource;
             var walker = new ParseTreeWalker();
             walker.Walk(this, context);
         }
@@ -114,11 +117,8 @@ namespace AntlrGrammarEditor
         {
             var text = context.GetText();
             text = text.Substring(1, text.Length - 2);
-            var textSpan = context.GetTextSpan();
-            textSpan.BeginChar++;
-            textSpan.EndChar--;
-            textSpan.Start++;
-            textSpan.Length -= 2;
+            var textSpan = context.GetTextSpan(GrammarSource);
+            textSpan = new TextSpan(GrammarSource, textSpan.Start + 1, textSpan.Length - 2);
 
             if (_lexer || _parser)
             {

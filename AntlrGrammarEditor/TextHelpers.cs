@@ -6,121 +6,18 @@ namespace AntlrGrammarEditor
 {
     public static class TextHelpers
     {
-        public static int LineColumnToLinear(string text, int line, int column)
-        {
-            int currentLine = 1;
-            int currentColumn = 0;
-
-            int i = 0;
-            try
-            {
-                while (currentLine != line || currentLine == line && currentColumn != column)
-                {
-                    // General line endings:
-                    //  Windows: '\r\n'
-                    //  Mac (OS 9-): '\r'
-                    //  Mac (OS 10+): '\n'
-                    //  Unix/Linux: '\n'
-
-                    switch (text[i])
-                    {
-                        case '\r':
-                            currentLine++;
-                            currentColumn = 0;
-                            if (i + 1 < text.Length && text[i + 1] == '\n')
-                            {
-                                i++;
-                            }
-                            break;
-
-                        case '\n':
-                            currentLine++;
-                            currentColumn = 0;
-                            break;
-
-                        default:
-                            currentColumn++;
-                            break;
-                    }
-
-                    i++;
-                }
-            }
-            catch
-            {
-            }
-
-            return i;
-        }
-
-        public static void LinearToLineColumn(int index, string text, out int line, out int column)
-        {
-            line = 1;
-            column = 0;
-
-            try
-            {
-                int i = 0;
-                while (i != index)
-                {
-                    // General line endings:
-                    //  Windows: '\r\n'
-                    //  Mac (OS 9-): '\r'
-                    //  Mac (OS 10+): '\n'
-                    //  Unix/Linux: '\n'
-
-                    switch (text[i])
-                    {
-                        case '\r':
-                            line++;
-                            column = 0;
-                            if (i + 1 < text.Length && text[i + 1] == '\n')
-                            {
-                                i++;
-                            }
-                            break;
-
-                        case '\n':
-                            line++;
-                            column = 0;
-                            break;
-
-                        default:
-                            column++;
-                            break;
-                    }
-                    i++;
-                }
-            }
-            catch
-            {
-            }
-        }
-
-        public static List<TextSpanMapping> Map(List<CodeInsertion> source, string destination)
+        public static List<TextSpanMapping> Map(List<CodeInsertion> source, CodeSource destinationSource, bool lexer)
         {
             var result = new List<TextSpanMapping>();
             int destInd = 0;
-            var sortedSource = source.OrderBy(s => s.Predicate).ToArray();
+            CodeInsertion[] sortedSource = source.Where(s => s.Lexer == lexer).OrderBy(s => s.Predicate).ToArray();
             foreach (var s in sortedSource)
             {
-                destInd = destination.IgnoreWhitespaceIndexOf(s.Text, destInd);
-                /*if (!s.Predicate)
-                {
-                    destInd = SelectIndexWithBoundaryNewlines(destination, destInd, s.Text);
-                }*/
-                int beginLine, beginColumn;
-                int endLine, endColumn;
-                LinearToLineColumn(destInd, destination, out beginLine, out beginColumn);
-                LinearToLineColumn(destInd + s.TextSpan.Length, destination, out endLine, out endColumn);
+                destInd = destinationSource.Text.IgnoreWhitespaceIndexOf(s.Text, destInd);
                 result.Add(new TextSpanMapping
                 {
                     SourceTextSpan = s.TextSpan,
-                    DestinationTextSpan = new TextSpan(beginLine, beginColumn, endLine, endColumn)
-                    {
-                        Start = destInd,
-                        Length = s.Text.Length
-                    }
+                    DestinationTextSpan = new TextSpan(destinationSource, destInd, s.Text.Length)
                 });
                 destInd += s.Text.Length;
             }
@@ -167,24 +64,24 @@ namespace AntlrGrammarEditor
         {
             foreach (var m in mapping)
             {
-                if (destinationLine >= m.DestinationTextSpan.BeginLine && destinationLine <= m.DestinationTextSpan.EndLine)
+                if (destinationLine >= m.DestinationTextSpan.StartLineColumn.Line && destinationLine <= m.DestinationTextSpan.EndLineColumn.Line)
                 {
                     return m.SourceTextSpan;
                 }
             }
-            return null;
+            return TextSpan.Empty;
         }
 
         public static TextSpan GetSourceTextSpanForLineColumn(List<TextSpanMapping> mapping, int destLine, int destColumn)
         {
             foreach (var m in mapping)
             {
-                if (destLine >= m.DestinationTextSpan.BeginLine && destLine <= m.DestinationTextSpan.EndLine)
+                if (destLine >= m.DestinationTextSpan.StartLineColumn.Line && destLine <= m.DestinationTextSpan.EndLineColumn.Line)
                 {
                     return m.SourceTextSpan;
                 }
             }
-            return null;
+            return TextSpan.Empty;
         }
 
         public static int IgnoreWhitespaceIndexOf(this string source, string value, int startIndex)

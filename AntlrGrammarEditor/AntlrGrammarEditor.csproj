@@ -82,11 +82,13 @@
     <Content Include="Runtimes\CSharp\Program.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Compile Include="CodeSource.cs" />
     <Compile Include="FileName.cs" />
     <Compile Include="Grammar.cs" />
     <Compile Include="GrammarFactory.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="LexerAdaptor.cs" />
+    <Compile Include="LineColumn.cs" />
     <Compile Include="ParsingError.cs" />
     <Compile Include="ProcessHelpers.cs" />
     <Compile Include="RulesCollectorListener.cs" />
@@ -112,7 +114,6 @@
     <Compile Include="CodeInsertion.cs" />
     <Compile Include="TextSpanMapping.cs" />
     <Compile Include="TextHelpers.cs" />
-    <Compile Include="WinHelpers.cs" />
     <Compile Include="Workflow.cs" />
     <Compile Include="WorkflowStage.cs" />
     <Compile Include="WorkflowState\GrammarCheckedState.cs" />

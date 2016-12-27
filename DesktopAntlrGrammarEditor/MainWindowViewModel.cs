@@ -737,7 +737,7 @@ namespace DesktopAntlrGrammarEditor
                 TextBox textBox = listBox == _grammarErrorsListBox ? _grammarTextBox : _textTextBox;
                 if (textBox == _grammarTextBox)
                 {
-                    OpenedGrammarFile = parsingError.FileName;
+                    OpenedGrammarFile = parsingError.TextSpan.Source.Name;
                 }
                 textBox.SelectionStart = parsingError.TextSpan.Start;
                 textBox.SelectionEnd = parsingError.TextSpan.Start + parsingError.TextSpan.Length;

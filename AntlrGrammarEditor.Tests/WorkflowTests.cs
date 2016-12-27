@@ -45,11 +45,15 @@ namespace AntlrGrammarEditor.Tests
                 Assert.IsFalse(state.HasErrors);
 
                 var extensions = RuntimeInfo.Runtimes[runtime].Extensions;
-                var actualFilesCount = Directory.GetFiles(Workflow.HelperDirectoryName).Where
+                var allFiles = Directory.GetFiles(Workflow.HelperDirectoryName);
+                var actualFilesCount = allFiles.Where
                     (file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext))).Count();
                 Assert.Greater(actualFilesCount, 0);
 
-                Directory.Delete(Workflow.HelperDirectoryName, true);
+                foreach (var file in allFiles)
+                {
+                    File.Delete(file);
+                }
             }
         }
         
@@ -67,12 +71,13 @@ namespace AntlrGrammarEditor.Tests
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage);
 
+            var grammarSource = new CodeSource("test.g4", File.ReadAllText("test.g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(3, 25, "error: test.g4:3:25: token recognition error at: '-z'", "test.g4", WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 27, "error: test.g4:3:27: token recognition error at: ']'", "test.g4", WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 28, "error: test.g4:3:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", "test.g4", WorkflowStage.GrammarChecked)
+                    new ParsingError(3, 25, "error: test.g4:3:25: token recognition error at: '-z'", grammarSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 27, "error: test.g4:3:27: token recognition error at: ']'", grammarSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 28, "error: test.g4:3:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", grammarSource, WorkflowStage.GrammarChecked)
                 },
                 grammarCheckedState.Errors);
         }
@@ -93,13 +98,15 @@ namespace AntlrGrammarEditor.Tests
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage);
 
+            var testLexerSource = new CodeSource("testLexer.g4", File.ReadAllText("testLexer.g4"));
+            var testParserSource = new CodeSource("testParser.g4", File.ReadAllText("testParser.g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(2, 25, "error: testLexer.g4:2:25: token recognition error at: '-z'", "testLexer.g4", WorkflowStage.GrammarChecked),
-                    new ParsingError(2, 27, "error: testLexer.g4:2:27: token recognition error at: ']'", "testLexer.g4", WorkflowStage.GrammarChecked),
-                    new ParsingError(2, 28, "error: testLexer.g4:2:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", "testLexer.g4", WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 16, "error: testParser.g4:3:16: extraneous input '#' expecting {<EOF>, TOKEN_REF, RULE_REF, DOC_COMMENT, 'fragment', 'protected', 'public', 'private', 'catch', 'finally', 'mode'}", "testParser.g4", WorkflowStage.GrammarChecked)
+                    new ParsingError(2, 25, "error: testLexer.g4:2:25: token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(2, 27, "error: testLexer.g4:2:27: token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(2, 28, "error: testLexer.g4:2:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", testLexerSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 16, "error: testParser.g4:3:16: extraneous input '#' expecting {<EOF>, TOKEN_REF, RULE_REF, DOC_COMMENT, 'fragment', 'protected', 'public', 'private', 'catch', 'finally', 'mode'}", testParserSource, WorkflowStage.GrammarChecked)
                 },
                 grammarCheckedState.Errors);
         }
@@ -120,10 +127,11 @@ namespace AntlrGrammarEditor.Tests
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage);
 
+            var grammarSource = new CodeSource("test.g4", File.ReadAllText("test.g4"));
             ParserGeneratedState parserGeneratedState = state as ParserGeneratedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(2, 24, "error(56): test.g4:2:24: reference to undefined rule: rule1", "test.g4", WorkflowStage.ParserGenerated),
+                    new ParsingError(2, 24, "error(56): test.g4:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
                 },
                 parserGeneratedState.Errors);
         }
@@ -159,7 +167,7 @@ namespace AntlrGrammarEditor.Tests
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
-            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.BeginLine);
+            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.StartLineColumn.Line);
         }
 
         [TestCase(Runtime.CSharpSharwell)]
@@ -193,11 +201,12 @@ namespace AntlrGrammarEditor.Tests
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
 
+            var textSource = new CodeSource("", workflow.Text);
             TextParsedState textParsedState = state as TextParsedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(1, 0, "line 1:0 token recognition error at: '!'", "", WorkflowStage.TextParsed),
-                    new ParsingError(1, 3, "line 1:3 extraneous input 'asdf' expecting DIGIT", "", WorkflowStage.TextParsed)
+                    new ParsingError(1, 1, "line 1:0 token recognition error at: '!'", textSource, WorkflowStage.TextParsed),
+                    new ParsingError(1, 4, "line 1:3 extraneous input 'asdf' expecting DIGIT", textSource, WorkflowStage.TextParsed)
                 },
                 textParsedState.TextErrors);
             Assert.AreEqual("(start asdf 1234)", textParsedState.Tree);
@@ -271,10 +280,10 @@ namespace AntlrGrammarEditor.Tests
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             var errors = parserGeneratedState.Errors;
             Assert.AreEqual(8, errors.Count);
-            Assert.AreEqual(2, errors.Where(e => e.TextSpan.BeginLine == 3).Count());
-            Assert.AreEqual(2, errors.Where(e => e.TextSpan.BeginLine == 6).Count());
-            Assert.AreEqual(2, errors.Where(e => e.TextSpan.BeginLine == 8).Count());
-            Assert.AreEqual(2, errors.Where(e => e.TextSpan.BeginLine == 9).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 3).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 6).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 8).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 9).Count());
         }
 
         private Workflow CreateWorkflow()

@@ -22,7 +22,6 @@ namespace AntlrGrammarEditor
             {
                 Runtime = Runtime.CSharp,
                 Name = "C#",
-                JarGenerator = "antlr-4.6-complete.jar",
                 DLanguage = "CSharp",
                 RuntimeLibrary = "Antlr4.Runtime.Standard.dll",
                 Extensions = new[] { "cs" },
@@ -34,7 +33,6 @@ namespace AntlrGrammarEditor
             {
                 Runtime = Runtime.Java,
                 Name = "Java",
-                JarGenerator = "antlr-4.6-complete.jar",
                 DLanguage = "Java",
                 RuntimeLibrary = "antlr-runtime-4.6.jar",
                 Extensions = new[] { "java" },
@@ -48,7 +46,6 @@ namespace AntlrGrammarEditor
             {
                 Runtime = Runtime.Python2,
                 Name = "Python2",
-                JarGenerator = "antlr-4.6-complete.jar",
                 DLanguage = "Python2",
                 RuntimeLibrary = "",
                 Extensions = new[] { "py" },
@@ -61,7 +58,6 @@ namespace AntlrGrammarEditor
             {
                 Runtime = Runtime.Python3,
                 Name = "Python3",
-                JarGenerator = "antlr-4.6-complete.jar",
                 DLanguage = "Python3",
                 RuntimeLibrary = "",
                 Extensions = new[] { "py" },
@@ -74,7 +70,6 @@ namespace AntlrGrammarEditor
             {
                 Runtime = Runtime.JavaScript,
                 Name = "JavaScript",
-                JarGenerator = "antlr-4.6-complete.jar",
                 DLanguage = "JavaScript",
                 RuntimeLibrary = "",
                 Extensions = new[] { "js" },
@@ -87,7 +82,6 @@ namespace AntlrGrammarEditor
             {
                 Runtime = Runtime.CPlusPlus,
                 Name = "C++ SoftGems",
-                JarGenerator = "antlr-4.6-complete.jar",
                 DLanguage = "Cpp",
                 RuntimeLibrary = "antlr4-runtime.dll",
                 Extensions = new[] { "cpp", "h" }
@@ -96,7 +90,6 @@ namespace AntlrGrammarEditor
             {
                 Runtime = Runtime.Go,
                 Name = "Go",
-                JarGenerator = "antlr-4.6-complete.jar",
                 DLanguage = "Go",
                 RuntimeLibrary = "",
                 Extensions = new[] { "go" },
@@ -110,7 +103,6 @@ namespace AntlrGrammarEditor
             {
                 Runtime = Runtime.Swift,
                 Name = "Swift",
-                JarGenerator = "antlr-4.6-complete.jar",
                 DLanguage = "Swift",
                 RuntimeLibrary = "",
                 Extensions = new[] { "swift" },
@@ -128,7 +120,7 @@ namespace AntlrGrammarEditor
 
         public Runtime Runtime { get; set; }
         public string Name { get; set; }
-        public string JarGenerator { get; set; }
+        public string JarGenerator { get; set; } = "antlr-4.6-complete.jar";
         public string DLanguage { get; set; }
         public string RuntimeLibrary { get; set; }
         public string[] Extensions { get; set; }

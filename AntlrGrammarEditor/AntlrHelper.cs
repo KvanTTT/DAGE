@@ -5,7 +5,7 @@ namespace AntlrGrammarEditor
 {
     public static class AntlrHelper
     {
-        public static TextSpan GetTextSpan(this ParserRuleContext ruleContext)
+        public static TextSpan GetTextSpan(this ParserRuleContext ruleContext, CodeSource source)
         {
             var start = ruleContext.Start;
             if (start.Text == "<EOF>")
@@ -21,26 +21,18 @@ namespace AntlrGrammarEditor
                 }
             }
 
-            var result = new TextSpan(start.Line, start.Column + 1, stop.Line, stop.Column + 1 + (stop.StopIndex - stop.StartIndex))
-            {
-                Start = start.StartIndex,
-                Length = stop.StopIndex - start.StartIndex + 1
-            };
+            var result = new TextSpan(source, start.StartIndex, stop.StopIndex - start.StartIndex + 1);
             return result;
         }
 
-        public static TextSpan GetTextSpan(this ITerminalNode node)
+        public static TextSpan GetTextSpan(this ITerminalNode node, CodeSource source)
         {
-            return GetTextSpan(node.Symbol);
+            return GetTextSpan(node.Symbol, source);
         }
 
-        public static TextSpan GetTextSpan(this IToken token)
+        public static TextSpan GetTextSpan(this IToken token, CodeSource source)
         {
-            var result = new TextSpan(token.Line, token.Column + 1, token.Line, token.Column + 1 + (token.StopIndex - token.StartIndex))
-            {
-                Start = token.StartIndex,
-                Length = token.StopIndex - token.StartIndex + 1
-            };
+            var result = new TextSpan(source, token.StartIndex, token.StopIndex - token.StartIndex + 1);
             return result;
         }
     }
