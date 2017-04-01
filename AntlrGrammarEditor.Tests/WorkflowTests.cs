@@ -221,6 +221,11 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void CaseInsensitive(Runtime runtime)
         {
+            if (runtime == Runtime.Java)
+            {
+                Assert.Ignore("Java 4.7 custom streams are not supported yet.");
+            }
+
             if (Helpers.IsLinux && runtime == Runtime.Python3)
             {
                 Assert.Ignore("Python3 is not working on Linux now");

@@ -41,11 +41,11 @@
       <Link>Runtimes\CSharpSharwell\Antlr4.Runtime.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\packages\Antlr4.Runtime.Standard.4.6.0\lib\net35\Antlr4.Runtime.Standard.dll">
+    <Content Include="..\packages\Antlr4.Runtime.Standard.4.7.0\lib\net35\Antlr4.Runtime.Standard.dll">
       <Link>Runtimes\CSharp\Antlr4.Runtime.Standard.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Generators\antlr-4.6-complete.jar">
+    <Content Include="Generators\antlr-4.7-complete.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Runtimes\JavaScript\AntlrCaseInsensitiveInputStream.js">
@@ -54,7 +54,7 @@
     <Content Include="Runtimes\JavaScript\main.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Runtimes\Java\antlr-runtime-4.6.jar">
+    <Content Include="Runtimes\Java\antlr-runtime-4.7.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Runtimes\Python2\AntlrCaseInsensitiveInputStream.py">

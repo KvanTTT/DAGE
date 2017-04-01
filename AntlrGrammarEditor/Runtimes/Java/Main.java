@@ -6,11 +6,9 @@ import java.io.IOException;
 import java.util.List;
 
 public class Main {
-
     public static void main(String[] args) {
         try {
-            String code = readFile(args[0]);
-            ANTLRInputStream codeStream = new ANTLRInputStream(code);
+            CharStream codeStream = CharStreams.fromFileName(args[0]);
             AntlrGrammarName42Lexer lexer = new AntlrGrammarName42Lexer(codeStream);
             List<? extends Token> tokens = lexer.getAllTokens();
             ListTokenSource tokensSource = new ListTokenSource(tokens);
@@ -22,25 +20,5 @@ public class Main {
         }
         catch (IOException e) {
         }
-    }
-
-    public static String readFile(String filename) throws IOException {
-        String content = null;
-        File file = new File(filename);
-        FileReader reader = null;
-        try {
-            reader = new FileReader(file);
-            char[] chars = new char[(int) file.length()];
-            reader.read(chars);
-            content = new String(chars);
-            reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if(reader != null) {
-                reader.close();
-            }
-        }
-        return content;
     }
 }
