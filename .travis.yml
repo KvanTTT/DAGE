@@ -8,7 +8,7 @@ before_install:
     - sudo pip2 install antlr4-python2-runtime
     - sudo $(which npm) install antlr4
     - export GOPATH=$HOME/gopath:$GOPATH
-    - go get github.com/antlr/antlr4/tree/4.7/runtime/Go/antlr
+    - go get github.com/antlr/antlr4/runtime/Go/antlr
     - python2 -V
     - python3 -V
     - node -v
