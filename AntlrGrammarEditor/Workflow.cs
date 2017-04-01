@@ -604,6 +604,7 @@ namespace AntlrGrammarEditor
                 code = code.Replace(TemplateGrammarRoot, root);
                 if (_grammar.CaseInsensitive)
                 {
+                    code = code.Replace("from antlr4.InputStream import InputStream\r\n", "");
                     code = code.Replace(runtimeInfo.AntlrInputStream, (Runtime == Runtime.Go ? "New" : "") + "AntlrCaseInsensitiveInputStream");
                     if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                     {
@@ -620,11 +621,11 @@ namespace AntlrGrammarEditor
                 {
                     if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                     {
-                        code = code.Replace("'''AntlrCaseInsensitive'''", "");
+                        code = code.Replace("'''AntlrCaseInsensitive'''\r\n", "");
                     }
                     else if (Runtime == Runtime.JavaScript)
                     {
-                        code = code.Replace("/*AntlrCaseInsensitive*/", "");
+                        code = code.Replace("/*AntlrCaseInsensitive*/\r\n", "");
                     }
                 }
                 File.WriteAllText(templateFile, code);
