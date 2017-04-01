@@ -1,0 +1,24 @@
+version: 1.0.{build}
+configuration: Release
+platform: Any CPU
+environment:
+  matrix:
+  - python3: C:\Python35-x64
+    python2: C:\Python27-x64
+    py: C:\Python35-x64\py.exe
+    GOPATH: C:\GOPATH
+    java: C:\Program Files\Java\jdk1.7.0\bin\java.exe
+    javac: C:\Program Files\Java\jdk1.7.0\bin\javac.exe
+install:
+- cmd: >-
+    %python2%/Scripts/pip.exe install antlr4-python2-runtime
+    %python3%/Scripts/pip.exe install antlr4-python3-runtime
+    go get github.com/antlr/antlr4/tree/4.7/runtime/Go/antlr
+    npm install antlr4
+before_build:
+- cmd: nuget sources add -Name Avalonia -Source https://www.myget.org/F/avalonia-ci/api/v2
+build:
+  project: AntlrGrammarEditor.sln
+  verbosity: normal
+test:
+  assemblies: Tests\Unit\bin
