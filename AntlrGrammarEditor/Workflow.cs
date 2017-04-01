@@ -808,11 +808,17 @@ namespace AntlrGrammarEditor
                 {
                     var strs = e.Data.Split(':');
                     ParsingError error;
-                    int line = 0, column = 0;
+                    int line = 1, column = 1;
                     if (strs.Length >= 4)
                     {
-                        int.TryParse(strs[2], out line);
-                        int.TryParse(strs[3], out column);
+                        if (!int.TryParse(strs[2], out line))
+                        {
+                            line = 1;
+                        }
+                        if (!int.TryParse(strs[3], out column))
+                        {
+                            column = 1;
+                        }
                     }
                     error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated);
                     AddError(error);

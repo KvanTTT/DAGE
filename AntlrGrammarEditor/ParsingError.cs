@@ -22,7 +22,7 @@ namespace AntlrGrammarEditor
         }
 
         public ParsingError(string message, CodeSource codeSource, WorkflowStage stage)
-            : this(0, 0, message, codeSource, stage)
+            : this(1, 1, message, codeSource, stage)
         {
         }
 
