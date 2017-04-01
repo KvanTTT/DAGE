@@ -11,8 +11,8 @@ environment:
     javac: C:\Program Files\Java\jdk1.7.0\bin\javac.exe
 install:
 - cmd: >-
-    %python2%/Scripts/pip.exe install antlr4-python2-runtime
-    %python3%/Scripts/pip.exe install antlr4-python3-runtime
+    %python2%\Scripts\pip.exe install antlr4-python2-runtime
+    %python3%\Scripts\pip.exe install antlr4-python3-runtime
     go get github.com/antlr/antlr4/tree/4.7/runtime/Go/antlr
     npm install antlr4
 before_build:
