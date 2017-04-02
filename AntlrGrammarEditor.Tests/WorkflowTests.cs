@@ -248,11 +248,6 @@ namespace AntlrGrammarEditor.Tests
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
             TextParsedState textParsedState = state as TextParsedState;
-            foreach (var error in textParsedState.TextErrors)
-            {
-                Console.WriteLine(error);
-                System.Diagnostics.Debug.WriteLine(error);
-            }
             Assert.AreEqual(0, textParsedState.TextErrors.Count);
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
         }
