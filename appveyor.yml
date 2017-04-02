@@ -14,8 +14,11 @@ environment:
 install:
 - cmd: >-
     pip2 install antlr4-python2-runtime
+
     pip3 install antlr4-python3-runtime
+
     go get github.com/antlr/antlr4/runtime/Go/antlr
+
     npm install antlr4
 before_build:
 - cmd: nuget sources add -Name Avalonia -Source https://www.myget.org/F/avalonia-ci/api/v2
