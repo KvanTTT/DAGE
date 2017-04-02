@@ -34,7 +34,7 @@ namespace AntlrGrammarEditor
                 Runtime = Runtime.Java,
                 Name = "Java",
                 DLanguage = "Java",
-                RuntimeLibrary = "antlr-runtime-4.6.jar",
+                RuntimeLibrary = "antlr-runtime-4.7.jar",
                 Extensions = new[] { "java" },
                 MainFile = "Main.java",
                 AntlrInputStream = "ANTLRInputStream",
@@ -120,7 +120,7 @@ namespace AntlrGrammarEditor
 
         public Runtime Runtime { get; set; }
         public string Name { get; set; }
-        public string JarGenerator { get; set; } = "antlr-4.6-complete.jar";
+        public string JarGenerator { get; set; } = "antlr-4.7-complete.jar";
         public string DLanguage { get; set; }
         public string RuntimeLibrary { get; set; }
         public string[] Extensions { get; set; }

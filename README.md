@@ -30,7 +30,7 @@
 * Python2.
 * Python3.
 * JavaScript (teting with nodejs).
-* Go ([ANTLR4 Language Target, Runtime for Go](https://github.com/pboyer/antlr4)).
+* Go.
 
 ## Tests
 * AppVeyor (Windows):
