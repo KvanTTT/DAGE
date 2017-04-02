@@ -5,17 +5,15 @@ environment:
   matrix:
   - python2: C:\Python27-x64
     python3: C:\Python35-x64
-    pip2: C:\Python27-x64\Scripts\pip.exe
-    pip3: C:\Python35-x64\Scripts\pip.exe
     py: C:\Python35-x64\py.exe
     GOPATH: C:\GOPATH
     java: C:\Program Files\Java\jdk1.7.0\bin\java.exe
     javac: C:\Program Files\Java\jdk1.7.0\bin\javac.exe
 install:
 - cmd: >-
-    pip2 install antlr4-python2-runtime
+    %python2%\Scripts\pip.exe install antlr4-python2-runtime
 
-    pip3 install antlr4-python3-runtime
+    %python3%\Scripts\pip.exe install antlr4-python3-runtime
 
     go get github.com/antlr/antlr4/runtime/Go/antlr
 
