@@ -19,7 +19,12 @@ install:
 
     npm install antlr4
 before_build:
-- cmd: nuget sources add -Name Avalonia -Source https://www.myget.org/F/avalonia-ci/api/v2
+- cmd:
+    nuget sources add -Name Avalonia -Source https://www.myget.org/F/avalonia-ci/api/v2
+
+    nuget restore AntlrGrammarEditor.sln
+
+    call prebuild.cmd
 build:
   project: AntlrGrammarEditor.sln
   verbosity: normal
