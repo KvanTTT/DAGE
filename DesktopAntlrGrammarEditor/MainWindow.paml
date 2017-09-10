@@ -3,6 +3,12 @@
     <Style Selector="TextBlock">
       <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
+    <Style Selector="TextBox">
+      <Setter Property="FontSize" Value="22"/>
+    </Style>
+    <Style Selector="ListBox">
+      <Setter Property="FontSize" Value="22"/>
+    </Style>
   </Window.Styles>
 
   <Grid ColumnDefinitions="*,Auto,*" Margin="10">
@@ -20,7 +26,9 @@
           <DropDown Width="90" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></DropDown>
         </StackPanel>
       </Grid>
+      
       <TextBox Grid.Row="1" Name="GrammarTextBox" AcceptsReturn="true" />
+      
       <Expander Grid.Row="2" Header="{Binding GrammarErrorsText}" IsExpanded="{Binding GrammarErrorsExpanded}">
         <ListBox Name="GrammarErrorsListBox" MinHeight="120" Items="{Binding GrammarErrors}" />
       </Expander>
@@ -31,7 +39,9 @@
         <TextBlock Grid.Column="3" Text="{Binding CurrentState}" />
       </Grid>
     </Grid>
+
     <GridSplitter Grid.Column="1" />
+
     <Grid Grid.Column="2" RowDefinitions="35,*,Auto,Auto,Auto" >
       <Grid ColumnDefinitions="50,60,60,60,100,150" Margin="3">
         <TextBlock Grid.Row="0" Text="TEXT" />
@@ -44,21 +54,21 @@
 
       <TextBox IsEnabled="{Binding TextBoxEnabled}" Grid.Row="1" Name="TextTextBox" AcceptsReturn="true" />
 
-      <Expander Grid.Row="2" Header="Tokens" IsExpanded="false">
-        <Grid RowDefinitions="120">
-          <TextBox MinHeight="120" Text="{Binding Tokens}" IsReadOnly="true" TextWrapping="Wrap" />
+      <Expander Grid.Row="2" Header="Tokens" IsExpanded="{Binding IsTokensExpanded, Mode=TwoWay}">
+        <Grid RowDefinitions="170">
+          <TextBox MinHeight="170" Text="{Binding Tokens}" IsReadOnly="true" TextWrapping="Wrap" />
         </Grid>
       </Expander>
 
-      <Expander Grid.Row="3" Header="Tree" IsExpanded="false">
-        <Grid RowDefinitions="120">
-          <TextBox MinHeight="120" Text="{Binding Tree, Mode=TwoWay}" IsReadOnly="true" TextWrapping="Wrap" />
+      <Expander Grid.Row="3" Header="Tree" IsExpanded="{Binding IsParseTreeExpanded, Mode=TwoWay}">
+        <Grid RowDefinitions="170">
+          <TextBox MinHeight="170" Text="{Binding Tree, Mode=TwoWay}" IsReadOnly="true" TextWrapping="Wrap" />
         </Grid>
       </Expander>
 
       <Expander Grid.Row="4" Header="{Binding TextErrorsText}" IsExpanded="{Binding TextErrorsExpanded}">
-        <Grid RowDefinitions="120" >
-          <ListBox Name="TextErrorsListBox" MinHeight="120" Items="{Binding TextErrors}" />
+        <Grid RowDefinitions="170" >
+          <ListBox Name="TextErrorsListBox" MinHeight="170" Items="{Binding TextErrors}" />
         </Grid>
       </Expander>
     </Grid>

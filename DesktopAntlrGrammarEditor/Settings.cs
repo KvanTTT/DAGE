@@ -38,6 +38,10 @@ namespace DesktopAntlrGrammarEditor
 
         public string JavaPath { get; set; }
 
+        public bool IsTokensExpanded { get; set; } = false;
+
+        public bool IsParseTreeExpanded { get; set; } = false;
+
         public Dictionary<Runtime, string> CompilerPaths { get; set; } = new Dictionary<Runtime, string>();
 
         static Settings()

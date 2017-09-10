@@ -249,7 +249,12 @@ namespace DesktopAntlrGrammarEditor
                     _openedTextFile = value;
                     try
                     {
-                        _textTextBox.Text = File.ReadAllText(value.FullFileName);
+                        string fileName = value.FullFileName;
+                        if (!File.Exists(value.FullFileName))
+                        {
+                            fileName = GetFullGrammarFileName(value.FullFileName);
+                        }
+                        _textTextBox.Text = File.ReadAllText(fileName);
                     }
                     catch (Exception ex)
                     {
@@ -314,6 +319,40 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
+        public bool IsTokensExpanded
+        {
+            get
+            {
+                return _settings.IsTokensExpanded;
+            }
+            set
+            {
+                if (_settings.IsTokensExpanded != value)
+                {
+                    _settings.IsTokensExpanded = value;
+                    _settings.Save();
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
+
+        public bool IsParseTreeExpanded
+        {
+            get
+            {
+                return _settings.IsParseTreeExpanded;
+            }
+            set
+            {
+                if (_settings.IsParseTreeExpanded != value)
+                {
+                    _settings.IsParseTreeExpanded = value;
+                    _settings.Save();
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
+
         public ReactiveCommand<object> NewGrammarCommand { get; } = ReactiveCommand.Create();
 
         public ReactiveCommand<object> OpenGrammarCommand { get; } = ReactiveCommand.Create();
@@ -367,7 +406,10 @@ namespace DesktopAntlrGrammarEditor
                 .Throttle(TimeSpan.FromMilliseconds(250))
                 .Subscribe(width =>
                 {
-                    _settings.Width = width;
+                    if (_window.WindowState != WindowState.Maximized)
+                    {
+                        _settings.Width = width;
+                    }
                     _settings.WindowState = _window.WindowState;
                     _settings.Save();
                 });
@@ -376,19 +418,24 @@ namespace DesktopAntlrGrammarEditor
                 .Throttle(TimeSpan.FromMilliseconds(250))
                 .Subscribe(height =>
                 {
-                    _settings.Height = height;
+                    if (_window.WindowState != WindowState.Maximized)
+                    {
+                        _settings.Height = height;
+                    }
                     _settings.WindowState = _window.WindowState;
                     _settings.Save();
                 });
 
-            Observable.FromEventPattern(
-                ev => _window.Closed += ev, ev => _window.Closed -= ev)
+            Observable.FromEventPattern<PointEventArgs>(
+                ev => _window.PositionChanged += ev, ev => _window.PositionChanged -= ev)
+                .Throttle(TimeSpan.FromMilliseconds(250))
                 .Subscribe(ev =>
                 {
-                    SaveGrammarFileIfRequired();
-                    SaveTextFileIfRequired();
-                    _settings.Left = _window.Position.X;
-                    _settings.Top = _window.Position.Y;
+                    if (_window.WindowState != WindowState.Maximized)
+                    {
+                        _settings.Left = _window.Position.X;
+                        _settings.Top = _window.Position.Y;
+                    }
                     _settings.Save();
                 });
         }
