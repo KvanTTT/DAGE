@@ -10,7 +10,7 @@ namespace AntlrGrammarEditor
             {
                 Runtime = Runtime.CSharpSharwell,
                 Name = "C# Sharwell",
-                JarGenerator = "antlr-4.5.3-csharpsharwell.jar",
+                JarGenerator = "antlr-4.6.4-csharpsharwell.jar",
                 DLanguage = "CSharp_v4_5",
                 RuntimeLibrary = "Antlr4.Runtime.dll",
                 Extensions = new[] { "cs" },

@@ -106,7 +106,7 @@ namespace AntlrGrammarEditor.Tests
                     new ParsingError(2, 25, "error: testLexer.g4:2:25: token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
                     new ParsingError(2, 27, "error: testLexer.g4:2:27: token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
                     new ParsingError(2, 28, "error: testLexer.g4:2:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 16, "error: testParser.g4:3:16: extraneous input '#' expecting {<EOF>, TOKEN_REF, RULE_REF, DOC_COMMENT, 'fragment', 'protected', 'public', 'private', 'catch', 'finally', 'mode'}", testParserSource, WorkflowStage.GrammarChecked)
+                    new ParsingError(3, 16, "error: testParser.g4:3:16: extraneous input '#' expecting {<EOF>, 'mode'}", testParserSource, WorkflowStage.GrammarChecked)
                 },
                 grammarCheckedState.Errors);
         }
