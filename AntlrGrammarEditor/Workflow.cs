@@ -45,6 +45,7 @@ namespace AntlrGrammarEditor
         private event EventHandler<ParsingError> _newErrorEvent;
         private List<string> _buffer = new List<string>();
         private int _eventInvokeCounter;
+        private bool _indentedTree;
 
         private CancellationTokenSource _cancellationTokenSource;
         private InputState _inputState = new InputState();
@@ -157,6 +158,23 @@ namespace AntlrGrammarEditor
         }
 
         public WorkflowStage EndStage { get; set; } = WorkflowStage.TextParsed;
+
+        public bool IndentedTree
+        {
+            get
+            {
+                return _indentedTree;
+            }
+            set
+            {
+                if (_indentedTree != value)
+                {
+                    StopIfRequired();
+                    _indentedTree = value;
+                    RollbackToStage(WorkflowStage.ParserCompilied);
+                }
+            }
+        }
 
         public event EventHandler<WorkflowState> StateChanged;
 
@@ -701,7 +719,8 @@ namespace AntlrGrammarEditor
                     {
                         File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
                     }
-                    arguments = $"{Root} \"\" {(EndStage == WorkflowStage.TextParsed ? false : true)}";
+                    bool parse = EndStage != WorkflowStage.TextParsed;
+                    arguments = $"{Root} \"\" {parse} {IndentedTree}";
                     parserFileName = $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.Grammar.Name}Parser.exe";
                     if (Helpers.IsRunningOnMono)
                     {
@@ -957,7 +976,7 @@ namespace AntlrGrammarEditor
                                 OutputTokens = data;
                                 break;
                             case TextParsedOutput.Tree:
-                                OutputTree = data;
+                                OutputTree = data.Replace("\\n", "\n");
                                 break;
                         }
                     }

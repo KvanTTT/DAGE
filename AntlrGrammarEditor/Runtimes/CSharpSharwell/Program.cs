@@ -1,4 +1,5 @@
 ﻿using Antlr4.Runtime;
+using Antlr4.Runtime.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,6 +14,7 @@ class Program
             string rootRule = "";
             string fileName = "Text";
             bool notParse = false;
+            bool indented = false;
             if (args.Length > 0)
             {
                 rootRule = args[0];
@@ -21,6 +23,7 @@ class Program
                     fileName = args[1];
                 }
                 notParse = bool.Parse(args[2]);
+                indented = bool.Parse(args[3]);
             }
             var code = System.IO.File.ReadAllText(fileName);
             var codeStream = new AntlrInputStream(code);
@@ -30,7 +33,7 @@ class Program
             var tokens = lexer.GetAllTokens();
             stopwatch.Stop();
             Console.WriteLine("LexerTime {0}", stopwatch.Elapsed);
-            Console.WriteLine("Tokens {0}", TokensToString(tokens));
+            Console.WriteLine("Tokens {0}", tokens.TokensToString());
 
             if (!notParse)
             {
@@ -52,7 +55,9 @@ class Program
                 stopwatch.Stop();
                 Console.WriteLine("ParserTime {0}", stopwatch.Elapsed);
 
-                var stringTree = ast.ToStringTree(parser);
+                var stringTree = indented
+                    ? ast.ToStringTreeIndented(parser)
+                    : ast.ToStringTree(parser);
                 Console.WriteLine("Tree {0}", stringTree);
             }
         }
@@ -61,8 +66,13 @@ class Program
             Console.Error.WriteLine(ex.ToString().Replace("\r", "").Replace("\n", ""));
         }
     }
+}
 
-    static string TokensToString(IList<IToken> tokens)
+public static class ParseTreeFormatter
+{
+    public const int IndentSize = 2;
+
+    public static string TokensToString(this IList<IToken> tokens)
     {
         var resultString = new StringBuilder();
         foreach (var token in tokens)
@@ -88,5 +98,36 @@ class Program
         }
         resultString.Append("EOF");
         return resultString.ToString();
+    }
+
+    public static string ToStringTreeIndented(this IParseTree parseTree, Parser parser)
+    {
+        var result = new StringBuilder();
+        parseTree.ToStringTreeIndented(parser, result, 0);
+        return result.ToString();
+    }
+
+    private static void ToStringTreeIndented(this IParseTree parseTree, Parser parser, StringBuilder builder, int level)
+    {
+        string currentLevelIndentString = string.Empty.PadLeft(level * IndentSize);
+        builder.Append(currentLevelIndentString);
+        var ruleContext = parseTree as RuleContext;
+        if (ruleContext != null)
+        {
+            builder.Append("(" + parser.RuleNames[ruleContext.RuleIndex] + "\\n");
+
+            for (int i = 0; i < ruleContext.ChildCount; i++)
+            {
+                ruleContext.GetChild(i).ToStringTreeIndented(parser, builder, level + 1);
+                builder.Append("\\n");
+            }
+
+            builder.Append(currentLevelIndentString);
+            builder.Append(")");
+        }
+        else
+        {
+            builder.Append('\'' + parseTree.GetText().Replace("'", "\\'") + '\'');
+        }
     }
 }

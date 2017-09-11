@@ -42,6 +42,8 @@ namespace DesktopAntlrGrammarEditor
 
         public bool IsParseTreeExpanded { get; set; } = false;
 
+        public bool IndentedTree { get; set; } = false;
+
         public Dictionary<Runtime, string> CompilerPaths { get; set; } = new Dictionary<Runtime, string>();
 
         static Settings()
