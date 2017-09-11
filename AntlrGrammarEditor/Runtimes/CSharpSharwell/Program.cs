@@ -127,7 +127,8 @@ public static class ParseTreeFormatter
         }
         else
         {
-            builder.Append('\'' + parseTree.GetText().Replace("'", "\\'") + '\'');
+            builder.Append('\'' + parseTree.GetText()
+                .Replace("'", "\\'").Replace("\r", "").Replace("\n", "") + '\'');
         }
     }
 }
