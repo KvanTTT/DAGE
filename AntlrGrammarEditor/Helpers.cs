@@ -1,22 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AntlrGrammarEditor
 {
     public static class Helpers
     {
-        public static bool IsRunningOnMono
-        {
-            get
-            {
-                return Type.GetType("Mono.Runtime") != null;
-            }
-        }
-
         public static bool IsLinux
         {
             get
@@ -47,13 +37,6 @@ namespace AntlrGrammarEditor
         public static RuntimeInfo GetRuntimeInfo(this Runtime runtime)
         {
             return RuntimeInfo.Runtimes[runtime];
-        }
-
-        public static string GetCSharpCompilerPath()
-        {
-            return IsRunningOnMono
-                   ? "mcs"
-                   : Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "csc.exe");
         }
 
         public static string GetJavaExePath(string exeName)

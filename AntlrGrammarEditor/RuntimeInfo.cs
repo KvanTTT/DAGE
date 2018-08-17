@@ -16,7 +16,7 @@ namespace AntlrGrammarEditor
                 Extensions = new[] { "cs" },
                 MainFile = "Program.cs",
                 AntlrInputStream = "AntlrInputStream",
-                DefaultCompilerPath = Helpers.GetCSharpCompilerPath()
+                DefaultCompilerPath = "dotnet"
             },
             [Runtime.CSharp] = new RuntimeInfo
             {
@@ -27,7 +27,7 @@ namespace AntlrGrammarEditor
                 Extensions = new[] { "cs" },
                 MainFile = "Program.cs",
                 AntlrInputStream = "AntlrInputStream",
-                DefaultCompilerPath = Helpers.GetCSharpCompilerPath()
+                DefaultCompilerPath = "dotnet"
             },
             [Runtime.Java] = new RuntimeInfo
             {

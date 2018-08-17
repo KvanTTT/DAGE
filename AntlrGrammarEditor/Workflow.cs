@@ -365,7 +365,8 @@ namespace AntlrGrammarEditor
                 _grammarActionsTextSpan.Clear();
                 foreach (var grammarFileName in _grammar.Files)
                 {
-                    var inputStream = new AntlrFileStream(Path.Combine(_grammar.GrammarPath, grammarFileName));
+                    string code = File.ReadAllText(Path.Combine(_grammar.GrammarPath, grammarFileName));
+                    var inputStream = new AntlrInputStream(code);
                     _antlrErrorListener.CodeSource = new CodeSource(grammarFileName, inputStream.ToString());
                     _grammarFilesData[grammarFileName] = _antlrErrorListener.CodeSource;
                    var antlr4Lexer = new ANTLRv4Lexer(inputStream);
@@ -551,7 +552,7 @@ namespace AntlrGrammarEditor
                         compiliedFiles.Append(" \"" + Path.Combine("..", "Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.cs") + "\"");
                     }
                     compiliedFiles.Append(" \"" + Path.Combine("..", "Runtimes", Runtime.ToString(), "AssemblyInfo.cs") + "\"");
-                    arguments = $@"/nologo /reference:""{(Path.Combine("..", runtimeLibraryPath))}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
+                    arguments = $@"/reference:""{(Path.Combine("..", runtimeLibraryPath))}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
                 }
                 else if (Runtime == Runtime.Java)
                 {
@@ -708,7 +709,23 @@ namespace AntlrGrammarEditor
                 File.WriteAllText(Path.Combine(HelperDirectoryName, TextFileName), result.Text);
 
                 var runtimeInfo = Runtime.GetRuntimeInfo();
-                string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), runtimeInfo.RuntimeLibrary);
+                string runtimeLibraryPath;
+                if (Runtime == Runtime.CSharpSharwell) // Not possible to add Antlr.Standard package
+                {
+                    string relativePath = Runtime == Runtime.CSharp
+                        ? Path.Combine("antlr4.runtime.standard", "4.7.1.1", "lib", "netstandard1.3")
+                        : Path.Combine("antlr4.runtime", "4.6.5-rc002", "lib", "netstandard1.1");
+                    runtimeLibraryPath = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                        ".nuget",
+                        "packages",
+                        relativePath,
+                        runtimeInfo.RuntimeLibrary);
+                }
+                else
+                {
+                    runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), runtimeInfo.RuntimeLibrary);
+                }
                 string parserFileName = "";
                 string arguments = "";
                 string workingDirectory = HelperDirectoryName;
@@ -720,17 +737,8 @@ namespace AntlrGrammarEditor
                         File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
                     }
                     bool parse = EndStage != WorkflowStage.TextParsed;
-                    arguments = $"{Root} \"\" {parse} {IndentedTree}";
-                    parserFileName = $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.Grammar.Name}Parser.exe";
-                    if (Helpers.IsRunningOnMono)
-                    {
-                        arguments = "\"" + parserFileName + "\" " + arguments;
-                        parserFileName = "mono";
-                    }
-                    else
-                    {
-                        parserFileName = "\"" + Path.Combine(HelperDirectoryName, parserFileName) + "\"";
-                    }
+                    arguments = $"\"{parserFileName}\" {Root} \"\" {parse} {IndentedTree}";
+                    parserFileName = "dotnet";
                 }
                 else if (Runtime == Runtime.Java)
                 {
@@ -870,7 +878,7 @@ namespace AntlrGrammarEditor
                 if (!string.IsNullOrEmpty(e.Data))
                 {
                     Console.WriteLine(e.Data);
-                    if (Helpers.IsRunningOnMono && (Runtime == Runtime.CSharp || Runtime == Runtime.CSharpSharwell))
+                    if (Runtime == Runtime.CSharp || Runtime == Runtime.CSharpSharwell)
                     {
                         AddCSharpError(e.Data);
                     }
@@ -906,7 +914,7 @@ namespace AntlrGrammarEditor
                 if (!string.IsNullOrEmpty(e.Data))
                 {
                     Console.WriteLine(e.Data);
-                    if (!Helpers.IsRunningOnMono && (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp))
+                    if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
                     {
                         AddCSharpError(e.Data);
                     }
