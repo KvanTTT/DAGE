@@ -1,5 +1,4 @@
 ﻿using AntlrGrammarEditor;
-using Avalonia;
 using Avalonia.Controls;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;

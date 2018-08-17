@@ -1,15 +1,12 @@
-﻿using System;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Diagnostics;
-using Avalonia.Themes.Default;
 using Avalonia.Markup.Xaml;
 
 namespace DesktopAntlrGrammarEditor
 {
     class App : Application
     {
-
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
@@ -19,6 +16,7 @@ namespace DesktopAntlrGrammarEditor
         static void Main(string[] args)
         {
             AppBuilder.Configure<App>()
+                .UseReactiveUI()
                 .UsePlatformDetect()
                 .Start<MainWindow>();
         }

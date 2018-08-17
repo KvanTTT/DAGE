@@ -20,7 +20,7 @@ namespace DesktopAntlrGrammarEditor
         {
             _window = window;
 
-            OkCommand.Subscribe(async _ =>
+            OkCommand = ReactiveCommand.Create(async () =>
             {
                 string grammarFileName = Path.Combine(GrammarDirectory, _grammar.Name);
                 bool success = false;
@@ -43,12 +43,12 @@ namespace DesktopAntlrGrammarEditor
                 }
             });
 
-            CancelCommand.Subscribe(_ =>
+            CancelCommand = ReactiveCommand.Create(() =>
             {
                 _window.Close(null);
             });
 
-            SelectGrammarDirectory.Subscribe(async _ =>
+            SelectGrammarDirectory = ReactiveCommand.Create(async () =>
             {
                 var openFolderDialog = new OpenFolderDialog
                 {
@@ -62,11 +62,11 @@ namespace DesktopAntlrGrammarEditor
             });
         }
 
-        public ReactiveCommand<object> OkCommand { get; } = ReactiveCommand.Create();
+        public ReactiveCommand OkCommand { get; }
 
-        public ReactiveCommand<object> CancelCommand { get; } = ReactiveCommand.Create();
+        public ReactiveCommand CancelCommand { get; }
 
-        public ReactiveCommand<object> SelectGrammarDirectory { get; } = ReactiveCommand.Create();
+        public ReactiveCommand SelectGrammarDirectory { get; }
 
         public string GrammarName
         {
