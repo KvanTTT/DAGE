@@ -2,7 +2,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace AntlrGrammarEditor.Tests
 {
@@ -166,11 +165,6 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void ParserCompiliedStageErrors(Runtime runtime)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && runtime == Runtime.Python3)
-            {
-                Assert.Ignore("Python3 runtime only works on Windows for now");
-            }
-
             var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
@@ -200,11 +194,6 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void TextParsedStageErrors(Runtime runtime)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && runtime == Runtime.Python3)
-            {
-                Assert.Ignore("Python3 runtime only works on Windows for now");
-            }
-
             var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
@@ -245,11 +234,6 @@ namespace AntlrGrammarEditor.Tests
             if (runtime == Runtime.Java)
             {
                 Assert.Ignore("Java 4.7 custom streams are not supported yet.");
-            }
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && runtime == Runtime.Python3)
-            {
-                Assert.Ignore("Python3 runtime only works on Windows for now");
             }
 
             var workflow = new Workflow();
