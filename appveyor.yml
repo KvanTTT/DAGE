@@ -1,32 +1,33 @@
+image:
+- Visual Studio 2017
+- Ubuntu
 version: 1.0.{build}
 configuration: Release
-platform: x86
-environment:
-  matrix:
-  - python2: C:\Python27-x64
-    python3: C:\Python35-x64
-    py: C:\Python35-x64\py.exe
-    GOPATH: C:\GOPATH
-    java: C:\Program Files\Java\jdk1.7.0\bin\java.exe
-    javac: C:\Program Files\Java\jdk1.7.0\bin\javac.exe
-install:
-- cmd: >-
-    %python2%\Scripts\pip.exe install antlr4-python2-runtime
+skip_branch_with_pr: true
+assembly_info:
+  patch: true
+  file: AntlrGrammarEditor\AssemblyInfo.cs;
+  assembly_version: '{version}'
+  assembly_file_version: '{version}'
+  assembly_informational_version: '{version}'
+build_script:
+- ps: |
+    dotnet build AntlrGrammarEditor.sln -c Release
 
-    %python3%\Scripts\pip.exe install antlr4-python3-runtime
+    dotnet publish DesktopAntlrGrammarEditor/DesktopAntlrGrammarEditor.csproj -c Release -o bin/Gui
+test_script:
+- ps: |
+    cd AntlrGrammarEditor.Tests/bin/Release/netcoreapp2.1
 
-    go get github.com/antlr/antlr4/runtime/Go/antlr
+    dotnet vstest AntlrGrammarEditor.Tests.dll --logger:nunit
 
-    npm install antlr4
-before_build:
-- cmd:
-    nuget sources add -Name Avalonia -Source https://www.myget.org/F/avalonia-ci/api/v2
+    $wc = New-Object 'System.Net.WebClient'
 
-    nuget restore AntlrGrammarEditor.sln
+    $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$env:APPVEYOR_JOB_ID", (Resolve-Path ./AntlrGrammarEditor.Tests/bin/Release/netcoreapp2.1/TestResults/TestResults.xml))
+after_test:
+- ps: |
+    cd DesktopAntlrGrammarEditor/bin/Gui
 
-    call prebuild.cmd
-build:
-  project: AntlrGrammarEditor.sln
-  verbosity: normal
-test:
-  assemblies: AntlrGrammarEditor.Tests\bin\$(configuration)\AntlrGrammarEditor.Tests.dll
+    7z a DAGE-$env:APPVEYOR_BUILD_VERSION.zip *.dll *.config *.json runtimes generators
+
+    Push-AppveyorArtifact DAGE-$env:APPVEYOR_BUILD_VERSION.zip
