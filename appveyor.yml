@@ -12,22 +12,40 @@ assembly_info:
   assembly_informational_version: '{version}'
 before_build:
 - ps: |
-    python2 -V
+    if ($isWindows) {
+        py -V
+    } else {
+        python2 -V
+    }
 
-    python3 -V
+    if ($isWindows) {
+        py -3 -V
+    } else {
+        python2 -V
+    }
 
     node -v
+
+    if ($isLinux) {
+        sudo apt-get -y install golang-go
+    }
 
     go version
 build_script:
 - ps: |
     if ($isWindows) {
+        python -m pip install --upgrade pip
+
         C:\Python27-x64\Scripts\pip.exe install antlr4-python2-runtime
 
         C:\Python35-x64\Scripts\pip.exe install antlr4-python3-runtime
     } else {
         sudo pip2 install antlr4-python2-runtime
+
+        sudo pip3 install antlr4-python3-runtime
     }
+
+    npm init -y
 
     npm install antlr4
 
@@ -44,7 +62,9 @@ test_script:
 
     $wc = New-Object 'System.Net.WebClient'
 
-    $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$env:APPVEYOR_JOB_ID", (Resolve-Path ./AntlrGrammarEditor.Tests/bin/Release/netcoreapp2.1/TestResults/TestResults.xml))
+    $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$env:APPVEYOR_JOB_ID", (Resolve-Path ./TestResults/TestResults.xml))
+
+    cd ../../../..
 after_test:
 - ps: |
     cd DesktopAntlrGrammarEditor/bin/Gui
