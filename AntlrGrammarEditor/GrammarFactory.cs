@@ -19,7 +19,7 @@ namespace AntlrGrammarEditor
             {
                 Name = "NewGrammar",
                 Root = "rootRule",
-                Runtimes = new HashSet<Runtime>() { Runtime.CSharpSharwell },
+                Runtimes = new HashSet<Runtime>() { Runtime.CSharpOptimized },
                 SeparatedLexerAndParser = false,
                 CaseInsensitive = false,
                 Preprocessor = false,
@@ -35,7 +35,7 @@ namespace AntlrGrammarEditor
             var result = new Grammar
             {
                 Name = grammarName,
-                Runtimes = new HashSet<Runtime>() { Runtime.CSharpSharwell },
+                Runtimes = new HashSet<Runtime>() { Runtime.CSharpOptimized },
             };
 
             result.AgeFileName = Path.Combine(directory, grammarName) + Grammar.ProjectDotExt;
@@ -55,7 +55,7 @@ namespace AntlrGrammarEditor
             var result = new Grammar
             {
                 Name = grammarName,
-                Runtimes = new HashSet<Runtime>() { Runtime.CSharpSharwell },
+                Runtimes = new HashSet<Runtime>() { Runtime.CSharpOptimized },
                 SeparatedLexerAndParser = true,
             };
 

@@ -5,26 +5,25 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Runtimes\CSharpSharwell\AntlrCaseInsensitiveInputStream.cs" />
-    <Compile Remove="Runtimes\CSharpSharwell\AssemblyInfo.cs" />
-    <Compile Remove="Runtimes\CSharpSharwell\Program.cs" />
-    <Compile Remove="Runtimes\CSharp\AntlrCaseInsensitiveInputStream.cs" />
-    <Compile Remove="Runtimes\CSharp\AssemblyInfo.cs" />
-    <Compile Remove="Runtimes\CSharp\Program.cs" />
+    <Compile Remove="Runtimes\CSharpOptimized\AntlrCaseInsensitiveInputStream.cs" />
+    <Compile Remove="Runtimes\CSharpOptimized\AssemblyInfo.cs" />
+    <Compile Remove="Runtimes\CSharpOptimized\Program.cs" />
+    <Compile Remove="Runtimes\CSharpStandard\AntlrCaseInsensitiveInputStream.cs" />
+    <Compile Remove="Runtimes\CSharpStandard\AssemblyInfo.cs" />
+    <Compile Remove="Runtimes\CSharpStandard\Program.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Runtimes\CSharp\Antlr4.Runtime.Standard.dll" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Antlr4" Version="4.6.5-rc002" />
+    <PackageReference Include="Antlr4" Version="4.6.5" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="Ude.NetStandard" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="Generators\antlr-4.6.4-csharpsharwell.jar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Generators\antlr-4.6.5-csharp-optimized.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Generators\antlr-4.7-complete.jar">
@@ -75,25 +74,34 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Runtimes\CSharpSharwell\AntlrCaseInsensitiveInputStream.cs">
+    <Content Include="Runtimes\CSharpOptimized\AntlrCaseInsensitiveInputStream.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Runtimes\CSharpSharwell\AssemblyInfo.cs">
+    <Content Include="Runtimes\CSharpOptimized\AssemblyInfo.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Runtimes\CSharpSharwell\Program.cs">
+    <Content Include="Runtimes\CSharpOptimized\Program.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Runtimes\CSharp\Antlr4.Runtime.Standard.dll">
+    <Content Include="Runtimes\CSharpStandard\AntlrCaseInsensitiveInputStream.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Runtimes\CSharp\AntlrCaseInsensitiveInputStream.cs">
+    <Content Include="Runtimes\CSharpStandard\AssemblyInfo.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Runtimes\CSharp\AssemblyInfo.cs">
+    <Content Include="Runtimes\CSharpStandard\Program.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Runtimes\CSharp\Program.cs">
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Runtimes\CSharpOptimized\Project.csproj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Runtimes\CSharpStandard\Project.csproj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
