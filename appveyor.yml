@@ -10,8 +10,29 @@ assembly_info:
   assembly_version: '{version}'
   assembly_file_version: '{version}'
   assembly_informational_version: '{version}'
+before_build:
+- ps: |
+    python2 -V
+
+    python3 -V
+
+    node -v
+
+    go version
 build_script:
 - ps: |
+    if ($isWindows) {
+        C:\Python27-x64\Scripts\pip.exe install antlr4-python2-runtime
+
+        C:\Python35-x64\Scripts\pip.exe install antlr4-python3-runtime
+    } else {
+        sudo pip2 install antlr4-python2-runtime
+    }
+
+    npm install antlr4
+
+    go get github.com/antlr/antlr4/runtime/Go/antlr
+
     dotnet build AntlrGrammarEditor.sln -c Release
 
     dotnet publish DesktopAntlrGrammarEditor/DesktopAntlrGrammarEditor.csproj -c Release -o bin/Gui
