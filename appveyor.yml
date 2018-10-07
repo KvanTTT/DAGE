@@ -69,6 +69,6 @@ after_test:
 - ps: |
     cd DesktopAntlrGrammarEditor/bin/Gui
 
-    7z a DAGE-$env:APPVEYOR_BUILD_VERSION.zip *.dll *.config *.json runtimes generators
+    7z a DAGE-$env:APPVEYOR_BUILD_VERSION.zip *.dll *.config *.json runtimes Generators AntlrRuntimes
 
     Push-AppveyorArtifact DAGE-$env:APPVEYOR_BUILD_VERSION.zip

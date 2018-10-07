@@ -13,10 +13,11 @@ namespace AntlrGrammarEditor
 {
     public class Workflow
     {
-        public static string HelperDirectoryName = "DageHelperDirectory";
+        public const string HelperDirectoryName = "DageHelperDirectory";
         private const string PythonHelperFileName = "AntlrPythonCompileTest.py";
         private const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
         private const string TextFileName = "Text";
+        private const string RuntimesDirName = "AntlrRuntimes";
 
         private const string TemplateGrammarName = "__TemplateGrammarName__";
         private const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
@@ -474,7 +475,7 @@ namespace AntlrGrammarEditor
             {
                 string arguments = "";
                 string templateName = "";
-                string runtimeDir = Path.Combine("Runtimes", Runtime.ToString());
+                string runtimeDir = Path.Combine(RuntimesDirName, Runtime.ToString());
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
                 string extension = runtimeInfo.Extensions.First();
                 string workingDirectory = Path.Combine(HelperDirectoryName, Runtime.ToString());
@@ -661,7 +662,7 @@ namespace AntlrGrammarEditor
                 File.WriteAllText(Path.Combine(HelperDirectoryName, TextFileName), result.Text);
 
                 var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Runtime);
-                string runtimeDir = Path.Combine("Runtimes", Runtime.ToString());
+                string runtimeDir = Path.Combine(RuntimesDirName, Runtime.ToString());
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
 
                 string parserFileName = "";
