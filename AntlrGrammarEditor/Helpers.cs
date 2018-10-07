@@ -1,18 +1,41 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace AntlrGrammarEditor
 {
     public static class Helpers
     {
-        public static bool IsLinux
+        private static bool _javaInitialized;
+
+        private static string javaVersion;
+
+        public static string JavaVersion
         {
             get
             {
-                int p = (int)Environment.OSVersion.Platform;
-                return (p == 4) || (p == 6) || (p == 128);
+                if (!_javaInitialized)
+                {
+                    _javaInitialized = true;
+
+                    try
+                    {
+                        var processor = new Processor("java", "-version");
+                        string version = "";
+                        processor.ErrorDataReceived += (sender, e) =>
+                        {
+                            version += e.Data + Environment.NewLine;
+                        };
+                        processor.Start();
+                        javaVersion = version.Trim();
+                    }
+                    catch
+                    {
+                        javaVersion = null;
+                    }
+                }
+
+                return javaVersion;
             }
         }
 
@@ -32,43 +55,6 @@ namespace AntlrGrammarEditor
                 }
             }
             return result;
-        }
-
-        public static RuntimeInfo GetRuntimeInfo(this Runtime runtime)
-        {
-            return RuntimeInfo.Runtimes[runtime];
-        }
-
-        public static string GetJavaExePath(string exeName)
-        {
-            string result = CheckFile(Environment.SpecialFolder.ProgramFiles, true, exeName) ??
-                            CheckFile(Environment.SpecialFolder.ProgramFiles, false, exeName) ??
-                            CheckFile(Environment.SpecialFolder.ProgramFilesX86, true, exeName) ??
-                            CheckFile(Environment.SpecialFolder.ProgramFilesX86, false, exeName);
-
-            return result;
-        }
-
-        private static string CheckFile(Environment.SpecialFolder specialFolder, bool jdk, string exeName)
-        {
-            var javaFilesDir = Path.Combine(Environment.GetFolderPath(specialFolder), "java");
-
-            if (Directory.Exists(javaFilesDir))
-            {
-                var dirs = Directory.GetDirectories(javaFilesDir);
-                // Chose the latest version.
-                dirs = dirs.Where(dir => Path.GetFileName(dir).StartsWith(jdk ? "jdk" : "jre")).OrderByDescending(dir => dir).ToArray();
-                foreach (var dir in dirs)
-                {
-                    var result = Path.Combine(dir, exeName);
-                    if (File.Exists(result))
-                    {
-                        return result;
-                    }
-                }
-            }
-
-            return null;
         }
     }
 }

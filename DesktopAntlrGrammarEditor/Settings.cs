@@ -35,15 +35,11 @@ namespace DesktopAntlrGrammarEditor
 
         public bool Autoprocessing { get; set; } = false;
 
-        public string JavaPath { get; set; }
-
         public bool IsTokensExpanded { get; set; } = false;
 
         public bool IsParseTreeExpanded { get; set; } = false;
 
         public bool IndentedTree { get; set; } = false;
-
-        public Dictionary<Runtime, string> CompilerPaths { get; set; } = new Dictionary<Runtime, string>();
 
         static Settings()
         {
