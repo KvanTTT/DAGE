@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 
@@ -11,6 +12,10 @@
     <None Remove="MessageBox.paml" />
     <None Remove="NewGrammarWindow.paml" />
     <None Remove="SelectPathDialog.paml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\AntlrGrammarEditor\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>

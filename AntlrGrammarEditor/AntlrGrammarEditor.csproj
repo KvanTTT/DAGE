@@ -2,7 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Antlr4 Remove="LexBasic.g4" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="Runtimes\CSharpOptimized\AntlrCaseInsensitiveInputStream.cs" />
@@ -65,15 +70,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Antlr4 Include="ANTLRv4Lexer.g4">
-      <Visitor>false</Visitor>
-    </Antlr4>
-    <Antlr4 Include="ANTLRv4Parser.g4">
-      <Visitor>false</Visitor>
-    </Antlr4>
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="Runtimes\CSharpOptimized\AntlrCaseInsensitiveInputStream.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -104,5 +100,14 @@
     <Content Include="Runtimes\CSharpStandard\Project.csproj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Antlr4 Update="ANTLRv4Lexer.g4">
+      <Visitor>false</Visitor>
+    </Antlr4>
+    <Antlr4 Update="ANTLRv4Parser.g4">
+      <Visitor>false</Visitor>
+    </Antlr4>
   </ItemGroup>
 </Project>
