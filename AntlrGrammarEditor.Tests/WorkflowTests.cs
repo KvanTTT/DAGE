@@ -1,8 +1,8 @@
 ﻿using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace AntlrGrammarEditor.Tests
 {
@@ -12,17 +12,37 @@ namespace AntlrGrammarEditor.Tests
         [SetUp]
         public void Init()
         {
-            var assemblyPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            System.IO.Directory.SetCurrentDirectory(assemblyPath);
+            var assemblyPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            Directory.SetCurrentDirectory(assemblyPath);
         }
 
         [Test]
-        public void RuntimeInfosFilled()
+        public void RuntimesExist()
         {
             var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
-            foreach (var runtime in runtimes)
+            foreach (Runtime runtime in runtimes)
             {
                 Assert.IsTrue(RuntimeInfo.Runtimes.ContainsKey(runtime));
+            }
+        }
+
+        [Test]
+        public void RuntimeInitialized()
+        {
+            var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
+
+            foreach (Runtime runtime in runtimes)
+            {
+                if (runtime != Runtime.CPlusPlus && runtime != Runtime.Swift)
+                {
+                    RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
+                    Assert.IsTrue(!string.IsNullOrEmpty(runtimeInfo.Version));
+                    Console.WriteLine($"{runtime}: {runtimeInfo.RuntimeToolName} {runtimeInfo.Version}");
+                }
+                else
+                {
+                    Console.WriteLine($"{runtime} is not supported for now");
+                }
             }
         }
 
@@ -30,7 +50,7 @@ namespace AntlrGrammarEditor.Tests
         public void AllGeneratorsExists()
         {
             var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText = @"grammar test;
                 start: DIGIT+;
                 CHAR:  [a-z]+;
@@ -38,14 +58,15 @@ namespace AntlrGrammarEditor.Tests
                 WS:    [ \r\n\t]+ -> skip;";
             workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
             workflow.EndStage = WorkflowStage.ParserGenerated;
-            foreach (var runtime in runtimes)
+            foreach (Runtime runtime in runtimes)
             {
                 workflow.Runtime = runtime;
                 var state = (ParserGeneratedState)workflow.Process();
                 Assert.IsFalse(state.HasErrors);
-
-                var extensions = RuntimeInfo.Runtimes[runtime].Extensions;
-                var allFiles = Directory.GetFiles(Workflow.HelperDirectoryName);
+                
+                RuntimeInfo runtimeInfo = RuntimeInfo.Runtimes[runtime];
+                var extensions = runtimeInfo.Extensions;
+                var allFiles = Directory.GetFiles(Path.Combine(Workflow.HelperDirectoryName, runtimeInfo.Runtime.ToString()));
                 var actualFilesCount = allFiles.Where
                     (file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext))).Count();
                 Assert.Greater(actualFilesCount, 0);
@@ -114,7 +135,7 @@ namespace AntlrGrammarEditor.Tests
         [Test]
         public void ParserGeneratedStageErrors()
         {
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                 start:  rule1+;
@@ -136,8 +157,8 @@ namespace AntlrGrammarEditor.Tests
                 parserGeneratedState.Errors);
         }
 
-        [TestCase(Runtime.CSharpSharwell)]
-        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
@@ -145,12 +166,12 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void ParserCompiliedStageErrors(Runtime runtime)
         {
-            if (Helpers.IsLinux && runtime == Runtime.Python3)
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && runtime == Runtime.Python3)
             {
-                Assert.Ignore("Python3 is not working on Linux now");
+                Assert.Ignore("Python3 runtime only works on Windows for now");
             }
 
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                 start:  DIGIT+ {i^;};
@@ -170,8 +191,8 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.StartLineColumn.Line);
         }
 
-        [TestCase(Runtime.CSharpSharwell)]
-        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
@@ -179,12 +200,12 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void TextParsedStageErrors(Runtime runtime)
         {
-            if (Helpers.IsLinux && runtime == Runtime.Python3)
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && runtime == Runtime.Python3)
             {
-                Assert.Ignore("Python3 is not working on Linux now");
+                Assert.Ignore("Python3 runtime only works on Windows for now");
             }
 
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                 start: DIGIT+;
@@ -212,8 +233,8 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual("(start asdf 1234)", textParsedState.Tree);
         }
 
-        [TestCase(Runtime.CSharpSharwell)]
-        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
@@ -226,12 +247,12 @@ namespace AntlrGrammarEditor.Tests
                 Assert.Ignore("Java 4.7 custom streams are not supported yet.");
             }
 
-            if (Helpers.IsLinux && runtime == Runtime.Python3)
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && runtime == Runtime.Python3)
             {
-                Assert.Ignore("Python3 is not working on Linux now");
+                Assert.Ignore("Python3 runtime only works on Windows for now");
             }
 
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                 start:  A A DIGIT;
@@ -252,8 +273,8 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
         }
 
-        [TestCase(Runtime.CSharpSharwell)]
-        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
@@ -263,7 +284,7 @@ namespace AntlrGrammarEditor.Tests
         {
             Assert.Ignore("Not ready");
 
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                   rootRule
@@ -289,25 +310,6 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 6).Count());
             Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 8).Count());
             Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 9).Count());
-        }
-
-        private Workflow CreateWorkflow()
-        {
-            var workflow = new Workflow
-            {
-                JavaPath = "java",
-                CompilerPaths = new Dictionary<Runtime, string>()
-                {
-                    [Runtime.CSharp] = RuntimeInfo.Runtimes[Runtime.CSharp].DefaultCompilerPath,
-                    [Runtime.CSharpSharwell] = RuntimeInfo.Runtimes[Runtime.CSharpSharwell].DefaultCompilerPath,
-                    [Runtime.Java] = RuntimeInfo.Runtimes[Runtime.Java].DefaultCompilerPath,
-                    [Runtime.Python2] = RuntimeInfo.Runtimes[Runtime.Python2].DefaultCompilerPath,
-                    [Runtime.Python3] = RuntimeInfo.Runtimes[Runtime.Python3].DefaultCompilerPath,
-                    [Runtime.JavaScript] = RuntimeInfo.Runtimes[Runtime.JavaScript].DefaultCompilerPath,
-                    [Runtime.Go] = RuntimeInfo.Runtimes[Runtime.Go].DefaultCompilerPath
-                }
-            };
-            return workflow;
         }
     }
 }
