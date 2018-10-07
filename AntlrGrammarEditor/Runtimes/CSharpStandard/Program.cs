@@ -11,7 +11,7 @@ class Program
         try
         {
             string rootRule = "";
-            string fileName = "Text";
+            string fileName = "../../../../Text";
             bool notParse = false;
             if (args.Length > 0)
             {
@@ -24,7 +24,7 @@ class Program
             }
             var code = System.IO.File.ReadAllText(fileName);
             var codeStream = new AntlrInputStream(code);
-            var lexer = new AntlrGrammarName42Lexer(codeStream);
+            var lexer = new __TemplateGrammarName__Lexer(codeStream);
 
             var stopwatch = Stopwatch.StartNew();
             var tokens = lexer.GetAllTokens();
@@ -36,13 +36,13 @@ class Program
             {
                 var tokensSource = new ListTokenSource(tokens);
                 var tokensStream = new CommonTokenStream(tokensSource);
-                var parser = new AntlrGrammarName42Parser(tokensStream);
+                var parser = new __TemplateGrammarName__Parser(tokensStream);
 
                 stopwatch.Restart();
                 ParserRuleContext ast;
                 if (string.IsNullOrEmpty(rootRule))
                 {
-                    ast = parser.AntlrGrammarRoot42();
+                    ast = parser.__TemplateGrammarRoot__();
                 }
                 else
                 {
@@ -67,7 +67,7 @@ class Program
         var resultString = new StringBuilder();
         foreach (var token in tokens)
         {
-            string symbolicName = AntlrGrammarName42Lexer.DefaultVocabulary.GetSymbolicName(token.Type);
+            string symbolicName = __TemplateGrammarName__Lexer.DefaultVocabulary.GetSymbolicName(token.Type);
             string value = token.Text ?? "";
             value = value.Replace("\r", "").Replace("\n", "");
             if (string.Compare(symbolicName, value, StringComparison.OrdinalIgnoreCase) != 0)
