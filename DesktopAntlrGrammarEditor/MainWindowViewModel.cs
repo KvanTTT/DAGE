@@ -1,7 +1,6 @@
 ﻿using AntlrGrammarEditor;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Threading;
 using ReactiveUI;
 using System;
@@ -10,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace DesktopAntlrGrammarEditor
@@ -55,8 +55,6 @@ namespace DesktopAntlrGrammarEditor
             }
 
             _workflow = new Workflow();
-            _workflow.JavaPath = _settings.JavaPath;
-            _workflow.CompilerPaths = _settings.CompilerPaths;
 
             bool openDefaultGrammar = false;
             if (string.IsNullOrEmpty(_settings.AgeFileName))
@@ -87,7 +85,7 @@ namespace DesktopAntlrGrammarEditor
             }
 
             _workflow.Grammar = _grammar;
-            SelectedRuntime = _grammar.Runtimes.First().GetRuntimeInfo();
+            SelectedRuntime = RuntimeInfo.Runtimes[_grammar.Runtimes.First()];
 
             InitFiles();
             if (string.IsNullOrEmpty(_settings.OpenedGrammarFile))
@@ -203,11 +201,11 @@ namespace DesktopAntlrGrammarEditor
         {
             get
             {
-                return _grammar.Runtimes.First().GetRuntimeInfo();
+                return RuntimeInfo.Runtimes[_grammar.Runtimes.First()];
             }
             set
             {
-                if (_grammar.Runtimes.First().GetRuntimeInfo() != value)
+                if (RuntimeInfo.Runtimes[_grammar.Runtimes.First()] != value)
                 {
                     _workflow.Runtime = value.Runtime;
                     _grammar.Runtimes.Clear();
@@ -851,44 +849,32 @@ namespace DesktopAntlrGrammarEditor
             var assemblyPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             Directory.SetCurrentDirectory(assemblyPath);
 
-            if (EndStage >= WorkflowStage.ParserGenerated && string.IsNullOrEmpty(_settings.JavaPath))
+            if (EndStage >= WorkflowStage.ParserGenerated && Helpers.JavaVersion == null)
             {
-                var javaPath = "java";
-                bool successExecution = ProcessHelpers.IsProcessCanBeExecuted(javaPath, "-version");
-                if (!successExecution)
+                string message = "Install java";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    javaPath = Helpers.GetJavaExePath(Path.Combine("bin", "java.exe")) ?? "";
+                    message += " and make sure path to Java added to the PATH environment variable";
                 }
 
-                var window = new SelectPathDialog("Select Java Path (java)", javaPath);
-                var selectResult = await window.ShowDialog<string>();
-                if (selectResult != null)
-                {
-                    _workflow.JavaPath = selectResult;
-                    _settings.JavaPath = selectResult;
-                    _settings.Save();
-                }
+                await MessageBox.ShowDialog(message);
+
+                return;
             }
 
-            if (EndStage >= WorkflowStage.ParserCompilied)
-            {
-                var selectedRuntime = SelectedRuntime.Runtime;
-                if (!_settings.CompilerPaths.ContainsKey(selectedRuntime))
-                {
-                    var runtimeInfo = selectedRuntime.GetRuntimeInfo();
-                    var compilerPath = runtimeInfo.DefaultCompilerPath;
-                    var compilerFileName = Path.GetFileNameWithoutExtension(compilerPath);
+            RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(SelectedRuntime.Runtime);
 
-                    var compilied = !runtimeInfo.Interpreted ? "Compiler " : "";
-                    var window = new SelectPathDialog($"Select {runtimeInfo.Name} ({compilerFileName}) {compilied}Path (csc)", compilerPath);
-                    var selectResult = await window.ShowDialog<string>();
-                    if (selectResult != null)
-                    {
-                        _workflow.CompilerPaths[selectedRuntime] = selectResult;
-                        _settings.CompilerPaths[selectedRuntime] = selectResult;
-                        _settings.Save();
-                    }
+            if (EndStage >= WorkflowStage.ParserCompilied && runtimeInfo.Version == null)
+            {
+                string message = $"Install {runtimeInfo.RuntimeToolName}";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    message += $" and make sure path to {runtimeInfo.RuntimeToolName} added to the PATH environment variable";
                 }
+
+                await MessageBox.ShowDialog(message);
+
+                return;
             }
 
             await _workflow.ProcessAsync();

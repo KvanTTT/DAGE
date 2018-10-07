@@ -2,11 +2,9 @@
 using Avalonia.Controls;
 using ReactiveUI;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace DesktopAntlrGrammarEditor
 {
@@ -132,11 +130,11 @@ namespace DesktopAntlrGrammarEditor
         {
             get
             {
-                return _grammar.Runtimes.First().GetRuntimeInfo();
+                return RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First());
             }
             set
             {
-                if (_grammar.Runtimes.First().GetRuntimeInfo() != value)
+                if (RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First()) != value)
                 {
                     _grammar.Runtimes.Clear();
                     _grammar.Runtimes.Add(value.Runtime);

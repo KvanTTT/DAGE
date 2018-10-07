@@ -3,12 +3,6 @@
     <Style Selector="TextBlock">
       <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
-    <Style Selector="TextBox">
-      <Setter Property="FontSize" Value="22"/>
-    </Style>
-    <Style Selector="ListBox">
-      <Setter Property="FontSize" Value="22"/>
-    </Style>
   </Window.Styles>
 
   <Grid ColumnDefinitions="*,Auto,*" Margin="10">
