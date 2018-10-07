@@ -11,7 +11,7 @@ namespace AntlrGrammarEditor
             var result = new List<TextSpanMapping>();
             int destInd = 0;
             CodeInsertion[] sortedSource = source.Where(s => s.Lexer == lexer).OrderBy(s => s.Predicate).ToArray();
-            foreach (var s in sortedSource)
+            foreach (CodeInsertion s in sortedSource)
             {
                 destInd = destinationSource.Text.IgnoreWhitespaceIndexOf(s.Text, destInd);
                 result.Add(new TextSpanMapping
