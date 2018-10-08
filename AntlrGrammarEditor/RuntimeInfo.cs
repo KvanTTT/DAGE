@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace AntlrGrammarEditor
 {
@@ -6,130 +9,205 @@ namespace AntlrGrammarEditor
     {
         public static Dictionary<Runtime, RuntimeInfo> Runtimes = new Dictionary<Runtime, RuntimeInfo>()
         {
-            [Runtime.CSharpSharwell] = new RuntimeInfo
-            {
-                Runtime = Runtime.CSharpSharwell,
-                Name = "C# Sharwell",
-                JarGenerator = "antlr-4.6.4-csharpsharwell.jar",
-                DLanguage = "CSharp_v4_5",
-                RuntimeLibrary = "Antlr4.Runtime.dll",
-                Extensions = new[] { "cs" },
-                MainFile = "Program.cs",
-                AntlrInputStream = "AntlrInputStream",
-                DefaultCompilerPath = Helpers.GetCSharpCompilerPath()
-            },
-            [Runtime.CSharp] = new RuntimeInfo
-            {
-                Runtime = Runtime.CSharp,
-                Name = "C#",
-                DLanguage = "CSharp",
-                RuntimeLibrary = "Antlr4.Runtime.Standard.dll",
-                Extensions = new[] { "cs" },
-                MainFile = "Program.cs",
-                AntlrInputStream = "AntlrInputStream",
-                DefaultCompilerPath = Helpers.GetCSharpCompilerPath()
-            },
+            [Runtime.CSharpOptimized] = new RuntimeInfo
+            (
+                runtime: Runtime.CSharpOptimized,
+                name: "C# Optimized",
+                jarGenerator: "antlr-4.6.5-csharp-optimized.jar",
+                dLanguage: "CSharp_v4_5",
+                runtimeLibrary: "Antlr4.Runtime.dll",
+                extensions: new[] { "cs" },
+                mainFile: "Program.cs",
+                antlrInputStream: "AntlrInputStream",
+                runtimeToolName: "dotnet",
+                versionArg: "--version"
+            ),
+            [Runtime.CSharpStandard] = new RuntimeInfo
+            (
+                runtime: Runtime.CSharpStandard,
+                name: "C# Standard",
+                dLanguage: "CSharp",
+                runtimeLibrary: "Antlr4.Runtime.Standard.dll",
+                extensions: new[] { "cs" },
+                mainFile: "Program.cs",
+                antlrInputStream: "AntlrInputStream",
+                runtimeToolName: "dotnet",
+                versionArg: "--version"
+            ),
             [Runtime.Java] = new RuntimeInfo
-            {
-                Runtime = Runtime.Java,
-                Name = "Java",
-                DLanguage = "Java",
-                RuntimeLibrary = "antlr-runtime-4.7.jar",
-                Extensions = new[] { "java" },
-                MainFile = "Main.java",
-                AntlrInputStream = "ANTLRInputStream",
-                DefaultCompilerPath = (Helpers.IsLinux || ProcessHelpers.IsProcessCanBeExecuted("javac", "-version"))
-                    ? "javac"
-                    : (Helpers.GetJavaExePath(@"bin\javac.exe") ?? "javac")
-            },
+            (
+                runtime: Runtime.Java,
+                name: "Java",
+                dLanguage: "Java",
+                runtimeLibrary: "antlr-runtime-4.7.jar",
+                extensions: new[] { "java" },
+                mainFile: "Main.java",
+                antlrInputStream: "ANTLRInputStream",
+                runtimeToolName: "javac",
+                versionArg: "-version",
+                errorVersionStream: true
+            ),
             [Runtime.Python2] = new RuntimeInfo
-            {
-                Runtime = Runtime.Python2,
-                Name = "Python2",
-                DLanguage = "Python2",
-                RuntimeLibrary = "",
-                Extensions = new[] { "py" },
-                MainFile = "main.py",
-                AntlrInputStream = "InputStream",
-                Interpreted = true,
-                DefaultCompilerPath = Helpers.IsLinux ? "python2" : "py"
-            },
+            (
+                runtime: Runtime.Python2,
+                name: "Python2",
+                dLanguage: "Python2",
+                runtimeLibrary: "",
+                extensions: new[] { "py" },
+                mainFile: "main.py",
+                antlrInputStream: "InputStream",
+                interpreted: true,
+                runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python2",
+                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-2 " : "") + "--version",
+                errorVersionStream: true
+            ),
             [Runtime.Python3] = new RuntimeInfo
-            {
-                Runtime = Runtime.Python3,
-                Name = "Python3",
-                DLanguage = "Python3",
-                RuntimeLibrary = "",
-                Extensions = new[] { "py" },
-                MainFile = "main.py",
-                AntlrInputStream = "InputStream",
-                Interpreted = true,
-                DefaultCompilerPath = Helpers.IsLinux ? "python3" : "py"
-            },
+            (
+                runtime: Runtime.Python3,
+                name: "Python3",
+                dLanguage: "Python3",
+                runtimeLibrary: "",
+                extensions: new[] { "py" },
+                mainFile: "main.py",
+                antlrInputStream: "InputStream",
+                interpreted: true,
+                runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python3",
+                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-3 " : "") + "--version",
+                errorVersionStream: false
+            ),
             [Runtime.JavaScript] = new RuntimeInfo
-            {
-                Runtime = Runtime.JavaScript,
-                Name = "JavaScript",
-                DLanguage = "JavaScript",
-                RuntimeLibrary = "",
-                Extensions = new[] { "js" },
-                MainFile = "main.js",
-                AntlrInputStream = "antlr4.InputStream",
-                Interpreted = true,
-                DefaultCompilerPath = "node"
-            },
+            (
+                runtime: Runtime.JavaScript,
+                name: "JavaScript",
+                dLanguage: "JavaScript",
+                runtimeLibrary: "",
+                extensions: new[] { "js" },
+                mainFile: "main.js",
+                antlrInputStream: "antlr4.InputStream",
+                interpreted: true,
+                runtimeToolName: "node",
+                versionArg: "-v",
+                errorVersionStream: false
+            ),
             [Runtime.CPlusPlus] = new RuntimeInfo
-            {
-                Runtime = Runtime.CPlusPlus,
-                Name = "C++ SoftGems",
-                DLanguage = "Cpp",
-                RuntimeLibrary = "antlr4-runtime.dll",
-                Extensions = new[] { "cpp", "h" }
-            },
+            (
+                runtime: Runtime.CPlusPlus,
+                name: "C++",
+                dLanguage: "Cpp",
+                runtimeLibrary: "antlr4-runtime.dll",
+                extensions: new[] { "cpp", "h" },
+                mainFile: "",
+                antlrInputStream: "",
+                runtimeToolName: "",
+                versionArg: ""
+            ),
             [Runtime.Go] = new RuntimeInfo
-            {
-                Runtime = Runtime.Go,
-                Name = "Go",
-                DLanguage = "Go",
-                RuntimeLibrary = "",
-                Extensions = new[] { "go" },
-                MainFile = "main.go",
-                AntlrInputStream = "antlr.NewInputStream",
-                DefaultCompilerPath = "go",
-                LexerPostfix = "_lexer",
-                ParserPostfix = "_parser",
-            },
+            (
+                runtime: Runtime.Go,
+                name: "Go",
+                dLanguage: "Go",
+                runtimeLibrary: "",
+                extensions: new[] { "go" },
+                mainFile: "main.go",
+                antlrInputStream: "antlr.NewInputStream",
+                runtimeToolName: "go",
+                versionArg: "version",
+                lexerPostfix: "_lexer",
+                parserPostfix: "_parser",
+                errorVersionStream: false
+            ),
             [Runtime.Swift] = new RuntimeInfo
-            {
-                Runtime = Runtime.Swift,
-                Name = "Swift",
-                DLanguage = "Swift",
-                RuntimeLibrary = "",
-                Extensions = new[] { "swift" },
-                MainFile = "",
-                AntlrInputStream = "",
-                DefaultCompilerPath = "",
-                LexerPostfix = "_lexer",
-                ParserPostfix = "_parser",
-            }
+            (
+                runtime: Runtime.Swift,
+                name: "Swift",
+                dLanguage: "Swift",
+                runtimeLibrary: "",
+                extensions: new[] { "swift" },
+                mainFile: "",
+                antlrInputStream: "",
+                runtimeToolName: "swift",
+                versionArg: "--version",
+                lexerPostfix: "_lexer",
+                parserPostfix: "_parser"
+            )
         };
 
-        static RuntimeInfo()
+        public Runtime Runtime { get; }
+        public string Name { get; }
+        public string JarGenerator { get; }
+        public string DLanguage { get; }
+        public string RuntimeLibrary { get; }
+        public string[] Extensions { get; }
+        public string MainFile { get; }
+        public string AntlrInputStream { get; }
+        public bool Interpreted { get; } = false;
+        public string RuntimeToolName { get; }
+        public string LexerPostfix { get; }
+        public string ParserPostfix { get; }
+        public string VersionArg { get; }
+        public bool ErrorVersionStream { get; }
+
+        public bool Initialized { get; private set; }
+
+        public bool Installed => Version != null;
+
+        public string Version { get; private set; }
+
+        public static RuntimeInfo InitOrGetRuntimeInfo(Runtime runtime)
         {
+            RuntimeInfo runtimeInfo = Runtimes[runtime];
+            if (!runtimeInfo.Initialized)
+            {
+                try
+                {
+                    var processor = new Processor(runtimeInfo.RuntimeToolName, runtimeInfo.VersionArg);
+                    string version = "";
+
+                    EventHandler<DataReceivedEventArgs> versionCollectFunc = (sender, e) =>
+                    {
+                        if (!e.IsIgnoreError())
+                            version += e.Data + Environment.NewLine;
+                    };
+
+                    if (runtimeInfo.ErrorVersionStream)
+                        processor.ErrorDataReceived += versionCollectFunc;
+                    else
+                        processor.OutputDataReceived += versionCollectFunc;
+
+                    processor.Start();
+                    runtimeInfo.Version = version.Trim();
+                }
+                catch
+                {
+                    runtimeInfo.Version = null;
+                }
+                runtimeInfo.Initialized = true;
+            }
+            return runtimeInfo;
         }
 
-        public Runtime Runtime { get; set; }
-        public string Name { get; set; }
-        public string JarGenerator { get; set; } = "antlr-4.7-complete.jar";
-        public string DLanguage { get; set; }
-        public string RuntimeLibrary { get; set; }
-        public string[] Extensions { get; set; }
-        public string MainFile { get; set; }
-        public string AntlrInputStream { get; set; }
-        public bool Interpreted { get; set; } = false;
-        public string DefaultCompilerPath { get; set; }
-        public string LexerPostfix { get; set; } = "Lexer";
-        public string ParserPostfix { get; set; } = "Parser";
+        public RuntimeInfo(Runtime runtime, string name,
+            string dLanguage, string runtimeLibrary, string[] extensions, string mainFile, string antlrInputStream,
+            string runtimeToolName, string versionArg, bool interpreted = false,
+            string jarGenerator = "antlr-4.7-complete.jar",
+            string lexerPostfix = "Lexer", string parserPostfix = "Parser",
+            bool errorVersionStream = false)
+        {
+            Runtime = runtime;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            JarGenerator = jarGenerator ?? throw new ArgumentNullException(nameof(jarGenerator));
+            DLanguage = dLanguage ?? throw new ArgumentNullException(nameof(dLanguage));
+            RuntimeLibrary = runtimeLibrary ?? throw new ArgumentNullException(nameof(runtimeLibrary));
+            Extensions = extensions ?? throw new ArgumentNullException(nameof(extensions));
+            MainFile = mainFile ?? throw new ArgumentNullException(nameof(mainFile));
+            AntlrInputStream = antlrInputStream ?? throw new ArgumentNullException(nameof(antlrInputStream));
+            Interpreted = interpreted;
+            RuntimeToolName = runtimeToolName ?? throw new ArgumentNullException(nameof(runtimeToolName));
+            LexerPostfix = lexerPostfix ?? throw new ArgumentNullException(nameof(lexerPostfix));
+            ParserPostfix = parserPostfix ?? throw new ArgumentNullException(nameof(parserPostfix));
+            VersionArg = versionArg ?? throw new ArgumentNullException(nameof(versionArg));
+            ErrorVersionStream = errorVersionStream;
+        }
 
         public override string ToString()
         {

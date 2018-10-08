@@ -13,10 +13,7 @@ namespace AntlrGrammarEditor
 
         public TextSpan(CodeSource codeSource, int start, int length)
         {
-            if (codeSource == null)
-            {
-                throw new ArgumentNullException(nameof(codeSource));
-            }
+            source = codeSource ?? throw new ArgumentNullException(nameof(codeSource));
 
             if (start < 0)
             {
@@ -28,7 +25,6 @@ namespace AntlrGrammarEditor
                 throw new ArgumentOutOfRangeException(nameof(length));
             }
 
-            source = codeSource;
             Start = start;
             Length = length;
         }

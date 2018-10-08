@@ -1,181 +1,113 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.props" Condition="Exists('..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.props')" />
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9688714B-0697-4340-9164-303CC1EB54DA}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AntlrGrammarEditor</RootNamespace>
-    <AssemblyName>AntlrGrammarEditor</AssemblyName>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+
   <ItemGroup>
-    <!-- A reference to the entire .NET Framework is automatically included -->
-    <Content Include="..\packages\Antlr4.Runtime.4.6.4\lib\net45\Antlr4.Runtime.dll">
-      <Link>Runtimes\CSharpSharwell\Antlr4.Runtime.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\Antlr4.Runtime.Standard.4.7.1\lib\net35\Antlr4.Runtime.Standard.dll">
-      <Link>Runtimes\CSharp\Antlr4.Runtime.Standard.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Generators\antlr-4.7-complete.jar">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\AntlrCaseInsensitiveInputStream.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\JavaScript\main.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\Java\antlr-runtime-4.7.jar">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\Python2\AntlrCaseInsensitiveInputStream.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\Python2\main.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\Python3\AntlrCaseInsensitiveInputStream.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\Python3\main.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Generators\antlr-4.6.4-csharpsharwell.jar">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\Java\Main.java">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Antlr4 Remove="LexBasic.g4" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="AntlrErrorListener.cs" />
-    <Compile Include="AntlrHelper.cs" />
-    <Content Include="Runtimes\CSharp\Program.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Compile Include="CodeSource.cs" />
-    <Compile Include="FileName.cs" />
-    <Compile Include="Grammar.cs" />
-    <Compile Include="GrammarFactory.cs" />
-    <Compile Include="Helpers.cs" />
-    <Compile Include="LexerAdaptor.cs" />
-    <Compile Include="LineColumn.cs" />
-    <Compile Include="ParsingError.cs" />
-    <Compile Include="ProcessHelpers.cs" />
-    <Compile Include="RulesCollectorListener.cs" />
-    <Compile Include="Runtime.cs" />
-    <Compile Include="RuntimeInfo.cs" />
-    <Content Include="Runtimes\CSharpSharwell\AntlrCaseInsensitiveInputStream.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\CSharp\AntlrCaseInsensitiveInputStream.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\Java\AntlrCaseInsensitiveInputStream.java">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\CSharp\AssemblyInfo.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\CSharpSharwell\AssemblyInfo.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Compile Include="TextParsedOutput.cs" />
-    <Compile Include="TextSpan.cs" />
-    <Compile Include="CodeInsertion.cs" />
-    <Compile Include="TextSpanMapping.cs" />
-    <Compile Include="TextHelpers.cs" />
-    <Compile Include="Workflow.cs" />
-    <Compile Include="WorkflowStage.cs" />
-    <Compile Include="WorkflowState\GrammarCheckedState.cs" />
-    <Compile Include="WorkflowState\InputState.cs" />
-    <Compile Include="WorkflowState\ParserCompiliedState.cs" />
-    <Compile Include="WorkflowState\ParserGeneratedState.cs" />
-    <Compile Include="WorkflowState\TextParsedState.cs" />
-    <Compile Include="WorkflowState\WorkflowState.cs" />
-    <Content Include="Runtimes\CSharpSharwell\Program.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Compile Include="Generated\ANTLRv4Lexer.cs" />
-    <Compile Include="Generated\ANTLRv4Parser.cs" />
-    <Compile Include="Generated\ANTLRv4ParserBaseListener.cs" />
-    <Compile Include="Generated\ANTLRv4ParserListener.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Remove="AntlrRuntimes\CSharpOptimized\AntlrCaseInsensitiveInputStream.cs" />
+    <Compile Remove="AntlrRuntimes\CSharpOptimized\AssemblyInfo.cs" />
+    <Compile Remove="AntlrRuntimes\CSharpOptimized\Program.cs" />
+    <Compile Remove="AntlrRuntimes\CSharpStandard\AntlrCaseInsensitiveInputStream.cs" />
+    <Compile Remove="AntlrRuntimes\CSharpStandard\AssemblyInfo.cs" />
+    <Compile Remove="AntlrRuntimes\CSharpStandard\Program.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="ANTLRv4Lexer.g4" />
-    <None Include="ANTLRv4Parser.g4" />
-    <None Include="Generated\ANTLRv4Lexer.tokens" />
-    <None Include="Generated\ANTLRv4Parser.tokens" />
-    <None Include="LexBasic.g4" />
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
+    <PackageReference Include="Antlr4" Version="4.6.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Ude.NetStandard" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Generators\antlr-4.6.4-csharpsharwell.jar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Content Include="Runtimes\Go\AntlrCaseInsensitiveInputStream.go">
+    <None Update="Generators\antlr-4.6.5-csharp-optimized.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Runtimes\Go\main.go">
+    </None>
+    <None Update="Generators\antlr-4.7-complete.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </None>
+    <None Update="AntlrRuntimes\Go\AntlrCaseInsensitiveInputStream.go">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\Go\main.go">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\JavaScript\AntlrCaseInsensitiveInputStream.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\JavaScript\main.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\Java\antlr-runtime-4.7.jar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\Java\AntlrCaseInsensitiveInputStream.java">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\Java\Main.java">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\Python2\AntlrCaseInsensitiveInputStream.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\Python2\main.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\Python3\AntlrCaseInsensitiveInputStream.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\Python3\main.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
+
   <ItemGroup>
-    <Reference Include="Antlr4.Runtime, Version=4.6.0.0, Culture=neutral, PublicKeyToken=09abb75b9ed49849, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Antlr4.Runtime.4.6.4\lib\net45\Antlr4.Runtime.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="Ude, Version=0.1.1.0, Culture=neutral, PublicKeyToken=dd537652db4726a9, processorArchitecture=MSIL">
-      <HintPath>..\packages\Ude.Signed.0.1.1\lib\net40\Ude.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
+    <Content Include="AntlrRuntimes\CSharpOptimized\AntlrCaseInsensitiveInputStream.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\CSharpOptimized\AssemblyInfo.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\CSharpOptimized\Program.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\CSharpStandard\AntlrCaseInsensitiveInputStream.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\CSharpStandard\AssemblyInfo.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\CSharpStandard\Program.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.props'))" />
-    <Error Condition="!Exists('..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.targets'))" />
-  </Target>
-  <Import Project="..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.targets" Condition="Exists('..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.targets')" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
+  <ItemGroup>
+    <Content Include="AntlrRuntimes\CSharpOptimized\Project.csproj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="AntlrRuntimes\CSharpStandard\Project.csproj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Antlr4 Update="ANTLRv4Lexer.g4">
+      <Visitor>false</Visitor>
+    </Antlr4>
+    <Antlr4 Update="ANTLRv4Parser.g4">
+      <Visitor>false</Visitor>
+    </Antlr4>
+  </ItemGroup>
 </Project>

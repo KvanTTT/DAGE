@@ -2,11 +2,9 @@
 using Avalonia.Controls;
 using ReactiveUI;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace DesktopAntlrGrammarEditor
 {
@@ -20,7 +18,7 @@ namespace DesktopAntlrGrammarEditor
         {
             _window = window;
 
-            OkCommand.Subscribe(async _ =>
+            OkCommand = ReactiveCommand.Create(async () =>
             {
                 string grammarFileName = Path.Combine(GrammarDirectory, _grammar.Name);
                 bool success = false;
@@ -43,12 +41,12 @@ namespace DesktopAntlrGrammarEditor
                 }
             });
 
-            CancelCommand.Subscribe(_ =>
+            CancelCommand = ReactiveCommand.Create(() =>
             {
                 _window.Close(null);
             });
 
-            SelectGrammarDirectory.Subscribe(async _ =>
+            SelectGrammarDirectory = ReactiveCommand.Create(async () =>
             {
                 var openFolderDialog = new OpenFolderDialog
                 {
@@ -62,11 +60,11 @@ namespace DesktopAntlrGrammarEditor
             });
         }
 
-        public ReactiveCommand<object> OkCommand { get; } = ReactiveCommand.Create();
+        public ReactiveCommand OkCommand { get; }
 
-        public ReactiveCommand<object> CancelCommand { get; } = ReactiveCommand.Create();
+        public ReactiveCommand CancelCommand { get; }
 
-        public ReactiveCommand<object> SelectGrammarDirectory { get; } = ReactiveCommand.Create();
+        public ReactiveCommand SelectGrammarDirectory { get; }
 
         public string GrammarName
         {
@@ -132,11 +130,11 @@ namespace DesktopAntlrGrammarEditor
         {
             get
             {
-                return _grammar.Runtimes.First().GetRuntimeInfo();
+                return RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First());
             }
             set
             {
-                if (_grammar.Runtimes.First().GetRuntimeInfo() != value)
+                if (RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First()) != value)
                 {
                     _grammar.Runtimes.Clear();
                     _grammar.Runtimes.Add(value.Runtime);

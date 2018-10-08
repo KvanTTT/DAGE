@@ -16,12 +16,12 @@ namespace DesktopAntlrGrammarEditor
             Message = message;
             Path = path;
 
-            OkCommand.Subscribe(_ =>
+            OkCommand = ReactiveCommand.Create(() =>
             {
                 _window.Close(Path);
             });
 
-            CancelCommand.Subscribe(_ =>
+            CancelCommand = ReactiveCommand.Create(() =>
             {
                 _window.Close(null);
             });
@@ -51,8 +51,8 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public ReactiveCommand<object> OkCommand { get; } = ReactiveCommand.Create();
+        public ReactiveCommand OkCommand { get; }
 
-        public ReactiveCommand<object> CancelCommand { get; } = ReactiveCommand.Create();
+        public ReactiveCommand CancelCommand { get; }
     }
 }

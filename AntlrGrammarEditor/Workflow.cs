@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,22 +13,18 @@ namespace AntlrGrammarEditor
 {
     public class Workflow
     {
-        public static string HelperDirectoryName = "AntlrGrammarEditorHelperDirectory42";
+        public const string HelperDirectoryName = "DageHelperDirectory";
         private const string PythonHelperFileName = "AntlrPythonCompileTest.py";
         private const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
         private const string TextFileName = "Text";
+        private const string RuntimesDirName = "AntlrRuntimes";
 
-        private const string TemplateGrammarName = "AntlrGrammarName42";
-        private const string TemplateGrammarRoot = "AntlrGrammarRoot42";
+        private const string TemplateGrammarName = "__TemplateGrammarName__";
+        private const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
 
         private const int GenerateParserProcessTimeout = 200;
         private const int CompileParserProcessTimeout = 200;
         private const int ParseTextTimeout = 200;
-
-        private const string CheckGrammarCancelMessage = "Grammar checking has been canceled.";
-        private const string GenerateParserCancelMessage = "Parser generation has been canceled.";
-        private const string CompileParserCancelMessage = "Parser compilation has been canceled.";
-        private const string ParseTextCancelMessage = "Text parsing has been canceled.";
 
         private Grammar _grammar = new Grammar();
         private string _text = "";
@@ -44,7 +41,6 @@ namespace AntlrGrammarEditor
         private AntlrErrorListener _antlrErrorListener;
         private event EventHandler<ParsingError> _newErrorEvent;
         private List<string> _buffer = new List<string>();
-        private int _eventInvokeCounter;
         private bool _indentedTree;
 
         private CancellationTokenSource _cancellationTokenSource;
@@ -55,18 +51,11 @@ namespace AntlrGrammarEditor
         private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping = new Dictionary<string, List<TextSpanMapping>>();
         private CodeSource _currentGrammarSource;
 
-        public string JavaPath { get; set; }
-
-        public Dictionary<Runtime, string> CompilerPaths { get; set; } = new Dictionary<Runtime, string>();
-
         public GrammarCheckedState GrammarCheckedState { get; private set; }
 
         public WorkflowState CurrentState
         {
-            get
-            {
-                return _currentState;
-            }
+            get => _currentState;
             private set
             {
                 _currentState = value;
@@ -76,10 +65,7 @@ namespace AntlrGrammarEditor
 
         public Grammar Grammar
         {
-            get
-            {
-                return _grammar;
-            }
+            get => _grammar;
             set
             {
                 StopIfRequired();
@@ -90,10 +76,7 @@ namespace AntlrGrammarEditor
 
         public Runtime Runtime
         {
-            get
-            {
-                return Grammar.Runtimes.First();
-            }
+            get => Grammar.Runtimes.First();
             set
             {
                 if (Grammar.Runtimes.First() != value)
@@ -108,10 +91,7 @@ namespace AntlrGrammarEditor
 
         public string Root
         {
-            get
-            {
-                return _grammar.Root;
-            }
+            get => _grammar.Root;
             set
             {
                 if (_grammar.Root != value)
@@ -125,10 +105,7 @@ namespace AntlrGrammarEditor
 
         public string PreprocessorRoot
         {
-            get
-            {
-                return _grammar.PreprocessorRoot;
-            }
+            get => _grammar.PreprocessorRoot;
             set
             {
                 if (_grammar.PreprocessorRoot != value)
@@ -142,10 +119,7 @@ namespace AntlrGrammarEditor
 
         public string Text
         {
-            get
-            {
-                return _text;
-            }
+            get => _text;
             set
             {
                 if (_text != value)
@@ -161,10 +135,7 @@ namespace AntlrGrammarEditor
 
         public bool IndentedTree
         {
-            get
-            {
-                return _indentedTree;
-            }
+            get => _indentedTree;
             set
             {
                 if (_indentedTree != value)
@@ -198,10 +169,7 @@ namespace AntlrGrammarEditor
 
         public TimeSpan OutputLexerTime
         {
-            get
-            {
-                return _outputLexerTime;
-            }
+            get => _outputLexerTime;
             set
             {
                 _outputLexerTime = value;
@@ -211,10 +179,7 @@ namespace AntlrGrammarEditor
 
         public TimeSpan OutputParserTime
         {
-            get
-            {
-                return _outputParserTime;
-            }
+            get => _outputParserTime;
             set
             {
                 _outputParserTime = value;
@@ -224,10 +189,7 @@ namespace AntlrGrammarEditor
 
         public string OutputTokens
         {
-            get
-            {
-                return _outputTokens;
-            }
+            get => _outputTokens;
             private set
             {
                 _outputTokens = value;
@@ -237,10 +199,7 @@ namespace AntlrGrammarEditor
 
         public string OutputTree
         {
-            get
-            {
-                return _outputTree;
-            }
+            get => _outputTree;
             private set
             {
                 _outputTree = value;
@@ -365,15 +324,16 @@ namespace AntlrGrammarEditor
                 _grammarActionsTextSpan.Clear();
                 foreach (var grammarFileName in _grammar.Files)
                 {
-                    var inputStream = new AntlrFileStream(Path.Combine(_grammar.GrammarPath, grammarFileName));
+                    string code = File.ReadAllText(Path.Combine(_grammar.GrammarPath, grammarFileName));
+                    var inputStream = new AntlrInputStream(code);
                     _antlrErrorListener.CodeSource = new CodeSource(grammarFileName, inputStream.ToString());
                     _grammarFilesData[grammarFileName] = _antlrErrorListener.CodeSource;
-                   var antlr4Lexer = new ANTLRv4Lexer(inputStream);
+                    var antlr4Lexer = new ANTLRv4Lexer(inputStream);
                     antlr4Lexer.RemoveErrorListeners();
                     antlr4Lexer.AddErrorListener(_antlrErrorListener);
                     var codeTokenSource = new ListTokenSource(antlr4Lexer.GetAllTokens());
 
-                    CancelOperationIfRequired(CheckGrammarCancelMessage);
+                    _cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                     var codeTokenStream = new CommonTokenStream(codeTokenSource);
                     var antlr4Parser = new ANTLRv4Parser(codeTokenStream);
@@ -421,7 +381,7 @@ namespace AntlrGrammarEditor
                             }
                         }
 
-                        CancelOperationIfRequired(CheckGrammarCancelMessage);
+                        _cancellationTokenSource.Token.ThrowIfCancellationRequested();
                     }
                 }
                 result.Errors = _antlrErrorListener.Errors;
@@ -434,7 +394,10 @@ namespace AntlrGrammarEditor
                     AddError(new ParsingError(ex, WorkflowStage.GrammarChecked));
                 }
             }
-            GrammarCheckedState = result;
+            finally
+            {
+                GrammarCheckedState = result;
+            }
             return result;
         }
 
@@ -445,39 +408,40 @@ namespace AntlrGrammarEditor
                 GrammarCheckedState = state,
                 Errors = _parserGenerationErrors
             };
-            Process process = null;
+            Processor processor = null;
             try
             {
-                if (!Directory.Exists(HelperDirectoryName))
+                string runtimeDirectoryName = Path.Combine(HelperDirectoryName, Runtime.ToString());
+                if (Directory.Exists(runtimeDirectoryName))
                 {
-                    Directory.CreateDirectory(HelperDirectoryName);
+                    Directory.Delete(runtimeDirectoryName, true);
                 }
-                CancelOperationIfRequired(GenerateParserCancelMessage);
+                Directory.CreateDirectory(runtimeDirectoryName);
 
-                var runtrimeInfo = Runtime.GetRuntimeInfo();
-                string[] extensions = runtrimeInfo.Extensions;
+                _cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
-                var jarGenerator = Path.Combine("Generators", runtrimeInfo.JarGenerator);
+                var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Runtime);
+                string[] extensions = runtimeInfo.Extensions;
+
+                var jarGenerator = Path.Combine("Generators", runtimeInfo.JarGenerator);
                 foreach (var grammarFileName in state.Grammar.Files)
                 {
                     _currentGrammarSource = _grammarFilesData[grammarFileName];
-                    var arguments = $@"-jar ""{jarGenerator}"" ""{Path.Combine(_grammar.GrammarPath, grammarFileName)}"" -o ""{HelperDirectoryName}"" " +
-                        $"-Dlanguage={runtrimeInfo.DLanguage} -no-visitor -no-listener";
+                    var arguments = $@"-jar ""{jarGenerator}"" ""{Path.Combine(_grammar.GrammarPath, grammarFileName)}"" -o ""{runtimeDirectoryName}"" " +
+                        $"-Dlanguage={runtimeInfo.DLanguage} -no-visitor -no-listener";
                     if (Runtime == Runtime.Go)
                     {
                         arguments += " -package main";
                     }
 
-                    _eventInvokeCounter = 0;
-                    process = ProcessHelpers.SetupHiddenProcessAndStart(JavaPath, arguments, ".", ParserGeneration_ErrorDataReceived, ParserGeneration_OutputDataReceived);
+                    processor = new Processor("java", arguments, ".");
+                    processor.CancellationToken = _cancellationTokenSource.Token;
+                    processor.ErrorDataReceived += ParserGeneration_ErrorDataReceived;
+                    processor.OutputDataReceived += ParserGeneration_OutputDataReceived;
 
-                    while (!process.HasExited || _eventInvokeCounter > 0)
-                    {
-                        Thread.Sleep(GenerateParserProcessTimeout);
-                        CancelOperationIfRequired(GenerateParserCancelMessage);
-                    }
+                    processor.Start();
 
-                    CancelOperationIfRequired(GenerateParserCancelMessage);
+                    _cancellationTokenSource.Token.ThrowIfCancellationRequested();
                 }
             }
             catch (Exception ex)
@@ -490,14 +454,7 @@ namespace AntlrGrammarEditor
             }
             finally
             {
-                if (process != null)
-                {
-                    if (!process.HasExited)
-                    {
-                        process.Kill();
-                    }
-                    process.Dispose();
-                }
+                processor?.Dispose();
             }
             return result;
         }
@@ -511,25 +468,26 @@ namespace AntlrGrammarEditor
                 Root = _grammar.Root,
                 PreprocessorRoot = _grammar.PreprocessorRoot
             };
-            var runtimeInfo = Runtime.GetRuntimeInfo();
+            RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Runtime);
 
-            Process process = null;
+            Processor processor = null;
             try
             {
-                string compilerPath = "";
                 string arguments = "";
                 string templateName = "";
-                string workingDirectory = HelperDirectoryName;
-                string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), runtimeInfo.RuntimeLibrary);
+                string runtimeDir = Path.Combine(RuntimesDirName, Runtime.ToString());
+                string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
                 string extension = runtimeInfo.Extensions.First();
+                string workingDirectory = Path.Combine(HelperDirectoryName, Runtime.ToString());
 
                 var generatedFiles = new List<string>();
                 generatedFiles.Add(_grammar.Name + runtimeInfo.LexerPostfix + "." + extension);
                 generatedFiles.Add(_grammar.Name + runtimeInfo.ParserPostfix + "." + extension);
-                generatedFiles = generatedFiles.Select(file => Path.Combine(HelperDirectoryName, file)).ToList();
+                generatedFiles = generatedFiles.Select(file => Path.Combine(workingDirectory, file)).ToList();
                 var compiliedFiles = new StringBuilder();
                 _grammarCodeMapping.Clear();
-                foreach (var codeFileName in generatedFiles)
+
+                foreach (string codeFileName in generatedFiles)
                 {
                     compiliedFiles.Append('"' + Path.GetFileName(codeFileName) + "\" ");
                     CodeSource codeSource = new CodeSource(codeFileName, File.ReadAllText(codeFileName));
@@ -542,16 +500,20 @@ namespace AntlrGrammarEditor
                 }
 
                 templateName = runtimeInfo.MainFile;
-                compilerPath = CompilerPaths[Runtime];
-                if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
+
+                if (Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard)
                 {
-                    compiliedFiles.Append('"' + templateName + '"');
+                    string antlrCaseInsensitivePath = Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.cs");
                     if (_grammar.CaseInsensitive)
                     {
-                        compiliedFiles.Append(" \"" + Path.Combine("..", "Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.cs") + "\"");
+                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath);
                     }
-                    compiliedFiles.Append(" \"" + Path.Combine("..", "Runtimes", Runtime.ToString(), "AssemblyInfo.cs") + "\"");
-                    arguments = $@"/nologo /reference:""{(Path.Combine("..", runtimeLibraryPath))}"" /out:{Runtime}_{state.GrammarCheckedState.Grammar.Name}Parser.exe " + compiliedFiles;
+
+                    File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"));
+                    File.Copy(Path.Combine(runtimeDir, "AssemblyInfo.cs"), Path.Combine(workingDirectory, "AssemblyInfo.cs"));
+                    File.Copy(Path.Combine(runtimeDir, "Project.csproj"), Path.Combine(workingDirectory, $"{_grammar.Name}.csproj"));
+
+                    arguments = "build";
                 }
                 else if (Runtime == Runtime.Java)
                 {
@@ -559,25 +521,25 @@ namespace AntlrGrammarEditor
                     if (_grammar.CaseInsensitive)
                     {
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
-                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.java"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.java"), true);
+                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.java"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.java"), true);
                     }
-                    arguments = $@"-cp ""{(Path.Combine("..", runtimeLibraryPath))}"" " + compiliedFiles.ToString();
+                    arguments = $@"-cp ""{(Path.Combine("..", "..", runtimeLibraryPath))}"" " + compiliedFiles.ToString();
                 }
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
                     var stringBuilder = new StringBuilder();
-                    foreach (var file in generatedFiles)
+                    foreach (string file in generatedFiles)
                     {
                         var shortFileName = Path.GetFileNameWithoutExtension(file);
                         stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
                     }
                     if (_grammar.CaseInsensitive)
                     {
-                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.py"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.py"), true);
+                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.py"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.py"), true);
                     }
-                    File.WriteAllText(Path.Combine(HelperDirectoryName, PythonHelperFileName), stringBuilder.ToString());
+                    File.WriteAllText(Path.Combine(workingDirectory, PythonHelperFileName), stringBuilder.ToString());
 
-                    if (runtimeInfo.DefaultCompilerPath == "py")
+                    if (runtimeInfo.RuntimeToolName == "py")
                     {
                         arguments += Runtime == Runtime.Python2 ? "-2 " : "-3 ";
                     }
@@ -586,15 +548,15 @@ namespace AntlrGrammarEditor
                 else if (Runtime == Runtime.JavaScript)
                 {
                     var stringBuilder = new StringBuilder();
-                    foreach (var file in generatedFiles)
+                    foreach (string file in generatedFiles)
                     {
                         var shortFileName = Path.GetFileNameWithoutExtension(file);
                         stringBuilder.AppendLine($"var {shortFileName} = require('./{shortFileName}');");
                     }
-                    File.WriteAllText(Path.Combine(HelperDirectoryName, JavaScriptHelperFileName), stringBuilder.ToString());
+                    File.WriteAllText(Path.Combine(workingDirectory, JavaScriptHelperFileName), stringBuilder.ToString());
                     if (_grammar.CaseInsensitive)
                     {
-                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.js"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.js"), true);
+                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.js"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);
                     }
 
                     arguments = JavaScriptHelperFileName;
@@ -605,14 +567,14 @@ namespace AntlrGrammarEditor
                     if (_grammar.CaseInsensitive)
                     {
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
-                        File.Copy(Path.Combine("Runtimes", Runtime.ToString(), "AntlrCaseInsensitiveInputStream.go"), Path.Combine(HelperDirectoryName, "AntlrCaseInsensitiveInputStream.go"), true);
+                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.go"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.go"), true);
                     }
 
                     arguments = "build " + compiliedFiles.ToString();
                 }
 
-                var templateFile = Path.Combine(HelperDirectoryName, templateName);
-                var code = File.ReadAllText(Path.Combine("Runtimes", Runtime.ToString(), templateName));
+                var templateFile = Path.Combine(workingDirectory, templateName);
+                var code = File.ReadAllText(Path.Combine(runtimeDir, templateName));
                 code = code.Replace(TemplateGrammarName, state.GrammarCheckedState.Grammar.Name);
                 string root = _grammar.Root;
                 if (Runtime == Runtime.Go)
@@ -648,15 +610,14 @@ namespace AntlrGrammarEditor
                 }
                 File.WriteAllText(templateFile, code);
 
-                _eventInvokeCounter = 0;
                 _buffer.Clear();
-                process = ProcessHelpers.SetupHiddenProcessAndStart(compilerPath, arguments, workingDirectory, ParserCompilation_ErrorDataReceived, ParserCompilation_OutputDataReceived);
 
-                while (!process.HasExited || _eventInvokeCounter > 0)
-                {
-                    Thread.Sleep(CompileParserProcessTimeout);
-                    CancelOperationIfRequired(CompileParserCancelMessage);
-                }
+                processor = new Processor(runtimeInfo.RuntimeToolName, arguments, workingDirectory);
+                processor.CancellationToken = _cancellationTokenSource.Token;
+                processor.ErrorDataReceived += ParserCompilation_ErrorDataReceived;
+                processor.OutputDataReceived += ParserCompilation_OutputDataReceived;
+
+                processor.Start();
 
                 if (_buffer.Count > 0)
                 {
@@ -670,7 +631,7 @@ namespace AntlrGrammarEditor
                     }
                 }
 
-                CancelOperationIfRequired(CompileParserCancelMessage);
+                _cancellationTokenSource.Token.ThrowIfCancellationRequested();
             }
             catch (Exception ex)
             {
@@ -682,14 +643,7 @@ namespace AntlrGrammarEditor
             }
             finally
             {
-                if (process != null)
-                {
-                    if (!process.HasExited)
-                    {
-                        process.Kill();
-                    }
-                    process.Dispose();
-                }
+                processor?.Dispose();
             }
             return result;
         }
@@ -702,41 +656,29 @@ namespace AntlrGrammarEditor
                 Text = Text,
                 TextErrors = _textErrors
             };
-            Process process = null;
+            Processor processor = null;
             try
             {
                 File.WriteAllText(Path.Combine(HelperDirectoryName, TextFileName), result.Text);
 
-                var runtimeInfo = Runtime.GetRuntimeInfo();
-                string runtimeLibraryPath = Path.Combine("Runtimes", Runtime.ToString(), runtimeInfo.RuntimeLibrary);
+                var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Runtime);
+                string runtimeDir = Path.Combine(RuntimesDirName, Runtime.ToString());
+                string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
+
                 string parserFileName = "";
                 string arguments = "";
-                string workingDirectory = HelperDirectoryName;
-                if (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp)
+                string workingDirectory = Path.Combine(HelperDirectoryName, Runtime.ToString());
+
+                if (Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard)
                 {
-                    var antlrRuntimeDir = Path.Combine(HelperDirectoryName, runtimeInfo.RuntimeLibrary);
-                    if (!File.Exists(antlrRuntimeDir))
-                    {
-                        File.Copy(runtimeLibraryPath, antlrRuntimeDir, true);
-                    }
                     bool parse = EndStage != WorkflowStage.TextParsed;
-                    arguments = $"{Root} \"\" {parse} {IndentedTree}";
-                    parserFileName = $"{Runtime}_{state.ParserGeneratedState.GrammarCheckedState.Grammar.Name}Parser.exe";
-                    if (Helpers.IsRunningOnMono)
-                    {
-                        arguments = "\"" + parserFileName + "\" " + arguments;
-                        parserFileName = "mono";
-                    }
-                    else
-                    {
-                        parserFileName = "\"" + Path.Combine(HelperDirectoryName, parserFileName) + "\"";
-                    }
+                    arguments = $"\"{Path.Combine("bin", "netcoreapp2.1", _grammar.Name + ".dll")}\" {Root} \"{Path.Combine("..", TextFileName)}\" {parse} {IndentedTree}";
+                    parserFileName = "dotnet";
                 }
                 else if (Runtime == Runtime.Java)
                 {
-                    parserFileName = JavaPath;
-                    string relativeRuntimeLibraryPath = "\"" + Path.Combine("..", runtimeLibraryPath) + "\"";
-                    if (!Helpers.IsLinux)
+                    string relativeRuntimeLibraryPath = "\"" + Path.Combine("..", "..", runtimeLibraryPath) + "\"";
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
                         relativeRuntimeLibraryPath += ";.";
                     }
@@ -744,11 +686,12 @@ namespace AntlrGrammarEditor
                     {
                         relativeRuntimeLibraryPath = ".:" + relativeRuntimeLibraryPath;
                     }
-                    arguments = $@"-cp {relativeRuntimeLibraryPath} Main " + TextFileName;
+                    arguments = $@"-cp {relativeRuntimeLibraryPath} Main ""{Path.Combine("..", TextFileName)}""";
+                    parserFileName = "java";
                 }
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
-                    parserFileName = CompilerPaths[Runtime];
+                    parserFileName = runtimeInfo.RuntimeToolName;
                     if (parserFileName == "py")
                     {
                         arguments += Runtime == Runtime.Python2 ? "-2 " : "-3 ";
@@ -757,18 +700,18 @@ namespace AntlrGrammarEditor
                 }
                 else if (Runtime == Runtime.JavaScript)
                 {
-                    parserFileName = CompilerPaths[Runtime];
+                    parserFileName = runtimeInfo.RuntimeToolName;
                     arguments = runtimeInfo.MainFile;
                 }
                 else if (Runtime == Runtime.Go)
                 {
-                    if (!Helpers.IsLinux)
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        parserFileName = Path.Combine(HelperDirectoryName, Path.ChangeExtension(runtimeInfo.MainFile, ".exe"));
+                        parserFileName = Path.Combine(workingDirectory, Path.ChangeExtension(runtimeInfo.MainFile, ".exe"));
                     }
                     else
                     {
-                        parserFileName = Path.Combine(HelperDirectoryName, Path.GetFileNameWithoutExtension(runtimeInfo.MainFile));
+                        parserFileName = Path.Combine(workingDirectory, Path.GetFileNameWithoutExtension(runtimeInfo.MainFile));
                     }
                     /* Another way of starting.
                     parserFileName = CompilerPaths[Runtime];
@@ -780,21 +723,19 @@ namespace AntlrGrammarEditor
                     arguments = "run " + compiliedFiles.ToString();*/
                 }
 
-                _eventInvokeCounter = 0;
-                process = ProcessHelpers.SetupHiddenProcessAndStart(parserFileName, arguments, workingDirectory, TextParsing_ErrorDataReceived, TextParsing_OutputDataReceived);
+                processor = new Processor(parserFileName, arguments, workingDirectory);
+                processor.CancellationToken = _cancellationTokenSource.Token;
+                processor.ErrorDataReceived += TextParsing_ErrorDataReceived;
+                processor.OutputDataReceived += TextParsing_OutputDataReceived;
 
-                while (!process.HasExited || _eventInvokeCounter > 0)
-                {
-                    Thread.Sleep(ParseTextTimeout);
-                    CancelOperationIfRequired(ParseTextCancelMessage);
-                }
+                processor.Start();
 
                 result.LexerTime = _outputLexerTime;
                 result.ParserTime = _outputParserTime;
                 result.Tokens = _outputTokens;
                 result.Tree = _outputTree;
 
-                CancelOperationIfRequired(ParseTextCancelMessage);
+                _cancellationTokenSource.Token.ThrowIfCancellationRequested();
             }
             catch (Exception ex)
             {
@@ -806,189 +747,138 @@ namespace AntlrGrammarEditor
             }
             finally
             {
-                if (process != null)
-                {
-                    if (!process.HasExited)
-                    {
-                        process.Kill();
-                    }
-                    process.Dispose();
-                }
+                processor?.Dispose();
             }
             return result;
         }
 
+        private void Processor_OutputDataReceived(object sender, string e)
+        {
+            throw new NotImplementedException();
+        }
+
         private void ParserGeneration_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            Interlocked.Increment(ref _eventInvokeCounter);
-
-            try
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                var strs = e.Data.Split(':');
+                ParsingError error;
+                int line = 1, column = 1;
+                if (strs.Length >= 4)
                 {
-                    var strs = e.Data.Split(':');
-                    ParsingError error;
-                    int line = 1, column = 1;
-                    if (strs.Length >= 4)
+                    if (!int.TryParse(strs[2], out line))
                     {
-                        if (!int.TryParse(strs[2], out line))
-                        {
-                            line = 1;
-                        }
-                        if (!int.TryParse(strs[3], out column))
-                        {
-                            column = 1;
-                        }
+                        line = 1;
                     }
-                    error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated);
-                    AddError(error);
+                    if (!int.TryParse(strs[3], out column))
+                    {
+                        column = 1;
+                    }
                 }
-            }
-            finally
-            {
-                Interlocked.Decrement(ref _eventInvokeCounter);
+                error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated);
+                AddError(error);
             }
         }
 
         private void ParserGeneration_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            Interlocked.Increment(ref _eventInvokeCounter);
-
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
             }
-
-            Interlocked.Decrement(ref _eventInvokeCounter);
         }
 
         private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            Interlocked.Increment(ref _eventInvokeCounter);
-
-            try
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                Console.WriteLine(e.Data);
+                if (Runtime == Runtime.CSharpStandard || Runtime == Runtime.CSharpOptimized)
                 {
-                    Console.WriteLine(e.Data);
-                    if (Helpers.IsRunningOnMono && (Runtime == Runtime.CSharp || Runtime == Runtime.CSharpSharwell))
+                    AddCSharpError(e.Data);
+                }
+                else if (Runtime == Runtime.Java)
+                {
+                    AddJavaError(e.Data);
+                }
+                else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3 || Runtime == Runtime.JavaScript)
+                {
+                    lock (_buffer)
                     {
-                        AddCSharpError(e.Data);
-                    }
-                    else if (Runtime == Runtime.Java)
-                    {
-                        AddJavaError(e.Data);
-                    }
-                    else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3 || Runtime == Runtime.JavaScript)
-                    {
-                        lock (_buffer)
-                        {
-                            _buffer.Add(e.Data);
-                        }
-                    }
-                    else if (Runtime == Runtime.Go)
-                    {
-                        AddGoError(e.Data);
+                        _buffer.Add(e.Data);
                     }
                 }
-            }
-            finally
-            {
-                Interlocked.Decrement(ref _eventInvokeCounter);
+                else if (Runtime == Runtime.Go)
+                {
+                    AddGoError(e.Data);
+                }
             }
         }
 
         private void ParserCompilation_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            Interlocked.Increment(ref _eventInvokeCounter);
-
-            try
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                Console.WriteLine(e.Data);
+                if (Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard)
                 {
-                    Console.WriteLine(e.Data);
-                    if (!Helpers.IsRunningOnMono && (Runtime == Runtime.CSharpSharwell || Runtime == Runtime.CSharp))
-                    {
-                        AddCSharpError(e.Data);
-                    }
+                    AddCSharpError(e.Data);
                 }
-            }
-            finally
-            {
-                Interlocked.Decrement(ref _eventInvokeCounter);
             }
         }
 
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            Interlocked.Increment(ref _eventInvokeCounter);
-
-            try
-            {
-                if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
+            { 
+                var errorString = Helpers.FixEncoding(e.Data);
+                ParsingError error;
+                var codeSource = new CodeSource("", _text);  // TODO: fix fileName
+                try
                 {
-                    var errorString = Helpers.FixEncoding(e.Data);
-                    ParsingError error;
-                    var codeSource = new CodeSource("", _text);  // TODO: fix fileName
-                    try
-                    {
-                        var words = errorString.Split(' ');
-                        var strs = words[1].Split(':');
-                        int line = 0, column = 0;
-                        int.TryParse(strs[0], out line);
-                        int.TryParse(strs[1], out column);
-                        error = new ParsingError(line, column + 1, errorString, codeSource, WorkflowStage.TextParsed);
-                    }
-                    catch
-                    {
-                        error = new ParsingError(errorString, codeSource, WorkflowStage.TextParsed);
-                    }
-                    AddError(error);
+                    var words = errorString.Split(new[] { ' ' }, 3);
+                    var strs = words[1].Split(':');
+                    int line = 0, column = 0;
+                    int.TryParse(strs[0], out line);
+                    int.TryParse(strs[1], out column);
+                    error = new ParsingError(line, column + 1, errorString, codeSource, WorkflowStage.TextParsed);
                 }
-            }
-            finally
-            {
-                Interlocked.Decrement(ref _eventInvokeCounter);
+                catch
+                {
+                    error = new ParsingError(errorString, codeSource, WorkflowStage.TextParsed);
+                }
+                AddError(error);
             }
         }
 
         private void TextParsing_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            Interlocked.Increment(ref _eventInvokeCounter);
-
-            try
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                var strs = e.Data.Split(new char[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                TextParsedOutput outputState;
+                if (Enum.TryParse(strs[0], out outputState))
                 {
-                    var strs = e.Data.Split(new char[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-                    TextParsedOutput outputState;
-                    if (Enum.TryParse(strs[0], out outputState))
+                    var data = strs[1];
+                    switch (outputState)
                     {
-                        var data = strs[1];
-                        switch (outputState)
-                        {
-                            case TextParsedOutput.LexerTime:
-                                OutputLexerTime = TimeSpan.Parse(data);
-                                break;
-                            case TextParsedOutput.ParserTime:
-                                OutputParserTime = TimeSpan.Parse(data);
-                                break;
-                            case TextParsedOutput.Tokens:
-                                OutputTokens = data;
-                                break;
-                            case TextParsedOutput.Tree:
-                                OutputTree = data.Replace("\\n", "\n");
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        AddError(new ParsingError(e.Data, _currentGrammarSource, WorkflowStage.TextParsed));
+                        case TextParsedOutput.LexerTime:
+                            OutputLexerTime = TimeSpan.Parse(data);
+                            break;
+                        case TextParsedOutput.ParserTime:
+                            OutputParserTime = TimeSpan.Parse(data);
+                            break;
+                        case TextParsedOutput.Tokens:
+                            OutputTokens = data;
+                            break;
+                        case TextParsedOutput.Tree:
+                            OutputTree = data.Replace("\\n", "\n");
+                            break;
                     }
                 }
-            }
-            finally
-            {
-                Interlocked.Decrement(ref _eventInvokeCounter);
+                else
+                {
+                    AddError(new ParsingError(e.Data, _currentGrammarSource, WorkflowStage.TextParsed));
+                }
             }
         }
 
@@ -1058,14 +948,6 @@ namespace AntlrGrammarEditor
             ClearErrorsEvent?.Invoke(this, stage);
         }
 
-        private void CancelOperationIfRequired(string message)
-        {
-            if (_cancellationTokenSource.IsCancellationRequested)
-            {
-                throw new OperationCanceledException(message, _cancellationTokenSource.Token);
-            }
-        }
-
         private string GetGrammarFromCodeFileName(RuntimeInfo runtimeInfo, string codeFileName)
         {
             if (!Grammar.SeparatedLexerAndParser)
@@ -1101,7 +983,7 @@ namespace AntlrGrammarEditor
                     var strs = errorString.Split(':');
                     int leftParenInd = strs[0].IndexOf('(');
                     string codeFileName = strs[0].Remove(leftParenInd);
-                    string grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.CSharp], codeFileName);
+                    string grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.CSharpStandard], codeFileName);
                     string lineColumnString = strs[0].Substring(leftParenInd);
                     lineColumnString = lineColumnString.Substring(1, lineColumnString.Length - 2); // Remove parenthesis.
                     var strs2 = lineColumnString.Split(',');

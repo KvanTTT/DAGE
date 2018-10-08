@@ -17,19 +17,19 @@ namespace DesktopAntlrGrammarEditor
 
             if (MessageBoxType == MessageBoxType.Ok)
             {
-                OkCommand.Subscribe(_ =>
+                OkCommand = ReactiveCommand.Create(() =>
                 {
                     _window.Close(true);
                 });
             }
             else if (MessageBoxType == MessageBoxType.YesNo)
             {
-                YesCommand.Subscribe(_ =>
+                YesCommand = ReactiveCommand.Create(() =>
                 {
                     _window.Close(true);
                 });
 
-                NoCommand.Subscribe(_ =>
+                NoCommand = ReactiveCommand.Create(() =>
                 {
                     _window.Close(false);
                 });
@@ -46,10 +46,10 @@ namespace DesktopAntlrGrammarEditor
 
         public bool YesNoButtonVisible => MessageBoxType == MessageBoxType.YesNo;
 
-        public ReactiveCommand<object> OkCommand { get; } = ReactiveCommand.Create();
+        public ReactiveCommand OkCommand { get; }
 
-        public ReactiveCommand<object> YesCommand { get; } = ReactiveCommand.Create();
+        public ReactiveCommand YesCommand { get; }
 
-        public ReactiveCommand<object> NoCommand { get; } = ReactiveCommand.Create();
+        public ReactiveCommand NoCommand { get; }
     }
 }

@@ -7,15 +7,15 @@ import (
 )
 
 func main() {
-    bytes, err := ioutil.ReadFile("Text")
+    bytes, err := ioutil.ReadFile("../Text")
     if err != nil {
         fmt.Print(err)
     }
     code := string(bytes)
     codeStream := antlr.NewInputStream(code)
-    lexer := NewAntlrGrammarName42Lexer(codeStream)
+    lexer := New__TemplateGrammarName__Lexer(codeStream)
     tokensStream := antlr.NewCommonTokenStream(lexer, 0)
-    parser := NewAntlrGrammarName42Parser(tokensStream)
-    tree := parser.AntlrGrammarRoot42()
+    parser := New__TemplateGrammarName__Parser(tokensStream)
+    tree := parser.__TemplateGrammarRoot__()
     fmt.Print("Tree " + tree.ToStringTree(nil, parser))
 }

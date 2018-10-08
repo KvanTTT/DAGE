@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -12,17 +12,40 @@ namespace AntlrGrammarEditor.Tests
         [SetUp]
         public void Init()
         {
-            var assemblyPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            System.IO.Directory.SetCurrentDirectory(assemblyPath);
+            var assemblyPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            Directory.SetCurrentDirectory(assemblyPath);
         }
 
         [Test]
-        public void RuntimeInfosFilled()
+        public void RuntimesExist()
         {
             var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
-            foreach (var runtime in runtimes)
+            foreach (Runtime runtime in runtimes)
             {
-                Assert.IsTrue(RuntimeInfo.Runtimes.ContainsKey(runtime));
+                Assert.IsTrue(RuntimeInfo.Runtimes.ContainsKey(runtime), $"Runtime {runtime} does not exist");
+            }
+        }
+
+        [Test]
+        public void RuntimeInitialized()
+        {
+            var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
+
+            foreach (Runtime runtime in runtimes)
+            {
+                string message;
+                if (runtime != Runtime.CPlusPlus && runtime != Runtime.Swift)
+                {
+                    RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
+                    Assert.IsFalse(string.IsNullOrEmpty(runtimeInfo.Version), $"Failed to initialize {runtime} runtime");
+                    message = $"{runtime}: {runtimeInfo.RuntimeToolName} {runtimeInfo.Version}";
+                }
+                else
+                {
+                    message = $"{runtime} is not supported for now";
+                }
+                Console.WriteLine(message);
+                Debug.WriteLine(message);
             }
         }
 
@@ -30,7 +53,7 @@ namespace AntlrGrammarEditor.Tests
         public void AllGeneratorsExists()
         {
             var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText = @"grammar test;
                 start: DIGIT+;
                 CHAR:  [a-z]+;
@@ -38,17 +61,18 @@ namespace AntlrGrammarEditor.Tests
                 WS:    [ \r\n\t]+ -> skip;";
             workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
             workflow.EndStage = WorkflowStage.ParserGenerated;
-            foreach (var runtime in runtimes)
+            foreach (Runtime runtime in runtimes)
             {
                 workflow.Runtime = runtime;
                 var state = (ParserGeneratedState)workflow.Process();
-                Assert.IsFalse(state.HasErrors);
+                Assert.IsFalse(state.HasErrors, string.Join(Environment.NewLine, state.Errors));
 
-                var extensions = RuntimeInfo.Runtimes[runtime].Extensions;
-                var allFiles = Directory.GetFiles(Workflow.HelperDirectoryName);
+                RuntimeInfo runtimeInfo = RuntimeInfo.Runtimes[runtime];
+                var extensions = runtimeInfo.Extensions;
+                var allFiles = Directory.GetFiles(Path.Combine(Workflow.HelperDirectoryName, runtimeInfo.Runtime.ToString()));
                 var actualFilesCount = allFiles.Where
                     (file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext))).Count();
-                Assert.Greater(actualFilesCount, 0);
+                Assert.Greater(actualFilesCount, 0, $"Failed to initialize {runtime} runtime");
 
                 foreach (var file in allFiles)
                 {
@@ -69,7 +93,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage);
+            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.Exception?.ToString());
 
             var grammarSource = new CodeSource("test.g4", File.ReadAllText("test.g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
@@ -96,7 +120,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = GrammarFactory.CreateDefaultSeparatedAndFill(lexerText, parserText, "test", ".");
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage);
+            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.Exception?.ToString());
 
             var testLexerSource = new CodeSource("testLexer.g4", File.ReadAllText("testLexer.g4"));
             var testParserSource = new CodeSource("testParser.g4", File.ReadAllText("testParser.g4"));
@@ -114,7 +138,7 @@ namespace AntlrGrammarEditor.Tests
         [Test]
         public void ParserGeneratedStageErrors()
         {
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                 start:  rule1+;
@@ -125,7 +149,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage);
+            Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage, state.Exception?.ToString());
 
             var grammarSource = new CodeSource("test.g4", File.ReadAllText("test.g4"));
             ParserGeneratedState parserGeneratedState = state as ParserGeneratedState;
@@ -136,8 +160,8 @@ namespace AntlrGrammarEditor.Tests
                 parserGeneratedState.Errors);
         }
 
-        [TestCase(Runtime.CSharpSharwell)]
-        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
@@ -145,12 +169,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void ParserCompiliedStageErrors(Runtime runtime)
         {
-            if (Helpers.IsLinux && runtime == Runtime.Python3)
-            {
-                Assert.Ignore("Python3 is not working on Linux now");
-            }
-
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                 start:  DIGIT+ {i^;};
@@ -163,15 +182,15 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = grammar;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage);
+            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage, state.Exception?.ToString());
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
             Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.StartLineColumn.Line);
         }
 
-        [TestCase(Runtime.CSharpSharwell)]
-        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
@@ -179,12 +198,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void TextParsedStageErrors(Runtime runtime)
         {
-            if (Helpers.IsLinux && runtime == Runtime.Python3)
-            {
-                Assert.Ignore("Python3 is not working on Linux now");
-            }
-
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                 start: DIGIT+;
@@ -199,7 +213,7 @@ namespace AntlrGrammarEditor.Tests
                 @"!  asdf  1234";
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.Exception?.ToString());
 
             var textSource = new CodeSource("", workflow.Text);
             TextParsedState textParsedState = state as TextParsedState;
@@ -212,8 +226,8 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual("(start asdf 1234)", textParsedState.Tree);
         }
 
-        [TestCase(Runtime.CSharpSharwell)]
-        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
@@ -226,12 +240,7 @@ namespace AntlrGrammarEditor.Tests
                 Assert.Ignore("Java 4.7 custom streams are not supported yet.");
             }
 
-            if (Helpers.IsLinux && runtime == Runtime.Python3)
-            {
-                Assert.Ignore("Python3 is not working on Linux now");
-            }
-
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                 start:  A A DIGIT;
@@ -246,14 +255,14 @@ namespace AntlrGrammarEditor.Tests
             workflow.Text = @"A a 1234";
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.Exception?.ToString());
             TextParsedState textParsedState = state as TextParsedState;
-            Assert.AreEqual(0, textParsedState.TextErrors.Count);
+            Assert.AreEqual(0, textParsedState.TextErrors.Count, string.Join(Environment.NewLine, textParsedState.TextErrors));
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
         }
 
-        [TestCase(Runtime.CSharpSharwell)]
-        [TestCase(Runtime.CSharp)]
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
         [TestCase(Runtime.Python2)]
         [TestCase(Runtime.Python3)]
@@ -263,7 +272,7 @@ namespace AntlrGrammarEditor.Tests
         {
             Assert.Ignore("Not ready");
 
-            var workflow = CreateWorkflow();
+            var workflow = new Workflow();
             var grammarText =
                 @"grammar test;
                   rootRule
@@ -280,7 +289,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = grammar;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage);
+            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage, state.Exception?.ToString());
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             var errors = parserGeneratedState.Errors;
@@ -289,25 +298,6 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 6).Count());
             Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 8).Count());
             Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 9).Count());
-        }
-
-        private Workflow CreateWorkflow()
-        {
-            var workflow = new Workflow
-            {
-                JavaPath = "java",
-                CompilerPaths = new Dictionary<Runtime, string>()
-                {
-                    [Runtime.CSharp] = RuntimeInfo.Runtimes[Runtime.CSharp].DefaultCompilerPath,
-                    [Runtime.CSharpSharwell] = RuntimeInfo.Runtimes[Runtime.CSharpSharwell].DefaultCompilerPath,
-                    [Runtime.Java] = RuntimeInfo.Runtimes[Runtime.Java].DefaultCompilerPath,
-                    [Runtime.Python2] = RuntimeInfo.Runtimes[Runtime.Python2].DefaultCompilerPath,
-                    [Runtime.Python3] = RuntimeInfo.Runtimes[Runtime.Python3].DefaultCompilerPath,
-                    [Runtime.JavaScript] = RuntimeInfo.Runtimes[Runtime.JavaScript].DefaultCompilerPath,
-                    [Runtime.Go] = RuntimeInfo.Runtimes[Runtime.Go].DefaultCompilerPath
-                }
-            };
-            return workflow;
         }
     }
 }
