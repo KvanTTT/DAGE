@@ -11,7 +11,7 @@ class Program
         try
         {
             string rootRule = "";
-            string fileName = "../../../../Text";
+            string fileName = "../../../Text";
             bool notParse = false;
             if (args.Length > 0)
             {

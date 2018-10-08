@@ -672,7 +672,7 @@ namespace AntlrGrammarEditor
                 if (Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard)
                 {
                     bool parse = EndStage != WorkflowStage.TextParsed;
-                    arguments = $"\"{Path.Combine("bin", "Debug", "netcoreapp2.1", _grammar.Name + ".dll")}\" {Root} \"{Path.Combine("..", TextFileName)}\" {parse} {IndentedTree}";
+                    arguments = $"\"{Path.Combine("bin", "netcoreapp2.1", _grammar.Name + ".dll")}\" {Root} \"{Path.Combine("..", TextFileName)}\" {parse} {IndentedTree}";
                     parserFileName = "dotnet";
                 }
                 else if (Runtime == Runtime.Java)
@@ -829,7 +829,7 @@ namespace AntlrGrammarEditor
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
-            {
+            { 
                 var errorString = Helpers.FixEncoding(e.Data);
                 ParsingError error;
                 var codeSource = new CodeSource("", _text);  // TODO: fix fileName

@@ -14,6 +14,8 @@ before_build:
 - ps: |
     if ($isLinux) {
         sudo apt-get -y install golang-go
+
+        export GOPATH=$HOME/go
     }
 
     if ($isWindows) {
