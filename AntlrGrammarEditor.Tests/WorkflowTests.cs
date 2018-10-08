@@ -21,7 +21,7 @@ namespace AntlrGrammarEditor.Tests
             var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
             foreach (Runtime runtime in runtimes)
             {
-                Assert.IsTrue(RuntimeInfo.Runtimes.ContainsKey(runtime));
+                Assert.IsTrue(RuntimeInfo.Runtimes.ContainsKey(runtime), $"Runtime {runtime} does not exist");
             }
         }
 
@@ -35,7 +35,7 @@ namespace AntlrGrammarEditor.Tests
                 if (runtime != Runtime.CPlusPlus && runtime != Runtime.Swift)
                 {
                     RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
-                    Assert.IsTrue(!string.IsNullOrEmpty(runtimeInfo.Version));
+                    Assert.IsFalse(string.IsNullOrEmpty(runtimeInfo.Version), $"Failed to initialize {runtime} runtime");
                     Console.WriteLine($"{runtime}: {runtimeInfo.RuntimeToolName} {runtimeInfo.Version}");
                 }
                 else
@@ -61,14 +61,14 @@ namespace AntlrGrammarEditor.Tests
             {
                 workflow.Runtime = runtime;
                 var state = (ParserGeneratedState)workflow.Process();
-                Assert.IsFalse(state.HasErrors);
-                
+                Assert.IsFalse(state.HasErrors, string.Join(Environment.NewLine, state.Errors));
+
                 RuntimeInfo runtimeInfo = RuntimeInfo.Runtimes[runtime];
                 var extensions = runtimeInfo.Extensions;
                 var allFiles = Directory.GetFiles(Path.Combine(Workflow.HelperDirectoryName, runtimeInfo.Runtime.ToString()));
                 var actualFilesCount = allFiles.Where
                     (file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext))).Count();
-                Assert.Greater(actualFilesCount, 0);
+                Assert.Greater(actualFilesCount, 0, $"Failed to initialize {runtime} runtime");
 
                 foreach (var file in allFiles)
                 {
@@ -89,7 +89,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage);
+            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.Exception?.ToString());
 
             var grammarSource = new CodeSource("test.g4", File.ReadAllText("test.g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
@@ -116,7 +116,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = GrammarFactory.CreateDefaultSeparatedAndFill(lexerText, parserText, "test", ".");
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage);
+            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.Exception?.ToString());
 
             var testLexerSource = new CodeSource("testLexer.g4", File.ReadAllText("testLexer.g4"));
             var testParserSource = new CodeSource("testParser.g4", File.ReadAllText("testParser.g4"));
@@ -145,7 +145,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage);
+            Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage, state.Exception?.ToString());
 
             var grammarSource = new CodeSource("test.g4", File.ReadAllText("test.g4"));
             ParserGeneratedState parserGeneratedState = state as ParserGeneratedState;
@@ -178,7 +178,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = grammar;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage);
+            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage, state.Exception?.ToString());
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
@@ -209,7 +209,7 @@ namespace AntlrGrammarEditor.Tests
                 @"!  asdf  1234";
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.Exception?.ToString());
 
             var textSource = new CodeSource("", workflow.Text);
             TextParsedState textParsedState = state as TextParsedState;
@@ -251,9 +251,9 @@ namespace AntlrGrammarEditor.Tests
             workflow.Text = @"A a 1234";
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.Exception?.ToString());
             TextParsedState textParsedState = state as TextParsedState;
-            Assert.AreEqual(0, textParsedState.TextErrors.Count);
+            Assert.AreEqual(0, textParsedState.TextErrors.Count, string.Join(Environment.NewLine, textParsedState.TextErrors));
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
         }
 
@@ -285,7 +285,7 @@ namespace AntlrGrammarEditor.Tests
             workflow.Grammar = grammar;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage);
+            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage, state.Exception?.ToString());
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             var errors = parserGeneratedState.Errors;

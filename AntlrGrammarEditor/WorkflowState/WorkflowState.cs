@@ -6,13 +6,7 @@ namespace AntlrGrammarEditor
     {
         public abstract WorkflowStage Stage { get; }
 
-        public virtual bool HasErrors
-        {
-            get
-            {
-                return Exception != null;
-            }
-        }
+        public virtual bool HasErrors => Exception != null;
 
         public abstract WorkflowState PreviousState { get; }
 

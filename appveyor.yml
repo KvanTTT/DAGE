@@ -12,6 +12,10 @@ assembly_info:
   assembly_informational_version: '{version}'
 before_build:
 - ps: |
+    if ($isLinux) {
+        sudo apt-get -y install golang-go
+    }
+
     if ($isWindows) {
         py -V
     } else {
@@ -21,14 +25,10 @@ before_build:
     if ($isWindows) {
         py -3 -V
     } else {
-        python2 -V
+        python3 -V
     }
 
     node -v
-
-    if ($isLinux) {
-        sudo apt-get -y install golang-go
-    }
 
     go version
 build_script:
