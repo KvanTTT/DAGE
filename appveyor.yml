@@ -15,11 +15,11 @@ before_build:
     if ($isLinux) {
         sudo apt-get -y install golang-go
 
-        export GOPATH=$HOME/go
+        $env:GOPATH = "$HOME/go"
     }
 
     if ($isWindows) {
-        py -V
+        py -2 -V
     } else {
         python2 -V
     }

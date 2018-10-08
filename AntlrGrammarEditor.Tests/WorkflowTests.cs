@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -32,16 +33,19 @@ namespace AntlrGrammarEditor.Tests
 
             foreach (Runtime runtime in runtimes)
             {
+                string message;
                 if (runtime != Runtime.CPlusPlus && runtime != Runtime.Swift)
                 {
                     RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
                     Assert.IsFalse(string.IsNullOrEmpty(runtimeInfo.Version), $"Failed to initialize {runtime} runtime");
-                    Console.WriteLine($"{runtime}: {runtimeInfo.RuntimeToolName} {runtimeInfo.Version}");
+                    message = $"{runtime}: {runtimeInfo.RuntimeToolName} {runtimeInfo.Version}";
                 }
                 else
                 {
-                    Console.WriteLine($"{runtime} is not supported for now");
+                    message = $"{runtime} is not supported for now";
                 }
+                Console.WriteLine(message);
+                Debug.WriteLine(message);
             }
         }
 
