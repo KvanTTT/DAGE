@@ -165,7 +165,8 @@ namespace AntlrGrammarEditor
 
                     EventHandler<DataReceivedEventArgs> versionCollectFunc = (sender, e) =>
                     {
-                        version += e.Data + Environment.NewLine;
+                        if (!e.IsIgnoreError())
+                            version += e.Data + Environment.NewLine;
                     };
 
                     if (runtimeInfo.ErrorVersionStream)

@@ -759,7 +759,7 @@ namespace AntlrGrammarEditor
 
         private void ParserGeneration_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
                 var strs = e.Data.Split(':');
                 ParsingError error;
@@ -782,14 +782,14 @@ namespace AntlrGrammarEditor
 
         private void ParserGeneration_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
             }
         }
 
         private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
                 Console.WriteLine(e.Data);
                 if (Runtime == Runtime.CSharpStandard || Runtime == Runtime.CSharpOptimized)
@@ -813,9 +813,10 @@ namespace AntlrGrammarEditor
                 }
             }
         }
+
         private void ParserCompilation_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
                 Console.WriteLine(e.Data);
                 if (Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard)
@@ -827,7 +828,7 @@ namespace AntlrGrammarEditor
 
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
                 var errorString = Helpers.FixEncoding(e.Data);
                 ParsingError error;
@@ -851,7 +852,7 @@ namespace AntlrGrammarEditor
 
         private void TextParsing_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
                 var strs = e.Data.Split(new char[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
                 TextParsedOutput outputState;

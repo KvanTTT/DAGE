@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -55,6 +56,11 @@ namespace AntlrGrammarEditor
                 }
             }
             return result;
+        }
+
+        public static bool IsIgnoreError(this DataReceivedEventArgs message)
+        {
+            return message.Data?.Contains("Picked up JAVA_TOOL_OPTIONS") == true;
         }
     }
 }
