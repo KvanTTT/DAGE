@@ -411,7 +411,7 @@ namespace AntlrGrammarEditor
             Processor processor = null;
             try
             {
-                string runtimeDirectoryName = Path.Combine(HelperDirectoryName, Runtime.ToString());
+                string runtimeDirectoryName = Path.Combine(HelperDirectoryName, _grammar.Name, Runtime.ToString());
                 if (Directory.Exists(runtimeDirectoryName))
                 {
                     Directory.Delete(runtimeDirectoryName, true);
@@ -477,7 +477,7 @@ namespace AntlrGrammarEditor
                 string templateName = "";
                 string runtimeDir = Path.Combine(RuntimesDirName, Runtime.ToString());
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
-                string workingDirectory = Path.Combine(HelperDirectoryName, Runtime.ToString());
+                string workingDirectory = Path.Combine(HelperDirectoryName, _grammar.Name, Runtime.ToString());
 
                 var compiliedFiles = new StringBuilder();
                 var generatedFiles = new List<string>();
@@ -510,7 +510,7 @@ namespace AntlrGrammarEditor
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
                         File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.java"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.java"), true);
                     }
-                    arguments = $@"-cp ""{(Path.Combine("..", "..", runtimeLibraryPath))}"" " + compiliedFiles;
+                    arguments = $@"-cp ""{(Path.Combine("..", "..", "..", runtimeLibraryPath))}"" " + compiliedFiles;
                 }
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
@@ -635,18 +635,6 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        private void GetGeneratedFileNames(RuntimeInfo runtimeInfo, string workingDirectory, List<string> generatedFiles,
-            StringBuilder compiliedFiles, bool lexer)
-        {
-            string grammarNameExt = _grammar.Name + ".g4";
-            string shortGeneratedFile = runtimeInfo.GetGeneratedLexerParserName(_grammar, lexer);
-            string generatedFile = Path.Combine(workingDirectory, shortGeneratedFile);
-            generatedFiles.Add(generatedFile);
-            compiliedFiles.Append('"' + shortGeneratedFile + "\" ");
-            CodeSource codeSource = new CodeSource(generatedFile, File.ReadAllText(generatedFile));
-            _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(_grammarActionsTextSpan[grammarNameExt], codeSource, lexer);
-        }
-
         private TextParsedState ParseText(ParserCompiliedState state)
         {
             var result = new TextParsedState
@@ -666,17 +654,18 @@ namespace AntlrGrammarEditor
 
                 string parserFileName = "";
                 string arguments = "";
-                string workingDirectory = Path.Combine(HelperDirectoryName, Runtime.ToString());
+                string workingDirectory = Path.Combine(HelperDirectoryName, _grammar.Name, Runtime.ToString());
+                string parseTextFileName = Path.Combine("..", "..", TextFileName);
 
                 if (Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard)
                 {
                     bool parse = EndStage != WorkflowStage.TextParsed;
-                    arguments = $"\"{Path.Combine("bin", "netcoreapp2.1", _grammar.Name + ".dll")}\" {Root} \"{Path.Combine("..", TextFileName)}\" {parse} {IndentedTree}";
+                    arguments = $"\"{Path.Combine("bin", "netcoreapp2.1", _grammar.Name + ".dll")}\" {Root} \"{parseTextFileName}\" {parse} {IndentedTree}";
                     parserFileName = "dotnet";
                 }
                 else if (Runtime == Runtime.Java)
                 {
-                    string relativeRuntimeLibraryPath = "\"" + Path.Combine("..", "..", runtimeLibraryPath) + "\"";
+                    string relativeRuntimeLibraryPath = "\"" + Path.Combine("..", "..", "..", runtimeLibraryPath) + "\"";
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
                         relativeRuntimeLibraryPath += ";.";
@@ -685,7 +674,7 @@ namespace AntlrGrammarEditor
                     {
                         relativeRuntimeLibraryPath = ".:" + relativeRuntimeLibraryPath;
                     }
-                    arguments = $@"-cp {relativeRuntimeLibraryPath} Main ""{Path.Combine("..", TextFileName)}""";
+                    arguments = $@"-cp {relativeRuntimeLibraryPath} Main ""{parseTextFileName}""";
                     parserFileName = "java";
                 }
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
@@ -749,6 +738,18 @@ namespace AntlrGrammarEditor
                 processor?.Dispose();
             }
             return result;
+        }
+
+        private void GetGeneratedFileNames(RuntimeInfo runtimeInfo, string workingDirectory, List<string> generatedFiles,
+            StringBuilder compiliedFiles, bool lexer)
+        {
+            string grammarNameExt = _grammar.Name + ".g4";
+            string shortGeneratedFile = runtimeInfo.GetGeneratedLexerParserName(_grammar, lexer);
+            string generatedFile = Path.Combine(workingDirectory, shortGeneratedFile);
+            generatedFiles.Add(generatedFile);
+            compiliedFiles.Append('"' + shortGeneratedFile + "\" ");
+            CodeSource codeSource = new CodeSource(generatedFile, File.ReadAllText(generatedFile));
+            _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(_grammarActionsTextSpan[grammarNameExt], codeSource, lexer);
         }
 
         private void Processor_OutputDataReceived(object sender, string e)

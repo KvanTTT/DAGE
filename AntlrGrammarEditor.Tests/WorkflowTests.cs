@@ -8,6 +8,8 @@ namespace AntlrGrammarEditor.Tests
     [TestFixture]
     public class WorkflowTests
     {
+        private const string TestGrammarName = "test";
+        
         [SetUp]
         public void Init()
         {
@@ -46,18 +48,18 @@ namespace AntlrGrammarEditor.Tests
                 Console.WriteLine(message);
             }
         }
-
+        
         [Test]
         public void AllGeneratorsExists()
         {
             var runtimes = (Runtime[])Enum.GetValues(typeof(Runtime));
             var workflow = new Workflow();
-            var grammarText = @"grammar test;
+            var grammarText = $@"grammar {TestGrammarName};
                 start: DIGIT+;
                 CHAR:  [a-z]+;
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
-            workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
+            workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
             workflow.EndStage = WorkflowStage.ParserGenerated;
             foreach (Runtime runtime in runtimes)
             {
@@ -67,9 +69,8 @@ namespace AntlrGrammarEditor.Tests
 
                 RuntimeInfo runtimeInfo = RuntimeInfo.Runtimes[runtime];
                 var extensions = runtimeInfo.Extensions;
-                var allFiles = Directory.GetFiles(Path.Combine(Workflow.HelperDirectoryName, runtimeInfo.Runtime.ToString()));
-                var actualFilesCount = allFiles.Where
-                    (file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext))).Count();
+                var allFiles = Directory.GetFiles(Path.Combine(Workflow.HelperDirectoryName, TestGrammarName, runtimeInfo.Runtime.ToString()));
+                var actualFilesCount = allFiles.Count(file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext)));
                 Assert.Greater(actualFilesCount, 0, $"Failed to initialize {runtime} runtime");
 
                 foreach (var file in allFiles)
@@ -83,17 +84,17 @@ namespace AntlrGrammarEditor.Tests
         public void GrammarCheckedStageErrors()
         {
             var workflow = new Workflow();
-            var grammarText = @"grammar test;
+            var grammarText = $@"grammar {TestGrammarName};
                 start: DIGIT+;
                 CHAR:   a-z]+;
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
-            workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
+            workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.Exception?.ToString());
 
-            var grammarSource = new CodeSource("test.g4", File.ReadAllText("test.g4"));
+            var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
@@ -108,27 +109,27 @@ namespace AntlrGrammarEditor.Tests
         public void SeparatedLexerAndParserErrors()
         {
             var workflow = new Workflow();
-            var lexerText = @"lexer grammar test;
+            var lexerText = $@"lexer grammar {TestGrammarName};
                 CHAR:   a-z]+;
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
-            var parserText = @"parser grammar test;
+            var parserText = $@"parser grammar {TestGrammarName};
                 start: DIGIT+;
                 #";
-            workflow.Grammar = GrammarFactory.CreateDefaultSeparatedAndFill(lexerText, parserText, "test", ".");
+            workflow.Grammar = GrammarFactory.CreateDefaultSeparatedAndFill(lexerText, parserText, TestGrammarName, ".");
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.Exception?.ToString());
 
-            var testLexerSource = new CodeSource("testLexer.g4", File.ReadAllText("testLexer.g4"));
-            var testParserSource = new CodeSource("testParser.g4", File.ReadAllText("testParser.g4"));
+            var testLexerSource = new CodeSource(TestGrammarName + "Lexer.g4", File.ReadAllText(TestGrammarName + "Lexer.g4"));
+            var testParserSource = new CodeSource(TestGrammarName + "Parser.g4", File.ReadAllText(TestGrammarName + "Parser.g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(2, 25, "error: testLexer.g4:2:25: token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(2, 27, "error: testLexer.g4:2:27: token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(2, 28, "error: testLexer.g4:2:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 16, "error: testParser.g4:3:16: extraneous input '#' expecting {<EOF>, 'mode'}", testParserSource, WorkflowStage.GrammarChecked)
+                    new ParsingError(2, 25, $"error: {TestGrammarName}Lexer.g4:2:25: token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(2, 27, $"error: {TestGrammarName}Lexer.g4:2:27: token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(2, 28, $"error: {TestGrammarName}Lexer.g4:2:28: mismatched input '+' expecting {{ASSIGN, PLUS_ASSIGN}}", testLexerSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 16, $"error: {TestGrammarName}Parser.g4:3:16: extraneous input '#' expecting {{<EOF>, 'mode'}}", testParserSource, WorkflowStage.GrammarChecked)
                 },
                 grammarCheckedState.Errors);
         }
@@ -138,22 +139,22 @@ namespace AntlrGrammarEditor.Tests
         {
             var workflow = new Workflow();
             var grammarText =
-                @"grammar test;
+                $@"grammar {TestGrammarName};
                 start:  rule1+;
                 rule:   DIGIT;
                 CHAR:   [a-z]+;
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
-            workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
+            workflow.Grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage, state.Exception?.ToString());
 
-            var grammarSource = new CodeSource("test.g4", File.ReadAllText("test.g4"));
+            var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
             ParserGeneratedState parserGeneratedState = state as ParserGeneratedState;
             CollectionAssert.AreEquivalent(
                 new ParsingError[] {
-                    new ParsingError(2, 24, "error(56): test.g4:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
+                    new ParsingError(2, 24, $"error(56): {TestGrammarName}.g4:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
                 },
                 parserGeneratedState.Errors);
         }
@@ -198,12 +199,12 @@ namespace AntlrGrammarEditor.Tests
         {
             var workflow = new Workflow();
             var grammarText =
-                @"grammar test;
+                $@"grammar {TestGrammarName};
                 start: DIGIT+;
                 CHAR:  [a-z]+;
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
+            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
             grammar.Runtimes.Clear();
             grammar.Runtimes.Add(runtime);
             workflow.Grammar = grammar;
@@ -240,12 +241,12 @@ namespace AntlrGrammarEditor.Tests
 
             var workflow = new Workflow();
             var grammarText =
-                @"grammar test;
+                $@"grammar {TestGrammarName};
                 start:  A A DIGIT;
                 A:      'a';
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
+            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
             grammar.CaseInsensitive = true;
             grammar.Runtimes.Clear();
             grammar.Runtimes.Add(runtime);

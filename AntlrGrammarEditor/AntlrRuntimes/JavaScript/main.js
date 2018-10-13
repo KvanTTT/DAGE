@@ -4,7 +4,7 @@ var __TemplateGrammarName__Lexer = require('./__TemplateGrammarName__Lexer').__T
 var __TemplateGrammarName__Parser = require('./__TemplateGrammarName__Parser').__TemplateGrammarName__Parser;
 /*AntlrCaseInsensitive*/
 
-var input = fs.readFileSync("../Text").toString();
+var input = fs.readFileSync("../../Text").toString();
 var chars = new antlr4.InputStream(input);
 var lexer = new __TemplateGrammarName__Lexer(chars);
 var tokens = new antlr4.CommonTokenStream(lexer);

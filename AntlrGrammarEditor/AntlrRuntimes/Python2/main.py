@@ -7,7 +7,7 @@ from __TemplateGrammarName__Parser import __TemplateGrammarName__Parser
 '''AntlrCaseInsensitive'''
 
 def main(argv):
-    code = open('../Text', 'r').read()
+    code = open('../../Text', 'r').read()
     codeStream = InputStream(code)
     lexer = __TemplateGrammarName__Lexer(codeStream)
     tokens = lexer.getAllTokens()
