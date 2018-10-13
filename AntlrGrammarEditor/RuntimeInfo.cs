@@ -126,9 +126,7 @@ namespace AntlrGrammarEditor
                 mainFile: "",
                 antlrInputStream: "",
                 runtimeToolName: "swift",
-                versionArg: "--version",
-                lexerPostfix: "_lexer",
-                parserPostfix: "_parser"
+                versionArg: "--version"
             )
         };
 
@@ -163,16 +161,16 @@ namespace AntlrGrammarEditor
                     var processor = new Processor(runtimeInfo.RuntimeToolName, runtimeInfo.VersionArg);
                     string version = "";
 
-                    EventHandler<DataReceivedEventArgs> versionCollectFunc = (sender, e) =>
+                    if (runtimeInfo.ErrorVersionStream)
+                        processor.ErrorDataReceived += VersionCollectFunc;
+                    else
+                        processor.OutputDataReceived += VersionCollectFunc;
+                    
+                    void VersionCollectFunc(object sender, DataReceivedEventArgs e)
                     {
                         if (!e.IsIgnoreError())
                             version += e.Data + Environment.NewLine;
-                    };
-
-                    if (runtimeInfo.ErrorVersionStream)
-                        processor.ErrorDataReceived += versionCollectFunc;
-                    else
-                        processor.OutputDataReceived += versionCollectFunc;
+                    }
 
                     processor.Start();
                     runtimeInfo.Version = version.Trim();
@@ -207,6 +205,13 @@ namespace AntlrGrammarEditor
             ParserPostfix = parserPostfix ?? throw new ArgumentNullException(nameof(parserPostfix));
             VersionArg = versionArg ?? throw new ArgumentNullException(nameof(versionArg));
             ErrorVersionStream = errorVersionStream;
+        }
+
+        public string GetGeneratedLexerParserName(Grammar grammar, bool lexer)
+        {
+            return (Runtime != Runtime.Go ? grammar.Name : grammar.Name.ToLowerInvariant())
+                   + (lexer ? LexerPostfix : ParserPostfix)
+                   + "." + Extensions[0];
         }
 
         public override string ToString()

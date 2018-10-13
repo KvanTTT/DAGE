@@ -25,7 +25,8 @@ namespace AntlrGrammarEditor
                         string version = "";
                         processor.ErrorDataReceived += (sender, e) =>
                         {
-                            version += e.Data + Environment.NewLine;
+                            if (!e.IsIgnoreError())
+                                version += e.Data + Environment.NewLine;
                         };
                         processor.Start();
                         javaVersion = version.Trim();

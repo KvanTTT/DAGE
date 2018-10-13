@@ -117,10 +117,7 @@ namespace DesktopAntlrGrammarEditor
 
         public string OpenedGrammarFile
         {
-            get
-            {
-                return _openedGrammarFile;
-            }
+            get => _openedGrammarFile;
             set
             {
                 SaveGrammarFileIfRequired();
@@ -154,7 +151,7 @@ namespace DesktopAntlrGrammarEditor
                     }
                     catch (Exception ex)
                     {
-                        ShowOpenFileErrorMessage(_openedGrammarFile, ex.Message).Wait();
+                        ShowOpenFileErrorMessage(_openedGrammarFile, ex.Message);
                     }
                 }
             }
@@ -236,10 +233,7 @@ namespace DesktopAntlrGrammarEditor
 
         public FileName OpenedTextFile
         {
-            get
-            {
-                return _openedTextFile;
-            }
+            get => _openedTextFile;
             set
             {
                 SaveTextFileIfRequired();

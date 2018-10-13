@@ -458,7 +458,7 @@ namespace AntlrGrammarEditor
             }
             return result;
         }
-
+        
         private ParserCompiliedState CompileParser(ParserGeneratedState state)
         {
             ParserCompiliedState result = new ParserCompiliedState
@@ -477,27 +477,14 @@ namespace AntlrGrammarEditor
                 string templateName = "";
                 string runtimeDir = Path.Combine(RuntimesDirName, Runtime.ToString());
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
-                string extension = runtimeInfo.Extensions.First();
                 string workingDirectory = Path.Combine(HelperDirectoryName, Runtime.ToString());
 
-                var generatedFiles = new List<string>();
-                generatedFiles.Add(_grammar.Name + runtimeInfo.LexerPostfix + "." + extension);
-                generatedFiles.Add(_grammar.Name + runtimeInfo.ParserPostfix + "." + extension);
-                generatedFiles = generatedFiles.Select(file => Path.Combine(workingDirectory, file)).ToList();
                 var compiliedFiles = new StringBuilder();
+                var generatedFiles = new List<string>();
                 _grammarCodeMapping.Clear();
 
-                foreach (string codeFileName in generatedFiles)
-                {
-                    compiliedFiles.Append('"' + Path.GetFileName(codeFileName) + "\" ");
-                    CodeSource codeSource = new CodeSource(codeFileName, File.ReadAllText(codeFileName));
-                    string shortCodeFileName = Path.GetFileName(codeFileName);
-
-                    bool isLexer = Path.GetFileNameWithoutExtension(shortCodeFileName).EndsWith(runtimeInfo.LexerPostfix);
-                    string shortGrammarFileName = GetGrammarFromCodeFileName(runtimeInfo, shortCodeFileName);
-
-                    _grammarCodeMapping[shortCodeFileName] = TextHelpers.Map(_grammarActionsTextSpan[shortGrammarFileName], codeSource, isLexer);
-                }
+                GetGeneratedFileNames(runtimeInfo, workingDirectory, generatedFiles, compiliedFiles, false);
+                GetGeneratedFileNames(runtimeInfo, workingDirectory, generatedFiles, compiliedFiles, true);
 
                 templateName = runtimeInfo.MainFile;
 
@@ -523,7 +510,7 @@ namespace AntlrGrammarEditor
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
                         File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.java"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.java"), true);
                     }
-                    arguments = $@"-cp ""{(Path.Combine("..", "..", runtimeLibraryPath))}"" " + compiliedFiles.ToString();
+                    arguments = $@"-cp ""{(Path.Combine("..", "..", runtimeLibraryPath))}"" " + compiliedFiles;
                 }
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
@@ -646,6 +633,18 @@ namespace AntlrGrammarEditor
                 processor?.Dispose();
             }
             return result;
+        }
+
+        private void GetGeneratedFileNames(RuntimeInfo runtimeInfo, string workingDirectory, List<string> generatedFiles,
+            StringBuilder compiliedFiles, bool lexer)
+        {
+            string grammarNameExt = _grammar.Name + ".g4";
+            string shortGeneratedFile = runtimeInfo.GetGeneratedLexerParserName(_grammar, lexer);
+            string generatedFile = Path.Combine(workingDirectory, shortGeneratedFile);
+            generatedFiles.Add(generatedFile);
+            compiliedFiles.Append('"' + shortGeneratedFile + "\" ");
+            CodeSource codeSource = new CodeSource(generatedFile, File.ReadAllText(generatedFile));
+            _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(_grammarActionsTextSpan[grammarNameExt], codeSource, lexer);
         }
 
         private TextParsedState ParseText(ParserCompiliedState state)
