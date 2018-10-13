@@ -1,6 +1,5 @@
 ﻿using NUnit.Framework;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -45,7 +44,6 @@ namespace AntlrGrammarEditor.Tests
                     message = $"{runtime} is not supported for now";
                 }
                 Console.WriteLine(message);
-                Debug.WriteLine(message);
             }
         }
 
@@ -171,12 +169,12 @@ namespace AntlrGrammarEditor.Tests
         {
             var workflow = new Workflow();
             var grammarText =
-                @"grammar test;
+                @"grammar Test;
                 start:  DIGIT+ {i^;};
                 CHAR:   [a-z]+;
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
+            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "Test", ".");
             grammar.Runtimes.Clear();
             grammar.Runtimes.Add(runtime);
             workflow.Grammar = grammar;
