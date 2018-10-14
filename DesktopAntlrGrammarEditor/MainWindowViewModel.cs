@@ -2,6 +2,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
+using AvaloniaEdit;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
@@ -23,9 +24,10 @@ namespace DesktopAntlrGrammarEditor
         private string _openedGrammarFile = "";
         private FileName _openedTextFile = FileName.Empty;
         private FileState _grammarFileState, _textFileState;
-        private TextBox _grammarTextBox, _textTextBox;
+        private TextEditor _grammarTextBox, _textTextBox;
+        private TextEditor _parseTreeTextBox;
         private ListBox _grammarErrorsListBox, _textErrorsListBox;
-        private string _tokens, _tree;
+        private string _tokens;
         private bool _autoprocessing;
         private bool _indentedTree;
         private WorkflowStage _endStage = WorkflowStage.TextParsed;
@@ -33,10 +35,11 @@ namespace DesktopAntlrGrammarEditor
         public MainWindowViewModel(Window window)
         {
             _window = window;
-            _grammarTextBox = _window.Find<TextBox>("GrammarTextBox");
-            _textTextBox = _window.Find<TextBox>("TextTextBox");
+            _grammarTextBox = _window.Find<TextEditor>("GrammarTextBox");
+            _textTextBox = _window.Find<TextEditor>("TextTextBox");
             _grammarErrorsListBox = _window.Find<ListBox>("GrammarErrorsListBox");
             _textErrorsListBox = _window.Find<ListBox>("TextErrorsListBox");
+            _parseTreeTextBox = _window.Find<TextEditor>("ParseTreeTextBox");
 
             _settings = Settings.Load();
 
@@ -165,10 +168,7 @@ namespace DesktopAntlrGrammarEditor
 
         public string Root
         {
-            get
-            {
-                return IsPreprocessor ? _grammar.PreprocessorRoot : _grammar.Root;
-            }
+            get => IsPreprocessor ? _grammar.PreprocessorRoot : _grammar.Root;
             set
             {
                 var currentRoot = IsPreprocessor ? _grammar.PreprocessorRoot : _grammar.Root;
@@ -196,10 +196,7 @@ namespace DesktopAntlrGrammarEditor
 
         public RuntimeInfo SelectedRuntime
         {
-            get
-            {
-                return RuntimeInfo.Runtimes[_grammar.Runtimes.First()];
-            }
+            get => RuntimeInfo.Runtimes[_grammar.Runtimes.First()];
             set
             {
                 if (RuntimeInfo.Runtimes[_grammar.Runtimes.First()] != value)
@@ -291,34 +288,19 @@ namespace DesktopAntlrGrammarEditor
 
         public string Tokens
         {
-            get
-            {
-                return _tokens;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _tokens, value);
-            }
+            get => _tokens;
+            set => this.RaiseAndSetIfChanged(ref _tokens, value);
         }
 
         public string Tree
         {
-            get
-            {
-                return _tree;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _tree, value);
-            }
+            get => _parseTreeTextBox.Text;
+            set => _parseTreeTextBox.Text = value;
         }
 
         public bool IsTokensExpanded
         {
-            get
-            {
-                return _settings.IsTokensExpanded;
-            }
+            get => _settings.IsTokensExpanded;
             set
             {
                 if (_settings.IsTokensExpanded != value)
@@ -332,10 +314,7 @@ namespace DesktopAntlrGrammarEditor
 
         public bool IsParseTreeExpanded
         {
-            get
-            {
-                return _settings.IsParseTreeExpanded;
-            }
+            get => _settings.IsParseTreeExpanded;
             set
             {
                 if (_settings.IsParseTreeExpanded != value)
@@ -349,10 +328,7 @@ namespace DesktopAntlrGrammarEditor
 
         public bool IndentedTree
         {
-            get
-            {
-                return _indentedTree;
-            }
+            get => _indentedTree;
             set
             {
                 if (_indentedTree != value)
@@ -380,10 +356,7 @@ namespace DesktopAntlrGrammarEditor
 
         public bool AutoProcessing
         {
-            get
-            {
-                return _autoprocessing;
-            }
+            get => _autoprocessing;
             set
             {
                 if (_autoprocessing != value)
@@ -403,20 +376,15 @@ namespace DesktopAntlrGrammarEditor
 
         public WorkflowStage EndStage
         {
-            get
-            {
-                return _endStage;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _endStage, value);
-            }
+            get => _endStage;
+            set => this.RaiseAndSetIfChanged(ref _endStage, value);
         }
 
         private void SetupWindowSubscriptions()
         {
             _window.GetObservable(Window.WidthProperty)
                 .Throttle(TimeSpan.FromMilliseconds(250))
+                .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(width =>
                 {
                     if (_window.WindowState != WindowState.Maximized)
@@ -429,6 +397,7 @@ namespace DesktopAntlrGrammarEditor
 
             _window.GetObservable(Window.HeightProperty)
                 .Throttle(TimeSpan.FromMilliseconds(250))
+                .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(height =>
                 {
                     if (_window.WindowState != WindowState.Maximized)
@@ -442,6 +411,7 @@ namespace DesktopAntlrGrammarEditor
             Observable.FromEventPattern<PointEventArgs>(
                 ev => _window.PositionChanged += ev, ev => _window.PositionChanged -= ev)
                 .Throttle(TimeSpan.FromMilliseconds(250))
+                .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev =>
                 {
                     if (_window.WindowState != WindowState.Maximized)
@@ -514,22 +484,40 @@ namespace DesktopAntlrGrammarEditor
             _grammarErrorsListBox.DoubleTapped += ErrorsListBox_DoubleTapped;
             _textErrorsListBox.DoubleTapped += ErrorsListBox_DoubleTapped;
 
-            _grammarTextBox.GetObservable(TextBox.TextProperty)
-                .Subscribe(str =>
-                {
-                    if (_grammarFileState == FileState.Opened)
-                    {
-                        _grammarFileState = FileState.Unchanged;
-                    }
-                    else
-                    {
-                        _grammarFileState = FileState.Changed;
-                    }
-                });
+            var grammarTextBoxObservable = Observable.FromEventPattern<EventHandler, EventArgs>(
+                h => _grammarTextBox.TextChanged += h,
+                h => _grammarTextBox.TextChanged -= h);
+            var textBoxObservable = Observable.FromEventPattern<EventHandler, EventArgs>(
+                h => _textTextBox.TextChanged += h,
+                h => _textTextBox.TextChanged -= h);
 
-            _grammarTextBox.GetObservable(TextBox.TextProperty)
+            grammarTextBoxObservable.Subscribe(x =>
+            {
+                if (_grammarFileState == FileState.Opened)
+                {
+                    _grammarFileState = FileState.Unchanged;
+                }
+                else
+                {
+                    _grammarFileState = FileState.Changed;
+                }
+            });
+
+            textBoxObservable.Subscribe(x =>
+            {
+                if (_textFileState == FileState.Opened)
+                {
+                    _textFileState = FileState.Unchanged;
+                }
+                else
+                {
+                    _textFileState = FileState.Changed;
+                }
+            });
+
+            grammarTextBoxObservable
                 .Throttle(TimeSpan.FromMilliseconds(1000))
-                .Subscribe(str =>
+                .Subscribe(x => 
                 {
                     if (_grammarFileState == FileState.Changed)
                     {
@@ -542,25 +530,14 @@ namespace DesktopAntlrGrammarEditor
                     }
                 });
 
-            _textTextBox.GetObservable(TextBox.TextProperty)
-                .Subscribe(str => {
-                    if (_textFileState == FileState.Opened)
-                    {
-                        _textFileState = FileState.Unchanged;
-                    }
-                    else
-                    {
-                        _textFileState = FileState.Changed;
-                    }
-                });
-
-            _textTextBox.GetObservable(TextBox.TextProperty)
+            textBoxObservable
                 .Throttle(TimeSpan.FromMilliseconds(1000))
-                .Subscribe(str =>
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(x =>
                 {
                     if (_textFileState == FileState.Changed)
                     {
-                        _workflow.Text = str;
+                        _workflow.Text = _textTextBox.Text;
                         if (AutoProcessing)
                         {
                             SaveTextFileIfRequired();
@@ -605,6 +582,7 @@ namespace DesktopAntlrGrammarEditor
             ProcessCommand = ReactiveCommand.Create(() =>
             {
                 bool changed = false;
+
                 if (_grammarFileState == FileState.Changed)
                 {
                     File.WriteAllText(GetFullGrammarFileName(_openedGrammarFile), _grammarTextBox.Text);
@@ -625,6 +603,7 @@ namespace DesktopAntlrGrammarEditor
                 {
                     _settings.Save();
                 }
+
                 Process();
             });
 
@@ -639,11 +618,13 @@ namespace DesktopAntlrGrammarEditor
                         Extensions = new List<string>() { _grammar.FileExtension }
                     });
                 }
+
                 filters.Add(new FileDialogFilter
                 {
                     Name = "All files",
                     Extensions = new List<string>() { "*" }
                 });
+
                 var saveFileDialog = new SaveFileDialog
                 {
                     Title = "Enter file name",
@@ -652,6 +633,7 @@ namespace DesktopAntlrGrammarEditor
                     InitialDirectory = _grammar.GrammarPath,
                     InitialFileName = Path.GetFileName(GrammarFactory.GenerateTextFileName(_grammar))
                 };
+
                 string fileName = await saveFileDialog.ShowAsync(_window);
                 if (fileName != null)
                 {
@@ -791,16 +773,14 @@ namespace DesktopAntlrGrammarEditor
             ListBox listBox = (ListBox)sender;
             listBox.Focus();
 
-            var parsingError = listBox.SelectedItem as ParsingError;
-            if (parsingError != null)
+            if (listBox.SelectedItem is ParsingError parsingError)
             {
-                TextBox textBox = listBox == _grammarErrorsListBox ? _grammarTextBox : _textTextBox;
+                TextEditor textBox = listBox == _grammarErrorsListBox ? _grammarTextBox : _textTextBox;
                 if (textBox == _grammarTextBox)
                 {
                     OpenedGrammarFile = parsingError.TextSpan.Source.Name;
                 }
-                textBox.SelectionStart = parsingError.TextSpan.Start;
-                textBox.SelectionEnd = parsingError.TextSpan.Start + parsingError.TextSpan.Length;
+                textBox.Select(parsingError.TextSpan.Start, parsingError.TextSpan.Length);
             }
         }
 

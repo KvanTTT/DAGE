@@ -1,4 +1,7 @@
-﻿<Window xmlns="https://github.com/avaloniaui" MinWidth="640" Width="1366" MinHeight="480" Height="768" Title="DAGE" >
+﻿<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    MinWidth="640" Width="1366" MinHeight="480" Height="768" Title="DAGE" >
   <Window.Styles>
     <Style Selector="TextBlock">
       <Setter Property="VerticalAlignment" Value="Center"/>
@@ -13,7 +16,7 @@
         <Button Grid.Column="2" Margin="0,0,5,0" Command="{Binding OpenGrammarCommand}" >Open</Button>
         <TextBlock Grid.Column="3" Margin="5,0,10,0" HorizontalAlignment="Right" Text="File" />
         <DropDown Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" ></DropDown>
-        <StackPanel Grid.Column="5" HorizontalAlignment="Right" Gap="4" Orientation="Horizontal">
+        <StackPanel Grid.Column="5" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal">
           <TextBlock HorizontalAlignment="Right" Text="Root" IsVisible="{Binding IsParserOpened}" />
           <DropDown Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" IsVisible="{Binding IsParserOpened}" ></DropDown>
           <TextBlock HorizontalAlignment="Right" Text="Runtime" />
@@ -21,7 +24,9 @@
         </StackPanel>
       </Grid>
       
-      <TextBox Grid.Row="1" Name="GrammarTextBox" AcceptsReturn="true" />
+      <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790">
+        <ae:TextEditor Name="GrammarTextBox" FontFamily="Consolas" FontSize="12" />
+      </Border>
       
       <Expander Grid.Row="2" Header="{Binding GrammarErrorsText}" IsExpanded="{Binding GrammarErrorsExpanded}">
         <ListBox Name="GrammarErrorsListBox" MinHeight="120" Items="{Binding GrammarErrors}" />
@@ -46,8 +51,10 @@
         <DropDown Grid.Column="5" SelectedItem="{Binding OpenedTextFile}" Items="{Binding TextFiles}" ></DropDown>
       </Grid>
 
-      <TextBox IsEnabled="{Binding TextBoxEnabled}" Grid.Row="1" Name="TextTextBox" AcceptsReturn="true" />
-
+      <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790">
+        <ae:TextEditor IsEnabled="{Binding TextBoxEnabled}" Name="TextTextBox" />
+      </Border>
+      
       <Expander Grid.Row="2" Header="Tokens" IsExpanded="{Binding IsTokensExpanded, Mode=TwoWay}">
         <Grid RowDefinitions="170">
           <TextBox MinHeight="170" Text="{Binding Tokens}" IsReadOnly="true" TextWrapping="Wrap" />
@@ -56,7 +63,9 @@
 
       <Expander Grid.Row="3" Header="Tree" IsExpanded="{Binding IsParseTreeExpanded, Mode=TwoWay}">
         <Grid RowDefinitions="170">
-          <TextBox MinHeight="170" Text="{Binding Tree, Mode=TwoWay}" IsReadOnly="true" TextWrapping="Wrap" />
+          <Border BorderThickness="1" BorderBrush="#FF828790">
+            <ae:TextEditor Name="ParseTreeTextBox" MinHeight="170"  IsReadOnly="true" />
+          </Border>
         </Grid>
       </Expander>
 
