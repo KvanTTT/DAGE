@@ -29,9 +29,8 @@ namespace DesktopAntlrGrammarEditor
         private FileName _openedTextFile = FileName.Empty;
         private FileState _grammarFileState, _textFileState;
         private TextEditor _grammarTextBox, _textTextBox;
-        private TextEditor _parseTreeTextBox;
+        private TextEditor _tokensTextBox, _parseTreeTextBox;
         private ListBox _grammarErrorsListBox, _textErrorsListBox;
-        private string _tokens;
         private bool _autoprocessing;
         private bool _indentedTree;
         private WorkflowStage _endStage = WorkflowStage.TextParsed;
@@ -44,6 +43,7 @@ namespace DesktopAntlrGrammarEditor
             _grammarErrorsListBox = _window.Find<ListBox>("GrammarErrorsListBox");
             _textErrorsListBox = _window.Find<ListBox>("TextErrorsListBox");
             _parseTreeTextBox = _window.Find<TextEditor>("ParseTreeTextBox");
+            _tokensTextBox = _window.Find<TextEditor>("TokensTextBox");
 
             using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("DesktopAntlrGrammarEditor.Antlr4.xshd"))
             {
@@ -300,8 +300,8 @@ namespace DesktopAntlrGrammarEditor
 
         public string Tokens
         {
-            get => _tokens;
-            set => this.RaiseAndSetIfChanged(ref _tokens, value);
+            get => _tokensTextBox.Text;
+            set => _tokensTextBox.Text = value;
         }
 
         public string Tree
