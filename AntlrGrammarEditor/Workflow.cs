@@ -743,7 +743,7 @@ namespace AntlrGrammarEditor
         private void GetGeneratedFileNames(RuntimeInfo runtimeInfo, string workingDirectory, List<string> generatedFiles,
             StringBuilder compiliedFiles, bool lexer)
         {
-            string grammarNameExt = _grammar.Name + ".g4";
+            string grammarNameExt = _grammar.Name + (_grammar.SeparatedLexerAndParser ? (lexer ? "Lexer" : "Parser") : "") + ".g4";
             string shortGeneratedFile = runtimeInfo.GetGeneratedLexerParserName(_grammar, lexer);
             string generatedFile = Path.Combine(workingDirectory, shortGeneratedFile);
             generatedFiles.Add(generatedFile);
