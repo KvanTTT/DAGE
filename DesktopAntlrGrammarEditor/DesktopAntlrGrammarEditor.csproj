@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Antlr4.xshd" />
     <None Remove="App.paml" />
     <None Remove="MainWindow.paml" />
     <None Remove="MessageBox.paml" />
@@ -15,6 +16,7 @@
     <Compile Include="..\AntlrGrammarEditor\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Antlr4.xshd" />
     <EmbeddedResource Include="App.paml" />
     <EmbeddedResource Include="MainWindow.paml" />
     <EmbeddedResource Include="MessageBox.paml" />

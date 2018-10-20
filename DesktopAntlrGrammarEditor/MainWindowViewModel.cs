@@ -3,6 +3,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using AvaloniaEdit;
+using AvaloniaEdit.Highlighting;
+using AvaloniaEdit.Highlighting.Xshd;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
@@ -10,8 +12,10 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace DesktopAntlrGrammarEditor
 {
@@ -40,6 +44,14 @@ namespace DesktopAntlrGrammarEditor
             _grammarErrorsListBox = _window.Find<ListBox>("GrammarErrorsListBox");
             _textErrorsListBox = _window.Find<ListBox>("TextErrorsListBox");
             _parseTreeTextBox = _window.Find<TextEditor>("ParseTreeTextBox");
+
+            using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("DesktopAntlrGrammarEditor.Antlr4.xshd"))
+            {
+                using (XmlTextReader reader = new XmlTextReader(s))
+                {
+                    _grammarTextBox.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+                }
+            }
 
             _settings = Settings.Load();
 
@@ -562,19 +574,29 @@ namespace DesktopAntlrGrammarEditor
 
             OpenGrammarCommand = ReactiveCommand.Create(async () =>
             {
-                var openDialog = new OpenFileDialog();
-                openDialog.Filters.Add(new FileDialogFilter() { Name = "Antlr Grammar Editor", Extensions = new List<string>() { Grammar.ProjectDotExt.Substring(1) } });
+                var openDialog = new OpenFileDialog
+                {
+                    Title = "Enter file name",
+                    Filters = new List<FileDialogFilter>
+                    {
+                        new FileDialogFilter
+                        {
+                            Name = "Antlr Grammar Editor",
+                            Extensions = new List<string>() { Grammar.ProjectDotExt.Substring(1) }
+                        }
+                    },
+                };
                 string[] fileNames = await openDialog.ShowAsync(_window);
-                if (fileNames != null)
+                if (fileNames?.Length > 0)
                 {
                     try
                     {
-                        var grammar = Grammar.Load(fileNames.First());
+                        var grammar = Grammar.Load(fileNames[0]);
                         OpenGrammar(grammar);
                     }
                     catch (Exception ex)
                     {
-                        await ShowOpenFileErrorMessage(fileNames.First(), ex.Message);
+                        await ShowOpenFileErrorMessage(fileNames[0], ex.Message);
                     }
                 }
             });
