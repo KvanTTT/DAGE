@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 
 namespace DesktopAntlrGrammarEditor
@@ -7,9 +8,11 @@ namespace DesktopAntlrGrammarEditor
     {
         public MainWindow()
         {
-            this.InitializeComponent();
+            InitializeComponent();
             DataContext = new MainWindowViewModel(this);
-            App.AttachDevTools(this);
+#if DEBUG
+            this.AttachDevTools();
+#endif
         }
 
         private void InitializeComponent()

@@ -16,12 +16,32 @@
     <Compile Include="..\AntlrGrammarEditor\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Update="**\*.xaml.cs">
+      <DependentUpon>%(Filename)</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="Antlr4.xshd" />
-    <EmbeddedResource Include="App.xaml" />
-    <EmbeddedResource Include="MainWindow.xaml" />
-    <EmbeddedResource Include="MessageBox.xaml" />
-    <EmbeddedResource Include="NewGrammarWindow.xaml" />
-    <EmbeddedResource Include="SelectPathDialog.xaml" />
+    <EmbeddedResource Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MessageBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NewGrammarWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SelectPathDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="0.6.2-build6260-beta" />
