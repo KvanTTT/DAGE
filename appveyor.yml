@@ -42,11 +42,11 @@ build_script:
 
         C:\Python27-x64\Scripts\pip.exe install antlr4-python2-runtime
 
-        C:\Python35-x64\Scripts\pip.exe install antlr4-python3-runtime
+        C:\Python27-x64\Scripts\pip.exe install antlr4-python3-runtime
     } else {
-        sudo pip2 install antlr4-python2-runtime
+        sudo pip install antlr4-python2-runtime
 
-        sudo pip3 install antlr4-python3-runtime
+        sudo pip install antlr4-python3-runtime
     }
 
     npm init -y
