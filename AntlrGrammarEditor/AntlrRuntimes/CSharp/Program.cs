@@ -1,10 +1,13 @@
 ﻿using Antlr4.Runtime;
-using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.IO;
+#if CSharpOptimized
+using Antlr4.Runtime.Misc;
+#endif
 
 class Program
 {
@@ -26,9 +29,10 @@ class Program
                 notParse = bool.Parse(args[2]);
                 indented = bool.Parse(args[3]);
             }
-            var code = System.IO.File.ReadAllText(fileName);
+            var code = File.ReadAllText(fileName);
             var codeStream = new AntlrInputStream(code);
             var lexer = new __TemplateGrammarName__Lexer(codeStream);
+            lexer.RemoveErrorListeners();
             lexer.AddErrorListener(new LexerErrorListener());
 
             var stopwatch = Stopwatch.StartNew();
@@ -42,6 +46,7 @@ class Program
                 var tokensSource = new ListTokenSource(tokens);
                 var tokensStream = new CommonTokenStream(tokensSource);
                 var parser = new __TemplateGrammarName__Parser(tokensStream);
+                parser.RemoveErrorListeners();
                 parser.AddErrorListener(new ParserErrorListener());
 
                 stopwatch.Restart();
@@ -72,7 +77,11 @@ class Program
 
     class LexerErrorListener : IAntlrErrorListener<int>
     {
+#if CSharpOptimized
         public void SyntaxError([NotNull] IRecognizer recognizer, [Nullable] int offendingSymbol, int line, int charPositionInLine, [NotNull] string msg, [Nullable] RecognitionException e)
+#else
+        public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+#endif
         {
             Console.Error.WriteLine($"line {line}:{charPositionInLine} {msg}");
         }
@@ -80,7 +89,11 @@ class Program
 
     class ParserErrorListener : IAntlrErrorListener<IToken>
     {
+#if CSharpOptimized
         public void SyntaxError([NotNull] IRecognizer recognizer, [Nullable] IToken offendingSymbol, int line, int charPositionInLine, [NotNull] string msg, [Nullable] RecognitionException e)
+#else
+        public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+#endif
         {
             Console.Error.WriteLine($"line {line}:{charPositionInLine} {msg}");
         }

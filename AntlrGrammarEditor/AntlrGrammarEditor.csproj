@@ -10,12 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="AntlrRuntimes\CSharpOptimized\AntlrCaseInsensitiveInputStream.cs" />
-    <Compile Remove="AntlrRuntimes\CSharpOptimized\AssemblyInfo.cs" />
-    <Compile Remove="AntlrRuntimes\CSharpOptimized\Program.cs" />
-    <Compile Remove="AntlrRuntimes\CSharpStandard\AntlrCaseInsensitiveInputStream.cs" />
-    <Compile Remove="AntlrRuntimes\CSharpStandard\AssemblyInfo.cs" />
-    <Compile Remove="AntlrRuntimes\CSharpStandard\Program.cs" />
+    <Compile Remove="AntlrRuntimes\CSharp\AntlrCaseInsensitiveInputStream.cs" />
+    <Compile Remove="AntlrRuntimes\CSharp\AssemblyInfo.cs" />
+    <Compile Remove="AntlrRuntimes\CSharp\Program.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -70,34 +67,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="AntlrRuntimes\CSharpOptimized\AntlrCaseInsensitiveInputStream.cs">
+    <Content Include="AntlrRuntimes\CSharp\AssemblyInfo.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="AntlrRuntimes\CSharpOptimized\AssemblyInfo.cs">
+    <Content Include="AntlrRuntimes\CSharp\Program.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="AntlrRuntimes\CSharpOptimized\Program.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="AntlrRuntimes\CSharpStandard\AntlrCaseInsensitiveInputStream.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="AntlrRuntimes\CSharpStandard\AssemblyInfo.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="AntlrRuntimes\CSharpStandard\Program.cs">
+    <Content Include="AntlrRuntimes\CSharp\AntlrCaseInsensitiveInputStream.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="AntlrRuntimes\CSharpOptimized\Project.csproj">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="AntlrRuntimes\CSharpStandard\Project.csproj">
+    <Content Include="AntlrRuntimes\CSharp\Project.csproj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

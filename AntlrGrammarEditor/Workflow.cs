@@ -475,7 +475,10 @@ namespace AntlrGrammarEditor
             {
                 string arguments = "";
                 string templateName = "";
-                string runtimeDir = Path.Combine(RuntimesDirName, Runtime.ToString());
+                string runtimeSource = Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard
+                    ? "CSharp"
+                    : Runtime.ToString();
+                string runtimeDir = Path.Combine(RuntimesDirName, runtimeSource);
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
                 string workingDirectory = Path.Combine(HelperDirectoryName, _grammar.Name, Runtime.ToString());
 
@@ -498,7 +501,10 @@ namespace AntlrGrammarEditor
 
                     File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"));
                     File.Copy(Path.Combine(runtimeDir, "AssemblyInfo.cs"), Path.Combine(workingDirectory, "AssemblyInfo.cs"));
-                    File.Copy(Path.Combine(runtimeDir, "Project.csproj"), Path.Combine(workingDirectory, $"{_grammar.Name}.csproj"));
+
+                    var projectContent = File.ReadAllText(Path.Combine(runtimeDir, "Project.csproj"));
+                    projectContent = projectContent.Replace("<DefineConstants></DefineConstants>", $"<DefineConstants>{Runtime}</DefineConstants>");
+                    File.WriteAllText(Path.Combine(workingDirectory, $"{_grammar.Name}.csproj"), projectContent);
 
                     arguments = "build";
                 }
