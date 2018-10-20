@@ -6,22 +6,22 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Antlr4.xshd" />
-    <None Remove="App.paml" />
-    <None Remove="MainWindow.paml" />
-    <None Remove="MessageBox.paml" />
-    <None Remove="NewGrammarWindow.paml" />
-    <None Remove="SelectPathDialog.paml" />
+    <None Remove="App.xaml" />
+    <None Remove="MainWindow.xaml" />
+    <None Remove="MessageBox.xaml" />
+    <None Remove="NewGrammarWindow.xaml" />
+    <None Remove="SelectPathDialog.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\AntlrGrammarEditor\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Antlr4.xshd" />
-    <EmbeddedResource Include="App.paml" />
-    <EmbeddedResource Include="MainWindow.paml" />
-    <EmbeddedResource Include="MessageBox.paml" />
-    <EmbeddedResource Include="NewGrammarWindow.paml" />
-    <EmbeddedResource Include="SelectPathDialog.paml" />
+    <EmbeddedResource Include="App.xaml" />
+    <EmbeddedResource Include="MainWindow.xaml" />
+    <EmbeddedResource Include="MessageBox.xaml" />
+    <EmbeddedResource Include="NewGrammarWindow.xaml" />
+    <EmbeddedResource Include="SelectPathDialog.xaml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="0.6.2-build6260-beta" />
