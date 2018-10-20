@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<SyntaxDefinition name="ANTLR" extensions=".g4" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Comment" foreground="Green" exampleText="// comment" />
+  <Color name="String" foreground="#A31515" exampleText="&quot;Hello, World!&quot;" />
+  <Color name="Keywords" foreground="Blue" exampleText="lexer grammar G;"/>
+  <Color name="Labels" foreground="#005580" exampleText="# BinaryExpression" />
+  <Color name="TokenRules" foreground="#400000" fontWeight="bold" exampleText="INT: [0-9];" />
+  <Color name="ParserRules" exampleText="rootRule: A | B;"/>
+  
+  <RuleSet>
+    <Span color="Comment">
+      <Begin>//</Begin>
+    </Span>
+
+    <Span color="Labels">
+      <Begin>\#</Begin>
+    </Span>
+
+    <Span color="Labels">
+      <Begin>\w+\s*\+?=</Begin>
+      <End></End>
+    </Span>
+
+    <Span color="Comment" multiline="true">
+      <Begin>/\*</Begin>
+      <End>\*/</End>
+    </Span>
+
+    <Span color="String" >
+      <Begin>'</Begin>
+      <End>'</End>
+      <RuleSet>
+        <Span begin="\\" end="."/>
+      </RuleSet>
+    </Span>
+
+    <Span color="String" >
+      <Begin>\[</Begin>
+      <End>\]</End>
+      <RuleSet>
+        <Span begin="\\" end="."/>
+      </RuleSet>
+    </Span>
+
+    <Keywords color="Keywords" >
+      <Word>options</Word>
+      <Word>tokens</Word>
+      <Word>channels</Word>
+      <Word>import</Word>
+      <Word>fragment</Word>
+      <Word>lexer</Word>
+      <Word>parser</Word>
+      <Word>grammar</Word>
+      <Word>protected</Word>
+      <Word>public</Word>
+      <Word>private</Word>
+    </Keywords>
+    
+    <Rule color="TokenRules">
+      \b[A-ZА-Я]\w*
+    </Rule>
+  </RuleSet>
+</SyntaxDefinition>

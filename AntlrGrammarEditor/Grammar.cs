@@ -43,10 +43,7 @@ namespace AntlrGrammarEditor
         [JsonIgnore]
         public string AgeFileName
         {
-            get
-            {
-                return _ageFileName;
-            }
+            get => _ageFileName;
             set
             {
                 _ageFileName = value;

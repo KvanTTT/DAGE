@@ -1,6 +1,5 @@
 ﻿using Avalonia.Controls;
 using ReactiveUI;
-using System;
 
 namespace DesktopAntlrGrammarEditor
 {
@@ -29,26 +28,14 @@ namespace DesktopAntlrGrammarEditor
 
         public string Message
         {
-            get
-            {
-                return _message;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _message, value);
-            }
+            get => _message;
+            set => this.RaiseAndSetIfChanged(ref _message, value);
         }
 
         public string Path
         {
-            get
-            {
-                return _path;
-            }
-            set
-            {
-                this.RaiseAndSetIfChanged(ref _path, value);
-            }
+            get => _path;
+            set => this.RaiseAndSetIfChanged(ref _path, value);
         }
 
         public ReactiveCommand OkCommand { get; }
