@@ -477,6 +477,8 @@ namespace AntlrGrammarEditor
                 string templateName = "";
                 string runtimeSource = Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard
                     ? "CSharp"
+                    : Runtime == Runtime.Python2 || Runtime == Runtime.Python3
+                    ? "Python"
                     : Runtime.ToString();
                 string runtimeDir = Path.Combine(RuntimesDirName, runtimeSource);
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
@@ -499,8 +501,8 @@ namespace AntlrGrammarEditor
                         File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath);
                     }
 
-                    File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"));
-                    File.Copy(Path.Combine(runtimeDir, "AssemblyInfo.cs"), Path.Combine(workingDirectory, "AssemblyInfo.cs"));
+                    File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"), true);
+                    File.Copy(Path.Combine(runtimeDir, "AssemblyInfo.cs"), Path.Combine(workingDirectory, "AssemblyInfo.cs"), true);
 
                     var projectContent = File.ReadAllText(Path.Combine(runtimeDir, "Project.csproj"));
                     projectContent = projectContent.Replace("<DefineConstants></DefineConstants>", $"<DefineConstants>{Runtime}</DefineConstants>");
@@ -521,14 +523,37 @@ namespace AntlrGrammarEditor
                 else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                 {
                     var stringBuilder = new StringBuilder();
+
                     foreach (string file in generatedFiles)
                     {
                         var shortFileName = Path.GetFileNameWithoutExtension(file);
                         stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
                     }
+
                     if (_grammar.CaseInsensitive)
                     {
-                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.py"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.py"), true);
+                        string antlrCaseInsensitiveInputStream = File.ReadAllText(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.py"));
+                        string superCall, strType, intType;
+
+                        if (Runtime == Runtime.Python2)
+                        {
+                            superCall = "type(self), self";
+                            strType = "";
+                            intType = "";
+                        }
+                        else
+                        {
+                            superCall = "";
+                            strType = ": str";
+                            intType = ": int";
+                        }
+
+                        antlrCaseInsensitiveInputStream = antlrCaseInsensitiveInputStream
+                            .Replace("'''SuperCall'''", superCall)
+                            .Replace("''': str'''", strType)
+                            .Replace("''': int'''", intType);
+
+                        File.WriteAllText(Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.py"), antlrCaseInsensitiveInputStream);
                     }
                     File.WriteAllText(Path.Combine(workingDirectory, PythonHelperFileName), stringBuilder.ToString());
 
@@ -536,6 +561,7 @@ namespace AntlrGrammarEditor
                     {
                         arguments += Runtime == Runtime.Python2 ? "-2 " : "-3 ";
                     }
+
                     arguments += PythonHelperFileName;
                 }
                 else if (Runtime == Runtime.JavaScript)
@@ -566,8 +592,8 @@ namespace AntlrGrammarEditor
                     arguments = "build " + compiliedFiles.ToString();
                 }
 
-                var templateFile = Path.Combine(workingDirectory, templateName);
-                var code = File.ReadAllText(Path.Combine(runtimeDir, templateName));
+                string templateFile = Path.Combine(workingDirectory, templateName);
+                string code = File.ReadAllText(Path.Combine(runtimeDir, templateName));
                 code = code.Replace(TemplateGrammarName, state.GrammarCheckedState.Grammar.Name);
                 string root = _grammar.Root;
                 if (Runtime == Runtime.Go)
@@ -575,10 +601,12 @@ namespace AntlrGrammarEditor
                     root = char.ToUpper(root[0]) + root.Substring(1);
                 }
                 code = code.Replace(TemplateGrammarRoot, root);
+
                 if (_grammar.CaseInsensitive)
                 {
                     code = code.Replace("from antlr4.InputStream import InputStream", "");
                     code = code.Replace(runtimeInfo.AntlrInputStream, (Runtime == Runtime.Go ? "New" : "") + "AntlrCaseInsensitiveInputStream");
+
                     if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
                     {
                         code = code.Replace("'''AntlrCaseInsensitive'''",
@@ -601,6 +629,16 @@ namespace AntlrGrammarEditor
                         code = code.Replace("/*AntlrCaseInsensitive*/", "");
                     }
                 }
+
+                if (Runtime == Runtime.Python2)
+                {
+                    code = code.Replace("'''PrintTree'''", "print \"Tree \" + tree.toStringTree(recog=parser);");
+                }
+                else if (Runtime == Runtime.Python3)
+                {
+                    code = code.Replace("'''PrintTree'''", "print(\"Tree \", tree.toStringTree(recog = parser));");
+                }
+
                 File.WriteAllText(templateFile, code);
 
                 _buffer.Clear();

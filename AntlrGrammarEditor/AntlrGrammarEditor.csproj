@@ -52,16 +52,10 @@
     <None Update="AntlrRuntimes\Java\Main.java">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="AntlrRuntimes\Python2\AntlrCaseInsensitiveInputStream.py">
+    <None Update="AntlrRuntimes\Python\AntlrCaseInsensitiveInputStream.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="AntlrRuntimes\Python2\main.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Python3\AntlrCaseInsensitiveInputStream.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Python3\main.py">
+    <None Update="AntlrRuntimes\Python\main.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

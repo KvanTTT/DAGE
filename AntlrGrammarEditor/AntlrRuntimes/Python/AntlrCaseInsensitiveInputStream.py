@@ -1,13 +1,13 @@
 ﻿from antlr4 import *
 
 class AntlrCaseInsensitiveInputStream(InputStream):
-    
-    def __init__(self, input: str):
-        super().__init__(input)
+
+    def __init__(self, input''': str'''):
+        super('''SuperCall''').__init__(input)
         inputLower = input.lower()
         self._lookaheadData = [ord(c) for c in inputLower]
 
-    def LA(self, offset: int):
+    def LA(self, offset''': int'''):
         if offset == 0:
             return 0 # undefined
         if offset < 0:

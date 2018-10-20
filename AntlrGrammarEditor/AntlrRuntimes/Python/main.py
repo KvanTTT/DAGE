@@ -15,7 +15,7 @@ def main(argv):
     tokensStream = CommonTokenStream(tokensSource)
     parser = __TemplateGrammarName__Parser(tokensStream)
     tree = parser.__TemplateGrammarRoot__()
-    print("Tree ", tree.toStringTree(recog=parser));
+    '''PrintTree'''
 
 if __name__ == '__main__':
     main(sys.argv)
