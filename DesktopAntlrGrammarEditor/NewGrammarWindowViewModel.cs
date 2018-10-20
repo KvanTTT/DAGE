@@ -68,10 +68,7 @@ namespace DesktopAntlrGrammarEditor
 
         public string GrammarName
         {
-            get
-            {
-                return _grammar.Name;
-            }
+            get => _grammar.Name;
             set
             {
                 if (_grammar.Name != value)
@@ -84,10 +81,7 @@ namespace DesktopAntlrGrammarEditor
 
         public string GrammarDirectory
         {
-            get
-            {
-                return _grammarDirectory;
-            }
+            get => _grammarDirectory;
             set
             {
                 this.RaiseAndSetIfChanged(ref _grammarDirectory, value);
@@ -96,10 +90,7 @@ namespace DesktopAntlrGrammarEditor
 
         public string GrammarRoot
         {
-            get
-            {
-                return _grammar.Root;
-            }
+            get => _grammar.Root;
             set
             {
                 if (_grammar.Root != value)
@@ -112,10 +103,7 @@ namespace DesktopAntlrGrammarEditor
 
         public string FileExtension
         {
-            get
-            {
-                return _grammar.FileExtension;
-            }
+            get => _grammar.FileExtension;
             set
             {
                 if (_grammar.FileExtension != value)
@@ -128,10 +116,7 @@ namespace DesktopAntlrGrammarEditor
 
         public RuntimeInfo Runtime
         {
-            get
-            {
-                return RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First());
-            }
+            get => RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First());
             set
             {
                 if (RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First()) != value)
@@ -147,10 +132,7 @@ namespace DesktopAntlrGrammarEditor
 
         public bool SeparatedLexerAndParser
         {
-            get
-            {
-                return _grammar.SeparatedLexerAndParser;
-            }
+            get => _grammar.SeparatedLexerAndParser;
             set
             {
                 if (_grammar.SeparatedLexerAndParser != value)
@@ -163,10 +145,7 @@ namespace DesktopAntlrGrammarEditor
 
         public bool CaseInsensitive
         {
-            get
-            {
-                return _grammar.CaseInsensitive;
-            }
+            get => _grammar.CaseInsensitive;
             set
             {
                 if (_grammar.CaseInsensitive != value)
@@ -179,10 +158,7 @@ namespace DesktopAntlrGrammarEditor
 
         public bool Preprocessor
         {
-            get
-            {
-                return _grammar.Preprocessor;
-            }
+            get => _grammar.Preprocessor;
             set
             {
                 if (_grammar.Preprocessor != value)
@@ -195,10 +171,7 @@ namespace DesktopAntlrGrammarEditor
 
         public string PreprocessorGrammarRoot
         {
-            get
-            {
-                return _grammar.PreprocessorRoot;
-            }
+            get => _grammar.PreprocessorRoot;
             set
             {
                 if (_grammar.PreprocessorRoot != value)
@@ -211,10 +184,7 @@ namespace DesktopAntlrGrammarEditor
 
         public bool PreprocessorSeparatedLexerAndParser
         {
-            get
-            {
-                return _grammar.PreprocessorSeparatedLexerAndParser;
-            }
+            get => _grammar.PreprocessorSeparatedLexerAndParser;
             set
             {
                 if (_grammar.PreprocessorSeparatedLexerAndParser != value)
@@ -227,10 +197,7 @@ namespace DesktopAntlrGrammarEditor
 
         public bool PreprocessorCaseInsensitive
         {
-            get
-            {
-                return _grammar.PreprocessorCaseInsensitive;
-            }
+            get => _grammar.PreprocessorCaseInsensitive;
             set
             {
                 if (_grammar.PreprocessorCaseInsensitive != value)

@@ -7,7 +7,7 @@ namespace DesktopAntlrGrammarEditor
     {
         public SelectPathDialog(string message, string path)
         {
-            this.InitializeComponent();
+            InitializeComponent();
             DataContext = new SelectPathViewModel(this, message, path);
             App.AttachDevTools(this);
         }
