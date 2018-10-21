@@ -109,11 +109,6 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        private void _process_Exited(object sender, EventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
         public void Dispose()
         {
             if (_process != null)

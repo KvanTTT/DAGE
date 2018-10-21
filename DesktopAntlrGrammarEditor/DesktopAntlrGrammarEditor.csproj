@@ -3,6 +3,10 @@
     <OutputType>Exe</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <PackageId>Dage</PackageId>
+    <RootNamespace>DesktopAntlrGrammarEditor</RootNamespace>
+    <AssemblyName>Dage</AssemblyName>
+    <Authors>Dage</Authors>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Antlr4.xshd" />

@@ -1,7 +1,7 @@
 ﻿<Window
     xmlns="https://github.com/avaloniaui"
     xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
-    MinWidth="640" Width="1366" MinHeight="480" Height="768" Title="DAGE" >
+    MinWidth="640" Width="1366" MinHeight="480" Height="768" Title="Dage" >
   <Window.Styles>
     <Style Selector="TextBlock">
       <Setter Property="VerticalAlignment" Value="Center"/>

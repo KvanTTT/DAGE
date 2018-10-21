@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Reflection;
 
-[assembly: AssemblyCompany("DAGE")]
-[assembly: AssemblyProduct("DAGE")]
+[assembly: AssemblyCompany("Dage")]
+[assembly: AssemblyProduct("Dage")]
 [assembly: CLSCompliant(false)]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
