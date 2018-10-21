@@ -9,6 +9,7 @@ using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
@@ -420,6 +421,14 @@ namespace DesktopAntlrGrammarEditor
                     _settings.Save();
                 });
 
+            Observable.FromEventPattern<CancelEventArgs>(
+                ev => _window.Closing += ev, ev => _window.Closing -= ev)
+                .Subscribe(ev =>
+                {
+                    SaveGrammarFileIfRequired();
+                    SaveTextFileIfRequired();
+                });
+
             Observable.FromEventPattern<PointEventArgs>(
                 ev => _window.PositionChanged += ev, ev => _window.PositionChanged -= ev)
                 .Throttle(TimeSpan.FromMilliseconds(250))
@@ -505,26 +514,12 @@ namespace DesktopAntlrGrammarEditor
 
             grammarTextBoxObservable.Subscribe(x =>
             {
-                if (_grammarFileState == FileState.Opened)
-                {
-                    _grammarFileState = FileState.Unchanged;
-                }
-                else
-                {
-                    _grammarFileState = FileState.Changed;
-                }
+                _grammarFileState = FileState.Changed;
             });
 
             textBoxObservable.Subscribe(x =>
             {
-                if (_textFileState == FileState.Opened)
-                {
-                    _textFileState = FileState.Unchanged;
-                }
-                else
-                {
-                    _textFileState = FileState.Changed;
-                }
+                _textFileState = FileState.Changed;
             });
 
             grammarTextBoxObservable
@@ -609,7 +604,7 @@ namespace DesktopAntlrGrammarEditor
                 {
                     File.WriteAllText(GetFullGrammarFileName(_openedGrammarFile), _grammarTextBox.Text);
                     _workflow.Grammar = _grammar;
-                    _grammarFileState = FileState.Unchanged;
+                    _grammarFileState = FileState.Saved;
                     changed = true;
                 }
 
@@ -617,7 +612,7 @@ namespace DesktopAntlrGrammarEditor
                 {
                     File.WriteAllText(_openedTextFile.FullFileName, _textTextBox.Text);
                     _workflow.Text = _textTextBox.Text;
-                    _textFileState = FileState.Unchanged;
+                    _textFileState = FileState.Saved;
                     changed = true;
                 }
 
@@ -825,7 +820,7 @@ namespace DesktopAntlrGrammarEditor
             if (_grammarFileState == FileState.Changed)
             {
                 File.WriteAllText(GetFullGrammarFileName(_openedGrammarFile), _grammarTextBox.Text);
-                _grammarFileState = FileState.Unchanged;
+                _grammarFileState = FileState.Saved;
             }
         }
 
@@ -834,7 +829,7 @@ namespace DesktopAntlrGrammarEditor
             if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile?.FullFileName))
             {
                 File.WriteAllText(_openedTextFile.FullFileName, _textTextBox.Text);
-                _textFileState = FileState.Unchanged;
+                _textFileState = FileState.Saved;
             }
         }
 

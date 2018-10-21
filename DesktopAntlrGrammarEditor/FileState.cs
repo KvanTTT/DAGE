@@ -3,7 +3,7 @@
     public enum FileState
     {
         Opened,
-        Unchanged,
+        Saved,
         Changed,
     }
 }
