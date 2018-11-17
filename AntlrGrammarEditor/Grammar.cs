@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Converters;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace AntlrGrammarEditor
 {
@@ -20,6 +21,8 @@ namespace AntlrGrammarEditor
         public string FileExtension { get; set; } = "txt";
 
         public HashSet<Runtime> Runtimes = new HashSet<Runtime>();
+
+        public Runtime MainRuntime => Runtimes.First();
 
         public bool SeparatedLexerAndParser { get; set; }
 

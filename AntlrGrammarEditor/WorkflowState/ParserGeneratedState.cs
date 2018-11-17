@@ -12,6 +12,6 @@ namespace AntlrGrammarEditor
 
         public GrammarCheckedState GrammarCheckedState { get; set; }
 
-        public IReadOnlyList<ParsingError> Errors { get; set; }
+        public List<ParsingError> Errors { get; } = new List<ParsingError>();
     }
 }

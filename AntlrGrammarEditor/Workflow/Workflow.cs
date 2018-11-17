@@ -21,15 +21,10 @@ namespace AntlrGrammarEditor
         private const string TemplateGrammarName = "__TemplateGrammarName__";
         private const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
 
-        private const int GenerateParserProcessTimeout = 200;
-        private const int CompileParserProcessTimeout = 200;
-        private const int ParseTextTimeout = 200;
-
         private Grammar _grammar = new Grammar();
         private string _text = "";
         private WorkflowState _currentState;
 
-        private List<ParsingError> _parserGenerationErrors = new List<ParsingError>();
         private List<ParsingError> _parserCompilationErrors = new List<ParsingError>();
         private List<ParsingError> _textErrors = new List<ParsingError>();
         private string _outputTree;
@@ -294,7 +289,8 @@ namespace AntlrGrammarEditor
                     CurrentState = GrammarCheckedState;
                     break;
                 case WorkflowStage.GrammarChecked:
-                    CurrentState = GenerateParser(GrammarCheckedState);
+                    var parserGenerator = new ParserGenerator();
+                    CurrentState = parserGenerator.GenerateParser(_grammar, GrammarCheckedState, _newErrorEvent, _cancellationTokenSource.Token);
                     break;
                 case WorkflowStage.ParserGenerated:
                     CurrentState = CompileParser((ParserGeneratedState)CurrentState);
@@ -305,64 +301,6 @@ namespace AntlrGrammarEditor
             }
         }
 
-        private ParserGeneratedState GenerateParser(GrammarCheckedState state)
-        {
-            ParserGeneratedState result = new ParserGeneratedState
-            {
-                GrammarCheckedState = state,
-                Errors = _parserGenerationErrors
-            };
-            Processor processor = null;
-            try
-            {
-                string runtimeDirectoryName = Path.Combine(HelperDirectoryName, _grammar.Name, Runtime.ToString());
-                if (Directory.Exists(runtimeDirectoryName))
-                {
-                    Directory.Delete(runtimeDirectoryName, true);
-                }
-                Directory.CreateDirectory(runtimeDirectoryName);
-
-                _cancellationTokenSource.Token.ThrowIfCancellationRequested();
-
-                var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Runtime);
-                string[] extensions = runtimeInfo.Extensions;
-
-                var jarGenerator = Path.Combine("Generators", runtimeInfo.JarGenerator);
-                foreach (string grammarFileName in state.Grammar.Files)
-                {
-                    _currentGrammarSource = state.GrammarFilesData[grammarFileName];
-                    var arguments = $@"-jar ""{jarGenerator}"" ""{Path.Combine(_grammar.GrammarPath, grammarFileName)}"" -o ""{runtimeDirectoryName}"" " +
-                        $"-Dlanguage={runtimeInfo.DLanguage} -no-visitor -no-listener";
-                    if (Runtime == Runtime.Go)
-                    {
-                        arguments += " -package main";
-                    }
-
-                    processor = new Processor("java", arguments, ".");
-                    processor.CancellationToken = _cancellationTokenSource.Token;
-                    processor.ErrorDataReceived += ParserGeneration_ErrorDataReceived;
-                    processor.OutputDataReceived += ParserGeneration_OutputDataReceived;
-
-                    processor.Start();
-
-                    _cancellationTokenSource.Token.ThrowIfCancellationRequested();
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Exception = ex;
-                if (!(ex is OperationCanceledException))
-                {
-                    AddError(new ParsingError(ex, WorkflowStage.ParserGenerated));
-                }
-            }
-            finally
-            {
-                processor?.Dispose();
-            }
-            return result;
-        }
-        
         private ParserCompiliedState CompileParser(ParserGeneratedState state)
         {
             ParserCompiliedState result = new ParserCompiliedState
@@ -700,41 +638,6 @@ namespace AntlrGrammarEditor
             _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(grammarCheckedState.GrammarActionsTextSpan[grammarNameExt], codeSource, lexer);
         }
 
-        private void Processor_OutputDataReceived(object sender, string e)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void ParserGeneration_ErrorDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
-            {
-                var strs = e.Data.Split(':');
-                ParsingError error;
-                int line = 1, column = 1;
-                if (strs.Length >= 4)
-                {
-                    if (!int.TryParse(strs[2], out line))
-                    {
-                        line = 1;
-                    }
-                    if (!int.TryParse(strs[3], out column))
-                    {
-                        column = 1;
-                    }
-                }
-                error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated);
-                AddError(error);
-            }
-        }
-
-        private void ParserGeneration_OutputDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
-            {
-            }
-        }
-
         private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
@@ -834,12 +737,6 @@ namespace AntlrGrammarEditor
         {
             switch (error.WorkflowStage)
             {
-                case WorkflowStage.ParserGenerated:
-                    lock (_parserGenerationErrors)
-                    {
-                        _parserGenerationErrors.Add(error);
-                    }
-                    break;
                 case WorkflowStage.ParserCompilied:
                     lock (_parserCompilationErrors)
                     {
@@ -861,12 +758,6 @@ namespace AntlrGrammarEditor
         {
             switch (stage)
             {
-                case WorkflowStage.ParserGenerated:
-                    lock (_parserGenerationErrors)
-                    {
-                        _parserGenerationErrors.Clear();
-                    }
-                    break;
                 case WorkflowStage.ParserCompilied:
                     lock (_parserCompilationErrors)
                     {
