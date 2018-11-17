@@ -14,6 +14,10 @@ namespace AntlrGrammarEditor
 
         public Grammar Grammar { get; set; }
 
+        public Dictionary<string, CodeSource> GrammarFilesData { get; } = new Dictionary<string, CodeSource>();
+
+        public Dictionary<string, List<CodeInsertion>> GrammarActionsTextSpan { get; } = new Dictionary<string, List<CodeInsertion>>();
+
         public List<string> Rules { get; set; }
 
         public List<string> PreprocessorRules { get; set; }

@@ -878,7 +878,13 @@ namespace DesktopAntlrGrammarEditor
 
         private void UpdateRules()
         {
-            var workflowRules = IsPreprocessor ? _workflow.GrammarCheckedState.PreprocessorRules : _workflow.GrammarCheckedState.Rules;
+            var grammarCheckedState = _workflow.GrammarCheckedState;
+            if (grammarCheckedState == null)
+            {
+                return;
+            }
+            
+            var workflowRules = IsPreprocessor ? grammarCheckedState.PreprocessorRules : grammarCheckedState.Rules;
             if (!Rules.SequenceEqual(workflowRules))
             {
                 Rules.Clear();
