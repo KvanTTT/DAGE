@@ -13,26 +13,25 @@ namespace AntlrGrammarEditor
     public class Workflow
     {
         public const string HelperDirectoryName = "DageHelperDirectory";
-        private const string PythonHelperFileName = "AntlrPythonCompileTest.py";
-        private const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
-        private const string TextFileName = "Text";
-        private const string RuntimesDirName = "AntlrRuntimes";
+        public const string PythonHelperFileName = "AntlrPythonCompileTest.py";
+        public const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
+        public const string TextFileName = "Text";
+        public const string RuntimesDirName = "AntlrRuntimes";
 
-        private const string TemplateGrammarName = "__TemplateGrammarName__";
-        private const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
+        public const string TemplateGrammarName = "__TemplateGrammarName__";
+        public const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
 
         private Grammar _grammar = new Grammar();
         private string _text = "";
         private WorkflowState _currentState;
 
-        private List<ParsingError> _parserCompilationErrors = new List<ParsingError>();
         private List<ParsingError> _textErrors = new List<ParsingError>();
         private string _outputTree;
         private string _outputTokens;
         private TimeSpan _outputLexerTime;
         private TimeSpan _outputParserTime;
         private event EventHandler<ParsingError> _newErrorEvent;
-        private List<string> _buffer = new List<string>();
+        
         private bool _indentedTree;
 
         private CancellationTokenSource _cancellationTokenSource;
@@ -293,232 +292,13 @@ namespace AntlrGrammarEditor
                     CurrentState = parserGenerator.GenerateParser(_grammar, GrammarCheckedState, _newErrorEvent, _cancellationTokenSource.Token);
                     break;
                 case WorkflowStage.ParserGenerated:
-                    CurrentState = CompileParser((ParserGeneratedState)CurrentState);
+                    var parserCompiler = new ParserCompiler();
+                    CurrentState = parserCompiler.Compile(_grammar, GrammarCheckedState, (ParserGeneratedState)CurrentState, _newErrorEvent, _cancellationTokenSource.Token);
                     break;
                 case WorkflowStage.ParserCompilied:
                     CurrentState = ParseText((ParserCompiliedState)CurrentState);
                     break;
             }
-        }
-
-        private ParserCompiliedState CompileParser(ParserGeneratedState state)
-        {
-            ParserCompiliedState result = new ParserCompiliedState
-            {
-                ParserGeneratedState = state,
-                Errors = _parserCompilationErrors,
-                Root = _grammar.Root,
-                PreprocessorRoot = _grammar.PreprocessorRoot
-            };
-            RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Runtime);
-
-            Processor processor = null;
-            try
-            {
-                string arguments = "";
-                string templateName = "";
-                string runtimeSource = Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard
-                    ? "CSharp"
-                    : Runtime == Runtime.Python2 || Runtime == Runtime.Python3
-                    ? "Python"
-                    : Runtime.ToString();
-                string runtimeDir = Path.Combine(RuntimesDirName, runtimeSource);
-                string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
-                string workingDirectory = Path.Combine(HelperDirectoryName, _grammar.Name, Runtime.ToString());
-
-                var compiliedFiles = new StringBuilder();
-                var generatedFiles = new List<string>();
-                _grammarCodeMapping.Clear();
-
-                GetGeneratedFileNames(state.GrammarCheckedState, runtimeInfo, workingDirectory, generatedFiles, compiliedFiles, false);
-                GetGeneratedFileNames(state.GrammarCheckedState, runtimeInfo, workingDirectory, generatedFiles, compiliedFiles, true);
-
-                templateName = runtimeInfo.MainFile;
-
-                if (Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard)
-                {
-                    string antlrCaseInsensitivePath = Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.cs");
-                    if (_grammar.CaseInsensitive)
-                    {
-                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath);
-                    }
-
-                    File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"), true);
-                    File.Copy(Path.Combine(runtimeDir, "AssemblyInfo.cs"), Path.Combine(workingDirectory, "AssemblyInfo.cs"), true);
-
-                    var projectContent = File.ReadAllText(Path.Combine(runtimeDir, "Project.csproj"));
-                    projectContent = projectContent.Replace("<DefineConstants></DefineConstants>", $"<DefineConstants>{Runtime}</DefineConstants>");
-                    File.WriteAllText(Path.Combine(workingDirectory, $"{_grammar.Name}.csproj"), projectContent);
-
-                    arguments = "build";
-                }
-                else if (Runtime == Runtime.Java)
-                {
-                    compiliedFiles.Append('"' + templateName + '"');
-                    if (_grammar.CaseInsensitive)
-                    {
-                        compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
-                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.java"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.java"), true);
-                    }
-                    arguments = $@"-cp ""{(Path.Combine("..", "..", "..", runtimeLibraryPath))}"" " + compiliedFiles;
-                }
-                else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
-                {
-                    var stringBuilder = new StringBuilder();
-
-                    foreach (string file in generatedFiles)
-                    {
-                        var shortFileName = Path.GetFileNameWithoutExtension(file);
-                        stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
-                    }
-
-                    if (_grammar.CaseInsensitive)
-                    {
-                        string antlrCaseInsensitiveInputStream = File.ReadAllText(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.py"));
-                        string superCall, strType, intType;
-
-                        if (Runtime == Runtime.Python2)
-                        {
-                            superCall = "type(self), self";
-                            strType = "";
-                            intType = "";
-                        }
-                        else
-                        {
-                            superCall = "";
-                            strType = ": str";
-                            intType = ": int";
-                        }
-
-                        antlrCaseInsensitiveInputStream = antlrCaseInsensitiveInputStream
-                            .Replace("'''SuperCall'''", superCall)
-                            .Replace("''': str'''", strType)
-                            .Replace("''': int'''", intType);
-
-                        File.WriteAllText(Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.py"), antlrCaseInsensitiveInputStream);
-                    }
-                    File.WriteAllText(Path.Combine(workingDirectory, PythonHelperFileName), stringBuilder.ToString());
-
-                    if (runtimeInfo.RuntimeToolName == "py")
-                    {
-                        arguments += Runtime == Runtime.Python2 ? "-2 " : "-3 ";
-                    }
-
-                    arguments += PythonHelperFileName;
-                }
-                else if (Runtime == Runtime.JavaScript)
-                {
-                    var stringBuilder = new StringBuilder();
-                    foreach (string file in generatedFiles)
-                    {
-                        var shortFileName = Path.GetFileNameWithoutExtension(file);
-                        stringBuilder.AppendLine($"var {shortFileName} = require('./{shortFileName}');");
-                    }
-                    File.WriteAllText(Path.Combine(workingDirectory, JavaScriptHelperFileName), stringBuilder.ToString());
-                    if (_grammar.CaseInsensitive)
-                    {
-                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.js"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);
-                    }
-
-                    arguments = JavaScriptHelperFileName;
-                }
-                else if (Runtime == Runtime.Go)
-                {
-                    compiliedFiles.Insert(0, '"' + templateName + "\" ");
-                    if (_grammar.CaseInsensitive)
-                    {
-                        compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
-                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.go"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.go"), true);
-                    }
-
-                    arguments = "build " + compiliedFiles.ToString();
-                }
-
-                string templateFile = Path.Combine(workingDirectory, templateName);
-                string code = File.ReadAllText(Path.Combine(runtimeDir, templateName));
-                code = code.Replace(TemplateGrammarName, state.GrammarCheckedState.Grammar.Name);
-                string root = _grammar.Root;
-                if (Runtime == Runtime.Go)
-                {
-                    root = char.ToUpper(root[0]) + root.Substring(1);
-                }
-                code = code.Replace(TemplateGrammarRoot, root);
-
-                if (_grammar.CaseInsensitive)
-                {
-                    code = code.Replace("from antlr4.InputStream import InputStream", "");
-                    code = code.Replace(runtimeInfo.AntlrInputStream, (Runtime == Runtime.Go ? "New" : "") + "AntlrCaseInsensitiveInputStream");
-
-                    if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
-                    {
-                        code = code.Replace("'''AntlrCaseInsensitive'''",
-                            "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
-                    }
-                    else if (Runtime == Runtime.JavaScript)
-                    {
-                        code = code.Replace("/*AntlrCaseInsensitive*/",
-                            "var AntlrCaseInsensitiveInputStream = require('./AntlrCaseInsensitiveInputStream').AntlrCaseInsensitiveInputStream;");
-                    }
-                }
-                else
-                {
-                    if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
-                    {
-                        code = code.Replace("'''AntlrCaseInsensitive'''", "");
-                    }
-                    else if (Runtime == Runtime.JavaScript)
-                    {
-                        code = code.Replace("/*AntlrCaseInsensitive*/", "");
-                    }
-                }
-
-                if (Runtime == Runtime.Python2)
-                {
-                    code = code.Replace("'''PrintTree'''", "print \"Tree \" + tree.toStringTree(recog=parser);");
-                }
-                else if (Runtime == Runtime.Python3)
-                {
-                    code = code.Replace("'''PrintTree'''", "print(\"Tree \", tree.toStringTree(recog = parser));");
-                }
-
-                File.WriteAllText(templateFile, code);
-
-                _buffer.Clear();
-
-                processor = new Processor(runtimeInfo.RuntimeToolName, arguments, workingDirectory);
-                processor.CancellationToken = _cancellationTokenSource.Token;
-                processor.ErrorDataReceived += ParserCompilation_ErrorDataReceived;
-                processor.OutputDataReceived += ParserCompilation_OutputDataReceived;
-
-                processor.Start();
-
-                if (_buffer.Count > 0)
-                {
-                    if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3)
-                    {
-                        AddPythonError();
-                    }
-                    else if (Runtime == Runtime.JavaScript)
-                    {
-                        AddJavaScriptError();
-                    }
-                }
-
-                _cancellationTokenSource.Token.ThrowIfCancellationRequested();
-            }
-            catch (Exception ex)
-            {
-                result.Exception = ex;
-                if (!(ex is OperationCanceledException))
-                {
-                    AddError(new ParsingError(ex, WorkflowStage.ParserCompilied));
-                }
-            }
-            finally
-            {
-                processor?.Dispose();
-            }
-            return result;
         }
 
         private TextParsedState ParseText(ParserCompiliedState state)
@@ -626,57 +406,6 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        private void GetGeneratedFileNames(GrammarCheckedState grammarCheckedState, RuntimeInfo runtimeInfo, string workingDirectory, List<string> generatedFiles,
-            StringBuilder compiliedFiles, bool lexer)
-        {
-            string grammarNameExt = _grammar.Name + (_grammar.SeparatedLexerAndParser ? (lexer ? "Lexer" : "Parser") : "") + ".g4";
-            string shortGeneratedFile = runtimeInfo.GetGeneratedLexerParserName(_grammar, lexer);
-            string generatedFile = Path.Combine(workingDirectory, shortGeneratedFile);
-            generatedFiles.Add(generatedFile);
-            compiliedFiles.Append('"' + shortGeneratedFile + "\" ");
-            CodeSource codeSource = new CodeSource(generatedFile, File.ReadAllText(generatedFile));
-            _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(grammarCheckedState.GrammarActionsTextSpan[grammarNameExt], codeSource, lexer);
-        }
-
-        private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
-            {
-                Console.WriteLine(e.Data);
-                if (Runtime == Runtime.CSharpStandard || Runtime == Runtime.CSharpOptimized)
-                {
-                    AddCSharpError(e.Data);
-                }
-                else if (Runtime == Runtime.Java)
-                {
-                    AddJavaError(e.Data);
-                }
-                else if (Runtime == Runtime.Python2 || Runtime == Runtime.Python3 || Runtime == Runtime.JavaScript)
-                {
-                    lock (_buffer)
-                    {
-                        _buffer.Add(e.Data);
-                    }
-                }
-                else if (Runtime == Runtime.Go)
-                {
-                    AddGoError(e.Data);
-                }
-            }
-        }
-
-        private void ParserCompilation_OutputDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
-            {
-                Console.WriteLine(e.Data);
-                if (Runtime == Runtime.CSharpOptimized || Runtime == Runtime.CSharpStandard)
-                {
-                    AddCSharpError(e.Data);
-                }
-            }
-        }
-
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
@@ -737,12 +466,6 @@ namespace AntlrGrammarEditor
         {
             switch (error.WorkflowStage)
             {
-                case WorkflowStage.ParserCompilied:
-                    lock (_parserCompilationErrors)
-                    {
-                        _parserCompilationErrors.Add(error);
-                    }
-                    break;
                 case WorkflowStage.TextTokenized:
                 case WorkflowStage.TextParsed:
                     lock (_textErrors)
@@ -758,12 +481,6 @@ namespace AntlrGrammarEditor
         {
             switch (stage)
             {
-                case WorkflowStage.ParserCompilied:
-                    lock (_parserCompilationErrors)
-                    {
-                        _parserCompilationErrors.Clear();
-                    }
-                    break;
                 case WorkflowStage.TextTokenized:
                 case WorkflowStage.TextParsed:
                     lock (_textErrors)
@@ -773,264 +490,6 @@ namespace AntlrGrammarEditor
                     break;
             }
             ClearErrorsEvent?.Invoke(this, stage);
-        }
-
-        private string GetGrammarFromCodeFileName(RuntimeInfo runtimeInfo, string codeFileName)
-        {
-            if (!Grammar.SeparatedLexerAndParser)
-            {
-                var grammarFileName = Path.GetFileNameWithoutExtension(codeFileName);
-                if (grammarFileName.EndsWith(runtimeInfo.LexerPostfix))
-                {
-                    grammarFileName = grammarFileName.Remove(grammarFileName.Length - runtimeInfo.LexerPostfix.Length);
-                }
-                else if (grammarFileName.EndsWith(runtimeInfo.ParserPostfix))
-                {
-                    grammarFileName = grammarFileName.Remove(grammarFileName.Length - runtimeInfo.ParserPostfix.Length);
-                }
-                return grammarFileName + Grammar.AntlrDotExt;
-            }
-            else
-            {
-                return Path.ChangeExtension(codeFileName, Grammar.AntlrDotExt);
-            }
-        }
-
-        private void AddCSharpError(string data)
-        {
-            if (data.Contains(": error CS"))
-            {
-                var errorString = Helpers.FixEncoding(data);
-                ParsingError error;
-                CodeSource grammarSource = CodeSource.Empty;
-                try
-                {
-                    // Format:
-                    // Lexer.cs(106,11): error CS0103: The name 'a' does not exist in the current context
-                    var strs = errorString.Split(':');
-                    int leftParenInd = strs[0].IndexOf('(');
-                    string codeFileName = strs[0].Remove(leftParenInd);
-                    string grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.CSharpStandard], codeFileName);
-                    string lineColumnString = strs[0].Substring(leftParenInd);
-                    lineColumnString = lineColumnString.Substring(1, lineColumnString.Length - 2); // Remove parenthesis.
-                    var strs2 = lineColumnString.Split(',');
-                    int line = int.Parse(strs2[0]);
-                    int column = int.Parse(strs2[1]);
-                    string rest = string.Join(":", strs.Skip(1));
-                    var grammarTextSpan = TextHelpers.GetSourceTextSpanForLineColumn(_grammarCodeMapping[codeFileName], line, column);
-
-                    grammarSource = GrammarCheckedState.GrammarFilesData[grammarFileName];
-                    if (!grammarTextSpan.IsEmpty)
-                    {
-                        error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.StartLineColumn.Line}:{rest}", WorkflowStage.ParserCompilied);
-                    }
-                    else
-                    {
-                        error = new ParsingError($"{grammarFileName}:{rest}", grammarSource, WorkflowStage.ParserCompilied);
-                    }
-                }
-                catch
-                {
-                    error = new ParsingError(errorString, grammarSource, WorkflowStage.ParserCompilied);
-                }
-                AddError(error);
-            }
-        }
-
-        private void AddJavaError(string data)
-        {
-            if (data.Count(c => c == ':') >= 2)
-            {
-                ParsingError error = null;
-                string grammarFileName = "";
-                try
-                {
-                    // Format:
-                    // Lexer.java:98: error: cannot find symbol
-                    string[] strs = data.Split(':');
-                    string codeFileName = strs[0];
-                    int codeLine = int.Parse(strs[1]);
-                    string rest = string.Join(":", strs.Skip(2));
-                    TextSpan grammarTextSpan = TextHelpers.GetSourceTextSpanForLine(_grammarCodeMapping[codeFileName], codeLine);
-                    grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Java], codeFileName);
-                    if (grammarTextSpan != null)
-                    {
-                        error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.StartLineColumn.Line}:{rest}", WorkflowStage.ParserCompilied);
-                    }
-                    else
-                    {
-                        // FIXME later (_grammarFilesData) !
-                        //error = new ParsingError($"{grammarFileName}:{rest}", _grammarFilesData[grammarFileName], WorkflowStage.ParserCompilied);
-                    }
-                }
-                catch
-                {
-                    error = new ParsingError(data, CodeSource.Empty, WorkflowStage.ParserCompilied);
-                }
-                AddError(error);
-            }
-        }
-
-        private void AddPythonError()
-        {
-            //Format:
-            //Traceback(most recent call last):
-            //  File "AntlrPythonCompileTest.py", line 1, in < module >
-            //    from NewGrammarLexer import NewGrammarLexer
-            //  File "Absolute\Path\To\LexerOrParser.py", line 23
-            //    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
-            //    ^
-            //IndentationError: unexpected indent
-            string message = "";
-            string grammarFileName = "";
-            TextSpan errorSpan = TextSpan.Empty;
-            for (int i = 0; i < _buffer.Count; i++)
-            {
-                if (_buffer[i].TrimStart().StartsWith("File"))
-                {
-                    if (grammarFileName != "")
-                    {
-                        continue;
-                    }
-
-                    string codeFileName = _buffer[i];
-                    codeFileName = codeFileName.Substring(codeFileName.IndexOf('"') + 1);
-                    codeFileName = codeFileName.Remove(codeFileName.IndexOf('"'));
-                    codeFileName = Path.GetFileName(codeFileName);
-
-                    List<TextSpanMapping> mapping;
-                    if (_grammarCodeMapping.TryGetValue(codeFileName, out mapping))
-                    {
-                        try
-                        {
-                            var lineStr = "\", line ";
-                            lineStr = _buffer[i].Substring(_buffer[i].IndexOf(lineStr) + lineStr.Length);
-                            int commaIndex = lineStr.IndexOf(',');
-                            if (commaIndex != -1)
-                            {
-                                lineStr = lineStr.Remove(commaIndex);
-                            }
-                            int codeLine = int.Parse(lineStr);
-                            errorSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine);
-                            grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Python2], codeFileName);
-                        }
-                        catch
-                        {
-                        }
-                    }
-                    else
-                    {
-                        grammarFileName = "";
-                    }
-                }
-                else if (i == _buffer.Count - 1)
-                {
-                    message = _buffer[i].Trim();
-                }
-            }
-            string finalMessage = "";
-            if (grammarFileName != "")
-            {
-                finalMessage = grammarFileName + ":";
-            }
-            if (!errorSpan.IsEmpty)
-            {
-                finalMessage += errorSpan.StartLineColumn.Line + ":";
-            }
-            finalMessage += message == "" ? "Unknown Error" : message;
-            AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));
-        }
-
-        private void AddJavaScriptError()
-        {
-            //Absolute\Path\To\LexerOrParser.js:68
-            //                break;
-            //                ^^^^^
-            //
-            //SyntaxError: Unexpected token break
-            //    at exports.runInThisContext (vm.js:53:16)
-            //    at Module._compile (module.js:373:25)
-            //    at Object.Module._extensions..js (module.js:416:10)
-            //    at Module.load (module.js:343:32)
-            //    at Function.Module._load (module.js:300:12)
-            //    at Module.require (module.js:353:17)
-            //    at require (internal/module.js:12:17)
-            //    at Object.<anonymous> (Absolute\Path\To\AntlrJavaScriptTest.js:1:85)
-            //    at Module._compile (module.js:409:26)
-            //    at Object.Module._extensions..js (module.js:416:10)
-            string message = "";
-            string grammarFileName = "";
-            TextSpan errorSpan = TextSpan.Empty;
-            try
-            {
-                int semicolonLastIndex = _buffer[0].LastIndexOf(':');
-                string codeFileName = Path.GetFileName(_buffer[0].Remove(semicolonLastIndex));
-                List<TextSpanMapping> mapping;
-                if (_grammarCodeMapping.TryGetValue(codeFileName, out mapping))
-                {
-                    int codeLine = int.Parse(_buffer[0].Substring(semicolonLastIndex + 1));
-                    errorSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine);
-                    grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.JavaScript], codeFileName);
-                }
-            }
-            catch
-            {
-            }
-            if (_buffer.Count > 0)
-            {
-                message = _buffer.LastOrDefault(line => !line.StartsWith("    at")) ?? "";
-            }
-            string finalMessage = "";
-            if (grammarFileName != "")
-            {
-                finalMessage = grammarFileName + ":";
-            }
-            if (!errorSpan.IsEmpty)
-            {
-                finalMessage += errorSpan.StartLineColumn.Line + ":";
-            }
-            finalMessage += message == "" ? "Unknown Error" : message;
-            AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));
-        }
-
-        private void AddGoError(string data)
-        {
-            if (data.Contains(": syntax error:"))
-            {
-                // Format:
-                // .\newgrammar_parser.go:169: syntax error: unexpected semicolon or newline, expecting expression
-                string grammarFileName = "";
-                TextSpan errorSpan = TextSpan.Empty;
-                string message = "";
-                var strs = data.Split(':');
-                try
-                {
-                    var runtimeInfo = RuntimeInfo.Runtimes[Runtime.Go];
-                    string codeFileName = strs[0].Substring(2);
-                    List<TextSpanMapping> mapping;
-                    if (_grammarCodeMapping.TryGetValue(codeFileName, out mapping))
-                    {
-                        int codeLine = int.Parse(strs[1]);
-                        errorSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine);
-                        grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Go], codeFileName);
-                    }
-                    message = strs[3];
-                }
-                catch
-                {
-                }
-                string finalMessage = "";
-                if (grammarFileName != "")
-                {
-                    finalMessage = grammarFileName + ":";
-                }
-                if (!errorSpan.IsEmpty)
-                {
-                    finalMessage += errorSpan.StartLineColumn.Line + ":";
-                }
-                finalMessage += message == "" ? "Unknown Error" : message;
-                AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));
-            }
         }
     }
 }
