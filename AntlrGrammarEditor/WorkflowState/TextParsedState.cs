@@ -7,7 +7,7 @@ namespace AntlrGrammarEditor
     {
         public override WorkflowStage Stage => WorkflowStage.TextParsed;
 
-        public override bool HasErrors => base.HasErrors || TextErrors == null || TextErrors.Count != 0;
+        public override bool HasErrors => base.HasErrors || Errors == null || Errors.Count != 0;
 
         public override WorkflowState PreviousState => ParserCompiliedState;
 
@@ -15,7 +15,7 @@ namespace AntlrGrammarEditor
 
         public ParserCompiliedState ParserCompiliedState { get; set; }
 
-        public IReadOnlyList<ParsingError> TextErrors { get; set; } = new ParsingError[0];
+        public List<ParsingError> Errors { get; } = new List<ParsingError>();
 
         public TimeSpan LexerTime { get; set; }
 
