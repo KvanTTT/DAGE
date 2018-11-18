@@ -46,10 +46,10 @@ namespace AntlrGrammarEditor
 
         public Runtime Runtime
         {
-            get => _grammar.MainRuntime;
+            get => _grammar.Runtimes.First();
             set
             {
-                if (_grammar.MainRuntime!= value)
+                if (_grammar.Runtimes.First() != value)
                 {
                     StopIfRequired();
                     _grammar.Runtimes.Clear();

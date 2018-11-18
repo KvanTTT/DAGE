@@ -30,13 +30,23 @@ namespace AntlrGrammarEditor
         public TextParsedState Parse(ParserCompiliedState state,
              CancellationToken cancellationToken = default(CancellationToken))
         {
-            Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
-            Runtime runtime = grammar.MainRuntime;
-            
             _result = new TextParsedState(state, Text)
             {
                 Root = Root
             };
+
+            Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
+            foreach (var runtime in grammar.Runtimes)
+            {
+                Parse(state, runtime, cancellationToken);                
+            }
+
+            return _result;
+        }
+
+        private void Parse(ParserCompiliedState state, Runtime runtime, CancellationToken cancellationToken)
+        {
+            Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
             Processor processor = null;
             try
             {
@@ -57,16 +67,16 @@ namespace AntlrGrammarEditor
                     case Runtime.CSharpStandard:
                         toolName = PrepareCSharpToolAndArgs(grammar, parseTextFileName, out args);
                         break;
-                    
+
                     case Runtime.Java:
                         toolName = PrepareJavaToolAndArgs(runtimeLibraryPath, parseTextFileName, out args);
                         break;
-                    
+
                     case Runtime.Python2:
                     case Runtime.Python3:
                         toolName = PreparePythonToolAndArgs(runtimeInfo, out args);
                         break;
-                    
+
                     case Runtime.JavaScript:
                         toolName = PrepareJavaScriptToolAndArgs(runtimeInfo, out args);
                         break;
@@ -97,7 +107,6 @@ namespace AntlrGrammarEditor
             {
                 processor?.Dispose();
             }
-            return _result;
         }
 
         private string PrepareCSharpToolAndArgs(Grammar grammar, string parseTextFileName, out string args)

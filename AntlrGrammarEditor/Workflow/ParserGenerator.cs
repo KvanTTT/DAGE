@@ -18,27 +18,40 @@ namespace AntlrGrammarEditor
             Grammar grammar = state.InputState.Grammar;
 
             _result = new ParserGeneratedState(state);
+
+            foreach (Runtime runtime in grammar.Runtimes)
+            {
+                Generate(grammar, runtime, state, cancellationToken);
+            }
+
+            return _result;
+        }
+
+        private void Generate(Grammar grammar, Runtime runtime, GrammarCheckedState state, CancellationToken cancellationToken)
+        {
             Processor processor = null;
             try
             {
-                string runtimeDirectoryName = Path.Combine(HelperDirectoryName, grammar.Name, grammar.MainRuntime.ToString());
+                string runtimeDirectoryName = Path.Combine(HelperDirectoryName, grammar.Name, runtime.ToString());
                 if (Directory.Exists(runtimeDirectoryName))
                 {
                     Directory.Delete(runtimeDirectoryName, true);
                 }
+
                 Directory.CreateDirectory(runtimeDirectoryName);
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(grammar.MainRuntime);
+                var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
 
                 var jarGenerator = Path.Combine("Generators", runtimeInfo.JarGenerator);
                 foreach (string grammarFileName in state.InputState.Grammar.Files)
                 {
                     _currentGrammarSource = state.GrammarFilesData[grammarFileName];
-                    var arguments = $@"-jar ""{jarGenerator}"" ""{Path.Combine(grammar.GrammarPath, grammarFileName)}"" -o ""{runtimeDirectoryName}"" " +
+                    var arguments =
+                        $@"-jar ""{jarGenerator}"" ""{Path.Combine(grammar.GrammarPath, grammarFileName)}"" -o ""{runtimeDirectoryName}"" " +
                         $"-Dlanguage={runtimeInfo.DLanguage} -no-visitor -no-listener";
-                    if (grammar.MainRuntime == Runtime.Go)
+                    if (runtime == Runtime.Go)
                     {
                         arguments += " -package main";
                     }
@@ -65,9 +78,8 @@ namespace AntlrGrammarEditor
             {
                 processor?.Dispose();
             }
-            return _result;
         }
-        
+
         private void ParserGeneration_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())

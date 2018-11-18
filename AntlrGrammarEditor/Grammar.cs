@@ -22,8 +22,6 @@ namespace AntlrGrammarEditor
 
         public HashSet<Runtime> Runtimes = new HashSet<Runtime>();
 
-        public Runtime MainRuntime => Runtimes.First();
-
         public bool SeparatedLexerAndParser { get; set; }
 
         public bool CaseInsensitive { get; set; }

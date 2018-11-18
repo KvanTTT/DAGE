@@ -21,18 +21,29 @@ namespace AntlrGrammarEditor
         private ParserCompiliedState _result;
         private List<string> _buffer;
         private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping;
+        private Runtime _currentRuntime;
 
         public ParserCompiliedState Compile(ParserGeneratedState state,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             _grammar = state.GrammarCheckedState.InputState.Grammar;
-            Runtime runtime = _grammar.MainRuntime;
-
             _result = new ParserCompiliedState(state)
             {
                 Root = _grammar.Root,
                 PreprocessorRoot = _grammar.PreprocessorRoot
             };
+
+            foreach (Runtime runtime in _grammar.Runtimes)
+            {
+                Compile(state, runtime, cancellationToken);                
+            }
+
+            return _result;
+        }
+
+        private void Compile(ParserGeneratedState state, Runtime runtime, CancellationToken cancellationToken)
+        {
+            _currentRuntime = runtime;
             RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
 
             Processor processor = null;
@@ -41,8 +52,8 @@ namespace AntlrGrammarEditor
                 string runtimeSource = runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard
                     ? "CSharp"
                     : runtime == Runtime.Python2 || runtime == Runtime.Python3
-                    ? "Python"
-                    : runtime.ToString();
+                        ? "Python"
+                        : runtime.ToString();
                 string runtimeDir = Path.Combine(RuntimesDirName, runtimeSource);
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
                 string workingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName, _grammar.Name, runtime.ToString());
@@ -51,8 +62,10 @@ namespace AntlrGrammarEditor
                 var generatedFiles = new List<string>();
                 _grammarCodeMapping = new Dictionary<string, List<TextSpanMapping>>();
 
-                GetGeneratedFileNames(state.GrammarCheckedState, runtimeInfo, workingDirectory, generatedFiles, compiliedFiles, false);
-                GetGeneratedFileNames(state.GrammarCheckedState, runtimeInfo, workingDirectory, generatedFiles, compiliedFiles, true);
+                GetGeneratedFileNames(state.GrammarCheckedState, runtimeInfo, workingDirectory, generatedFiles, compiliedFiles,
+                    false);
+                GetGeneratedFileNames(state.GrammarCheckedState, runtimeInfo, workingDirectory, generatedFiles, compiliedFiles,
+                    true);
 
                 string templateName = runtimeInfo.MainFile;
                 string arguments = "";
@@ -61,28 +74,29 @@ namespace AntlrGrammarEditor
                 {
                     case Runtime.CSharpOptimized:
                     case Runtime.CSharpStandard:
-                        arguments = PrepareCSharpFiles(workingDirectory, runtimeDir);
+                        arguments = PrepareCSharpFiles(workingDirectory, runtime, runtimeDir);
                         break;
-                    
+
                     case Runtime.Java:
-                        arguments = PrepareJavaFiles(compiliedFiles, templateName, runtimeDir, workingDirectory, runtimeLibraryPath);
+                        arguments = PrepareJavaFiles(compiliedFiles, templateName, runtimeDir, workingDirectory,
+                            runtimeLibraryPath);
                         break;
-                    
+
                     case Runtime.Python2:
                     case Runtime.Python3:
-                        arguments = PreparePythonFiles(generatedFiles, runtimeDir, workingDirectory);
+                        arguments = PreparePythonFiles(generatedFiles, runtime, runtimeDir, workingDirectory);
                         break;
-                    
+
                     case Runtime.JavaScript:
                         arguments = PrepareJavaScriptFiles(generatedFiles, workingDirectory, runtimeDir);
                         break;
-                    
+
                     case Runtime.Go:
                         arguments = PrepareGoFiles(compiliedFiles, templateName, runtimeDir, workingDirectory);
                         break;
                 }
 
-                PrepareParserCode(workingDirectory, templateName, runtimeDir);
+                PrepareParserCode(workingDirectory, templateName, runtime, runtimeDir);
 
                 _buffer = new List<string>();
 
@@ -119,7 +133,6 @@ namespace AntlrGrammarEditor
             {
                 processor?.Dispose();
             }
-            return _result;
         }
 
         private void GetGeneratedFileNames(GrammarCheckedState grammarCheckedState, RuntimeInfo runtimeInfo, string workingDirectory, List<string> generatedFiles,
@@ -134,7 +147,7 @@ namespace AntlrGrammarEditor
             _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(grammarCheckedState.GrammarActionsTextSpan[grammarNameExt], codeSource, lexer);
         }
 
-        private string PrepareCSharpFiles(string workingDirectory, string runtimeDir)
+        private string PrepareCSharpFiles(string workingDirectory, Runtime runtime, string runtimeDir)
         {
             string antlrCaseInsensitivePath = Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.cs");
             if (_grammar.CaseInsensitive)
@@ -147,7 +160,7 @@ namespace AntlrGrammarEditor
 
             var projectContent = File.ReadAllText(Path.Combine(runtimeDir, "Project.csproj"));
             projectContent = projectContent.Replace("<DefineConstants></DefineConstants>",
-                $"<DefineConstants>{_grammar.MainRuntime}</DefineConstants>");
+                $"<DefineConstants>{runtime}</DefineConstants>");
             File.WriteAllText(Path.Combine(workingDirectory, $"{_grammar.Name}.csproj"), projectContent);
 
             return "build";
@@ -167,7 +180,7 @@ namespace AntlrGrammarEditor
             return $@"-cp ""{Path.Combine("..", "..", "..", runtimeLibraryPath)}"" " + compiliedFiles;
         }
 
-        private string PreparePythonFiles(List<string> generatedFiles, string runtimeDir, string workingDirectory)
+        private string PreparePythonFiles(List<string> generatedFiles, Runtime runtime, string runtimeDir, string workingDirectory)
         {
             var stringBuilder = new StringBuilder();
 
@@ -183,7 +196,7 @@ namespace AntlrGrammarEditor
                     File.ReadAllText(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.py"));
                 string superCall, strType, intType;
 
-                if (_grammar.MainRuntime == Runtime.Python2)
+                if (runtime == Runtime.Python2)
                 {
                     superCall = "type(self), self";
                     strType = "";
@@ -210,7 +223,7 @@ namespace AntlrGrammarEditor
             string arguments = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                arguments += _grammar.MainRuntime == Runtime.Python2 ? "-2 " : "-3 ";
+                arguments += runtime == Runtime.Python2 ? "-2 " : "-3 ";
             }
             arguments += PythonHelperFileName;
 
@@ -250,9 +263,8 @@ namespace AntlrGrammarEditor
             return "build " + compiliedFiles;
         }
 
-        private void PrepareParserCode(string workingDirectory, string templateName, string runtimeDir)
+        private void PrepareParserCode(string workingDirectory, string templateName, Runtime runtime, string runtimeDir)
         {
-            Runtime runtime = _grammar.MainRuntime;
             string templateFile = Path.Combine(workingDirectory, templateName);
 
             string code = File.ReadAllText(Path.Combine(runtimeDir, templateName));
@@ -311,7 +323,7 @@ namespace AntlrGrammarEditor
             if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
                 Console.WriteLine(e.Data);
-                Runtime runtime = _grammar.MainRuntime;
+                Runtime runtime = _currentRuntime;
                 if (runtime == Runtime.CSharpStandard || runtime == Runtime.CSharpOptimized)
                 {
                     AddCSharpError(e.Data);
@@ -339,7 +351,7 @@ namespace AntlrGrammarEditor
             if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
                 Console.WriteLine(e.Data);
-                if (_grammar.MainRuntime == Runtime.CSharpOptimized || _grammar.MainRuntime == Runtime.CSharpStandard)
+                if (_currentRuntime == Runtime.CSharpOptimized || _currentRuntime == Runtime.CSharpStandard)
                 {
                     AddCSharpError(e.Data);
                 }
