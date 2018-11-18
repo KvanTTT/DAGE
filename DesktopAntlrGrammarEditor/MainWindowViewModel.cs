@@ -22,16 +22,19 @@ namespace DesktopAntlrGrammarEditor
 {
     public class MainWindowViewModel : ReactiveObject
     {
-        private Window _window;
-        private Settings _settings;
+        private readonly Window _window;
+        private readonly Settings _settings;
         private Grammar _grammar;
-        private Workflow _workflow;
+        private readonly Workflow _workflow;
         private string _openedGrammarFile = "";
         private FileName _openedTextFile = FileName.Empty;
         private FileState _grammarFileState, _textFileState;
-        private TextEditor _grammarTextBox, _textTextBox;
-        private TextEditor _tokensTextBox, _parseTreeTextBox;
-        private ListBox _grammarErrorsListBox, _textErrorsListBox;
+        private readonly TextEditor _grammarTextBox;
+        private readonly TextEditor _textTextBox;
+        private readonly TextEditor _tokensTextBox;
+        private readonly TextEditor _parseTreeTextBox;
+        private readonly ListBox _grammarErrorsListBox;
+        private readonly ListBox _textErrorsListBox;
         private bool _autoprocessing;
         private bool _indentedTree;
         private WorkflowStage _endStage = WorkflowStage.TextParsed;
@@ -457,7 +460,7 @@ namespace DesktopAntlrGrammarEditor
                 });
 
             Observable.FromEventPattern<ParsingError>(
-                ev => _workflow.NewErrorEvent += ev, ev => _workflow.NewErrorEvent -= ev)
+                ev => _workflow.ErrorEvent += ev, ev => _workflow.ErrorEvent -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev =>
                 {
@@ -479,7 +482,7 @@ namespace DesktopAntlrGrammarEditor
                     }
                 });
 
-            Observable.FromEventPattern<Tuple<TextParsedOutput, object>>(
+            Observable.FromEventPattern<(TextParsedOutput, object)>(
                  ev => _workflow.TextParsedOutputEvent += ev, ev => _workflow.TextParsedOutputEvent -= ev)
                  .ObserveOn(RxApp.MainThreadScheduler)
                  .Subscribe(ev =>
@@ -745,6 +748,7 @@ namespace DesktopAntlrGrammarEditor
             bool grammarErrors = false;
             switch (e)
             {
+                case WorkflowStage.Input:
                 case WorkflowStage.GrammarChecked:
                 case WorkflowStage.ParserGenerated:
                 case WorkflowStage.ParserCompilied:
@@ -878,7 +882,7 @@ namespace DesktopAntlrGrammarEditor
 
         private void UpdateRules()
         {
-            var grammarCheckedState = _workflow.GetState<GrammarCheckedState>();
+            var grammarCheckedState = _workflow.CurrentState.GetState<GrammarCheckedState>();
             if (grammarCheckedState == null)
             {
                 return;

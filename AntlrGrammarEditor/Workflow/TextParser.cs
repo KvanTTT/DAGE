@@ -8,17 +8,19 @@ namespace AntlrGrammarEditor
 {
     public class TextParser : StageProcessor
     {
+        public const string TextFileName = "Text";
+
         private TextParsedState _result;
 
         public string Text { get; }
-        
+
         public string Root { get; set; }
  
         public bool OnlyTokenize { get; set; }
 
         public bool IndentedTree { get; set; }
-        
-        
+
+        public EventHandler<(TextParsedOutput, object)> TextParsedOutputEvent { get; set; }
 
         public TextParser(string text)
         {
@@ -38,16 +40,16 @@ namespace AntlrGrammarEditor
             Processor processor = null;
             try
             {
-                File.WriteAllText(Path.Combine(Workflow.HelperDirectoryName, Workflow.TextFileName), _result.Text);
+                File.WriteAllText(Path.Combine(ParserCompiler.HelperDirectoryName, TextFileName), _result.Text);
 
                 var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
-                string runtimeDir = Path.Combine(Workflow.RuntimesDirName, runtime.ToString());
+                string runtimeDir = Path.Combine(ParserCompiler.RuntimesDirName, runtime.ToString());
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
 
                 string parserFileName = "";
                 string arguments = "";
-                string workingDirectory = Path.Combine(Workflow.HelperDirectoryName, grammar.Name, runtime.ToString());
-                string parseTextFileName = Path.Combine("..", "..", Workflow.TextFileName);
+                string workingDirectory = Path.Combine(ParserCompiler.HelperDirectoryName, grammar.Name, runtime.ToString());
+                string parseTextFileName = Path.Combine("..", "..", TextFileName);
 
                 if (runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard)
                 {
@@ -162,15 +164,19 @@ namespace AntlrGrammarEditor
                     {
                         case TextParsedOutput.LexerTime:
                             _result.LexerTime = TimeSpan.Parse(data); 
+                            TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.LexerTime, _result.LexerTime));
                             break;
                         case TextParsedOutput.ParserTime:
                             _result.ParserTime = TimeSpan.Parse(data);
+                            TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.ParserTime, _result.ParserTime));
                             break;
                         case TextParsedOutput.Tokens:
                             _result.Tokens = data;
+                            TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tokens, _result.Tokens));
                             break;
                         case TextParsedOutput.Tree:
                             _result.Tree = data.Replace("\\n", "\n");
+                            TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tree, _result.Tree));
                             break;
                     }
                 }

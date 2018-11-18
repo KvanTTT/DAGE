@@ -10,6 +10,13 @@ namespace AntlrGrammarEditor
 {
     public class ParserCompiler : StageProcessor
     {
+        public const string PythonHelperFileName = "AntlrPythonCompileTest.py";
+        public const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
+        public const string TemplateGrammarName = "__TemplateGrammarName__";
+        public const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
+        public const string HelperDirectoryName = "DageHelperDirectory";
+        public const string RuntimesDirName = "AntlrRuntimes";
+
         private Grammar _grammar;
         private ParserCompiliedState _result;
         private List<string> _buffer;
@@ -36,9 +43,9 @@ namespace AntlrGrammarEditor
                     : runtime == Runtime.Python2 || runtime == Runtime.Python3
                     ? "Python"
                     : runtime.ToString();
-                string runtimeDir = Path.Combine(Workflow.RuntimesDirName, runtimeSource);
+                string runtimeDir = Path.Combine(RuntimesDirName, runtimeSource);
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
-                string workingDirectory = Path.Combine(Workflow.HelperDirectoryName, _grammar.Name, runtime.ToString());
+                string workingDirectory = Path.Combine(HelperDirectoryName, _grammar.Name, runtime.ToString());
 
                 var compiliedFiles = new StringBuilder();
                 var generatedFiles = new List<string>();
@@ -198,9 +205,9 @@ namespace AntlrGrammarEditor
                     antlrCaseInsensitiveInputStream);
             }
 
-            File.WriteAllText(Path.Combine(workingDirectory, Workflow.PythonHelperFileName), stringBuilder.ToString());
+            File.WriteAllText(Path.Combine(workingDirectory, PythonHelperFileName), stringBuilder.ToString());
 
-            return (_grammar.MainRuntime == Runtime.Python2 ? "-2 " : "-3 ") + Workflow.PythonHelperFileName;
+            return (_grammar.MainRuntime == Runtime.Python2 ? "-2 " : "-3 ") + PythonHelperFileName;
         }
 
         private string PrepareJavaScriptFiles(List<string> generatedFiles, string workingDirectory, string runtimeDir)
@@ -212,14 +219,14 @@ namespace AntlrGrammarEditor
                 stringBuilder.AppendLine($"var {shortFileName} = require('./{shortFileName}');");
             }
 
-            File.WriteAllText(Path.Combine(workingDirectory, Workflow.JavaScriptHelperFileName), stringBuilder.ToString());
+            File.WriteAllText(Path.Combine(workingDirectory, JavaScriptHelperFileName), stringBuilder.ToString());
             if (_grammar.CaseInsensitive)
             {
                 File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.js"),
                     Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);
             }
 
-            return Workflow.JavaScriptHelperFileName;
+            return JavaScriptHelperFileName;
         }
 
         private string PrepareGoFiles(StringBuilder compiliedFiles, string templateName, string runtimeDir,
@@ -242,14 +249,14 @@ namespace AntlrGrammarEditor
             string templateFile = Path.Combine(workingDirectory, templateName);
 
             string code = File.ReadAllText(Path.Combine(runtimeDir, templateName));
-            code = code.Replace(Workflow.TemplateGrammarName, _grammar.Name);
+            code = code.Replace(TemplateGrammarName, _grammar.Name);
             string root = _grammar.Root;
             if (runtime == Runtime.Go)
             {
                 root = char.ToUpper(root[0]) + root.Substring(1);
             }
 
-            code = code.Replace(Workflow.TemplateGrammarRoot, root);
+            code = code.Replace(TemplateGrammarRoot, root);
 
             if (_grammar.CaseInsensitive)
             {

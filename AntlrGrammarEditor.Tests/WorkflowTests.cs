@@ -69,7 +69,7 @@ namespace AntlrGrammarEditor.Tests
 
                 RuntimeInfo runtimeInfo = RuntimeInfo.Runtimes[runtime];
                 var extensions = runtimeInfo.Extensions;
-                var allFiles = Directory.GetFiles(Path.Combine(Workflow.HelperDirectoryName, TestGrammarName, runtimeInfo.Runtime.ToString()));
+                var allFiles = Directory.GetFiles(Path.Combine(ParserCompiler.HelperDirectoryName, TestGrammarName, runtimeInfo.Runtime.ToString()));
                 var actualFilesCount = allFiles.Count(file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext)));
                 Assert.Greater(actualFilesCount, 0, $"Failed to initialize {runtime} runtime");
 

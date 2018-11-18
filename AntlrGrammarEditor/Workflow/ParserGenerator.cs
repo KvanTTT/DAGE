@@ -19,7 +19,7 @@ namespace AntlrGrammarEditor
             Processor processor = null;
             try
             {
-                string runtimeDirectoryName = Path.Combine(Workflow.HelperDirectoryName, grammar.Name, grammar.MainRuntime.ToString());
+                string runtimeDirectoryName = Path.Combine(ParserCompiler.HelperDirectoryName, grammar.Name, grammar.MainRuntime.ToString());
                 if (Directory.Exists(runtimeDirectoryName))
                 {
                     Directory.Delete(runtimeDirectoryName, true);

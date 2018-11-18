@@ -12,39 +12,25 @@ namespace AntlrGrammarEditor
 {
     public class Workflow
     {
-        public const string HelperDirectoryName = "DageHelperDirectory";
-        public const string PythonHelperFileName = "AntlrPythonCompileTest.py";
-        public const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
-        public const string TextFileName = "Text";
-        public const string RuntimesDirName = "AntlrRuntimes";
-
-        public const string TemplateGrammarName = "__TemplateGrammarName__";
-        public const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
-
         private Grammar _grammar = new Grammar();
         private string _text = "";
-        private IWorkflowState _currentState;
-
-        private string _outputTree;
-        private string _outputTokens;
-        private TimeSpan _outputLexerTime;
-        private TimeSpan _outputParserTime;
-        private event EventHandler<ParsingError> _newErrorEvent;
-        
         private bool _indentedTree;
+
+        private IWorkflowState _currentState;
 
         private CancellationTokenSource _cancellationTokenSource;
         private object _lockObj = new object();
 
-        public IWorkflowState CurrentState
-        {
-            get => _currentState;
-            private set
-            {
-                _currentState = value;
-                StateChanged?.Invoke(this, _currentState);
-            }
-        }
+        private event EventHandler<ParsingError> _errorEvent;
+        private event EventHandler<(TextParsedOutput, object)> _textParsedOutputEvent;
+
+        public WorkflowStage EndStage { get; set; } = WorkflowStage.TextParsed;
+
+        public event EventHandler<IWorkflowState> StateChanged;
+
+        public event EventHandler<WorkflowStage> ClearErrorsEvent;
+
+        public IWorkflowState CurrentState => _currentState;
 
         public Grammar Grammar
         {
@@ -52,22 +38,22 @@ namespace AntlrGrammarEditor
             set
             {
                 StopIfRequired();
-                _grammar = value;
-                CurrentState = new InputState(_grammar);
                 RollbackToStage(WorkflowStage.Input);
+                _grammar = value;
+                _currentState = new InputState(_grammar);
             }
         }
 
         public Runtime Runtime
         {
-            get => Grammar.MainRuntime;
+            get => _grammar.MainRuntime;
             set
             {
-                if (Grammar.MainRuntime!= value)
+                if (_grammar.MainRuntime!= value)
                 {
                     StopIfRequired();
-                    Grammar.Runtimes.Clear();
-                    Grammar.Runtimes.Add(value);
+                    _grammar.Runtimes.Clear();
+                    _grammar.Runtimes.Add(value);
                     RollbackToStage(WorkflowStage.GrammarChecked);
                 }
             }
@@ -114,8 +100,6 @@ namespace AntlrGrammarEditor
                 }
             }
         }
-        
-        public WorkflowStage EndStage { get; set; } = WorkflowStage.TextParsed;
 
         public bool IndentedTree
         {
@@ -131,56 +115,16 @@ namespace AntlrGrammarEditor
             }
         }
 
-        public event EventHandler<IWorkflowState> StateChanged;
-
-        public event EventHandler<ParsingError> NewErrorEvent
+        public event EventHandler<ParsingError> ErrorEvent
         {
-            add => _newErrorEvent += value;
-            remove => _newErrorEvent -= value;
+            add => _errorEvent += value;
+            remove => _errorEvent -= value;
         }
 
-        public event EventHandler<WorkflowStage> ClearErrorsEvent;
-
-        public event EventHandler<Tuple<TextParsedOutput, object>> TextParsedOutputEvent;
-
-        public TimeSpan OutputLexerTime
+        public event EventHandler<(TextParsedOutput, object)> TextParsedOutputEvent
         {
-            get => _outputLexerTime;
-            set
-            {
-                _outputLexerTime = value;
-                TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.LexerTime, _outputLexerTime));
-            }
-        }
-
-        public TimeSpan OutputParserTime
-        {
-            get => _outputParserTime;
-            set
-            {
-                _outputParserTime = value;
-                TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.ParserTime, _outputParserTime));
-            }
-        }
-
-        public string OutputTokens
-        {
-            get => _outputTokens;
-            private set
-            {
-                _outputTokens = value;
-                TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tokens, _outputTokens));
-            }
-        }
-
-        public string OutputTree
-        {
-            get => _outputTree;
-            private set
-            {
-                _outputTree = value;
-                TextParsedOutputEvent?.Invoke(this, new Tuple<TextParsedOutput, object>(TextParsedOutput.Tree, _outputTree));
-            }
+            add => _textParsedOutputEvent += value;
+            remove => _textParsedOutputEvent -= value;
         }
 
         public Task<IWorkflowState> ProcessAsync()
@@ -195,13 +139,13 @@ namespace AntlrGrammarEditor
         {
             _cancellationTokenSource = new CancellationTokenSource();
 
-            while (!CurrentState.HasErrors && CurrentState.Stage < WorkflowStage.TextParsed && CurrentState.Stage < EndStage)
+            while (!_currentState.HasErrors && _currentState.Stage < WorkflowStage.TextParsed && _currentState.Stage < EndStage)
             {
                 ProcessOneStep();
             }
 
             _cancellationTokenSource = null;
-            return CurrentState;
+            return _currentState;
         }
 
         public void StopIfRequired()
@@ -222,77 +166,61 @@ namespace AntlrGrammarEditor
             }
         }
 
-        public T GetState<T>()
-            where T : IWorkflowState
-        {
-            IWorkflowState state = CurrentState;
-            
-            while (state != null)
-            {
-                if (state is T stateT)
-                {
-                    return stateT;
-                }
-                
-                state = state.PreviousState;
-            }
-
-            return default(T);
-        }
-
         public void RollbackToPreviousStageIfErrors()
         {
-            if (CurrentState.HasErrors)
+            if (_currentState.HasErrors)
             {
-                ClearErrors(CurrentState.Stage);
-                CurrentState = CurrentState.PreviousState;
+                ClearErrorsEvent?.Invoke(this, _currentState.Stage);
+                _currentState = _currentState.PreviousState;
             }
         }
 
         public void RollbackToStage(WorkflowStage stage)
         {
-            while (CurrentState.Stage > stage && CurrentState.PreviousState != null)
+            while (_currentState?.Stage > stage)
             {
-                if (CurrentState.Stage <= WorkflowStage.TextParsed)
+                switch (_currentState.Stage)
                 {
-                    OutputTokens = "";
-                    OutputTree = "";
-                    ClearErrors(WorkflowStage.TextTokenized);
-                    ClearErrors(WorkflowStage.TextParsed);
+                    case WorkflowStage.TextParsed:
+                        _textParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tokens, ""));
+                        _textParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tree, ""));
+                        ClearErrorsEvent?.Invoke(this, WorkflowStage.TextTokenized);
+                        ClearErrorsEvent?.Invoke(this, WorkflowStage.TextParsed);
+                        break;
+                    
+                    case WorkflowStage.ParserCompilied:
+                    case WorkflowStage.ParserGenerated:
+                    case WorkflowStage.GrammarChecked:
+                        ClearErrorsEvent?.Invoke(this, _currentState.Stage);
+                        break;
                 }
-                if (CurrentState.Stage <= WorkflowStage.ParserCompilied)
-                {
-                    ClearErrors(WorkflowStage.ParserCompilied);
-                }
-                if (CurrentState.Stage <= WorkflowStage.ParserGenerated)
-                {
-                    ClearErrors(WorkflowStage.ParserGenerated);
-                }
-                if (CurrentState.Stage <= WorkflowStage.GrammarChecked)
-                {
-                    ClearErrors(WorkflowStage.GrammarChecked);
-                }
-                CurrentState = CurrentState.PreviousState;
+
+                _currentState = _currentState.PreviousState;
+            }
+
+            if (StateChanged != null && _currentState != null)
+            {
+                StateChanged.Invoke(this, _currentState);
             }
         }
 
         private void ProcessOneStep()
         {
-            switch (CurrentState.Stage)
+            switch (_currentState.Stage)
             {
                 case WorkflowStage.Input:
-                    var grammarChecker = new GrammarChecker {ErrorEvent = _newErrorEvent};
-                    CurrentState = grammarChecker.Check((InputState)CurrentState, _cancellationTokenSource.Token);
+                    var grammarChecker = new GrammarChecker {ErrorEvent = _errorEvent};
+                    _currentState = grammarChecker.Check((InputState)_currentState, _cancellationTokenSource.Token);
                     break;
 
                 case WorkflowStage.GrammarChecked:
-                    var parserGenerator = new ParserGenerator {ErrorEvent = _newErrorEvent};
-                    CurrentState = parserGenerator.Generate((GrammarCheckedState)CurrentState, _cancellationTokenSource.Token);
+                    var parserGenerator = new ParserGenerator {ErrorEvent = _errorEvent};
+                    _currentState = parserGenerator.Generate((GrammarCheckedState)_currentState, _cancellationTokenSource.Token);
                     break;
 
                 case WorkflowStage.ParserGenerated:
-                    var parserCompiler = new ParserCompiler {ErrorEvent = _newErrorEvent};
-                    CurrentState = parserCompiler.Compile((ParserGeneratedState)CurrentState, _cancellationTokenSource.Token);
+                    var parserCompiler = new ParserCompiler {ErrorEvent = _errorEvent};
+                    _currentState = parserCompiler.Compile((ParserGeneratedState)_currentState, _cancellationTokenSource.Token);
                     break;
 
                 case WorkflowStage.ParserCompilied:
@@ -301,21 +229,15 @@ namespace AntlrGrammarEditor
                         Root = Root,
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         IndentedTree = IndentedTree,
-                        ErrorEvent = _newErrorEvent
+                        ErrorEvent = _errorEvent
                     };
-                    var textParsedState = textParser.Parse((ParserCompiliedState)CurrentState, _cancellationTokenSource.Token);
-                    OutputLexerTime = textParsedState.LexerTime;
-                    OutputParserTime = textParsedState.ParserTime;
-                    OutputTokens = textParsedState.Tokens;
-                    OutputTree = textParsedState.Tree;
-                    CurrentState = textParsedState;
+                    textParser.TextParsedOutputEvent += _textParsedOutputEvent;
+                    var textParsedState = textParser.Parse((ParserCompiliedState)_currentState, _cancellationTokenSource.Token);
+                    _currentState = textParsedState;
                     break;
             }
-        }
 
-        private void ClearErrors(WorkflowStage stage)
-        {
-            ClearErrorsEvent?.Invoke(this, stage);
+            StateChanged?.Invoke(this, _currentState);
         }
     }
 }
