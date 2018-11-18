@@ -279,6 +279,34 @@ namespace AntlrGrammarEditor.Tests
             Assert.IsTrue(((TextParsedState)state).ParserCompiliedState.ParserGeneratedState.Errors[0].IsWarning);
         }
 
+        [Test]
+        public void MultiruntimeGrammar()
+        {
+            var workflow = new Workflow();
+            var grammarText =
+                $@"grammar {TestGrammarName};
+                t: T;
+                T: [a-z]+;";
+            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
+            grammar.Runtimes = new HashSet<Runtime>
+            {
+                Runtime.CSharpOptimized,
+                Runtime.CSharpStandard,
+                Runtime.Java,
+                Runtime.Python2,
+                Runtime.Python3,
+                Runtime.JavaScript,
+                Runtime.Go
+            };
+            workflow.Grammar = grammar;
+            workflow.Text = @"asdf";
+            
+            var state = workflow.Process();
+            TextParsedState textParsedState = state as TextParsedState;
+            Assert.AreEqual(0, textParsedState.Errors.Count, string.Join(Environment.NewLine, textParsedState.Errors));
+            Assert.AreEqual("(t asdf)", textParsedState.Tree);
+        }
+
         [TestCase(Runtime.CSharpOptimized)]
         [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
