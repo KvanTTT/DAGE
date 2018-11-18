@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AntlrGrammarEditor
 {
@@ -7,7 +8,7 @@ namespace AntlrGrammarEditor
     {
         public WorkflowStage Stage => WorkflowStage.TextParsed;
 
-        public bool HasErrors => Exception != null || Errors.Count > 0;
+        public bool HasErrors => Exception != null || Errors.Any(error => !error.IsWarning);
 
         public IWorkflowState PreviousState => ParserCompiliedState;
 

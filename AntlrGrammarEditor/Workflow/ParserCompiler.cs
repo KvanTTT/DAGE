@@ -15,7 +15,6 @@ namespace AntlrGrammarEditor
         public const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
         public const string TemplateGrammarName = "__TemplateGrammarName__";
         public const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
-        public const string HelperDirectoryName = "DageHelperDirectory";
         public const string RuntimesDirName = "AntlrRuntimes";
 
         private Grammar _grammar;
@@ -46,7 +45,7 @@ namespace AntlrGrammarEditor
                     : runtime.ToString();
                 string runtimeDir = Path.Combine(RuntimesDirName, runtimeSource);
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
-                string workingDirectory = Path.Combine(HelperDirectoryName, _grammar.Name, runtime.ToString());
+                string workingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName, _grammar.Name, runtime.ToString());
 
                 var compiliedFiles = new StringBuilder();
                 var generatedFiles = new List<string>();

@@ -7,12 +7,10 @@ namespace AntlrGrammarEditor
         public TextSpan TextSpan { get; set; }
 
         public string Message { get; set; }
+        
+        public bool IsWarning { get; set; }
 
         public WorkflowStage WorkflowStage { get; set; } = WorkflowStage.GrammarChecked;
-
-        public ParsingError()
-        {
-        }
 
         public ParsingError(Exception ex, WorkflowStage stage)
         {
@@ -49,10 +47,8 @@ namespace AntlrGrammarEditor
                        Message == parsingError.Message &&
                        WorkflowStage == parsingError.WorkflowStage;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         public override int GetHashCode()

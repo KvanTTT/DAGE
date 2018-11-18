@@ -41,7 +41,7 @@ namespace AntlrGrammarEditor
         public List<string> TextFiles { get; set; } = new List<string>();
 
         [JsonIgnore]
-        public string GrammarPath { get; private set; } = "";
+        public string GrammarPath { get; set; } = "";
 
         [JsonIgnore]
         public string AgeFileName

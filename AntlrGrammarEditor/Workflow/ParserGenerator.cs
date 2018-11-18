@@ -7,6 +7,8 @@ namespace AntlrGrammarEditor
 {
     public class ParserGenerator : StageProcessor
     {
+        public const string HelperDirectoryName = "DageHelperDirectory";
+
         private CodeSource _currentGrammarSource;
         private ParserGeneratedState _result;
 
@@ -19,7 +21,7 @@ namespace AntlrGrammarEditor
             Processor processor = null;
             try
             {
-                string runtimeDirectoryName = Path.Combine(ParserCompiler.HelperDirectoryName, grammar.Name, grammar.MainRuntime.ToString());
+                string runtimeDirectoryName = Path.Combine(HelperDirectoryName, grammar.Name, grammar.MainRuntime.ToString());
                 if (Directory.Exists(runtimeDirectoryName))
                 {
                     Directory.Delete(runtimeDirectoryName, true);
@@ -71,8 +73,8 @@ namespace AntlrGrammarEditor
             if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
             {
                 var strs = e.Data.Split(':');
-                ParsingError error;
                 int line = 1, column = 1;
+                bool warning = false;
                 if (strs.Length >= 4)
                 {
                     if (!int.TryParse(strs[2], out line))
@@ -84,7 +86,11 @@ namespace AntlrGrammarEditor
                         column = 1;
                     }
                 }
-                error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated);
+                ParsingError error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated);
+                if (strs.Length > 0 && strs[0].StartsWith("warning"))
+                {
+                    error.IsWarning = true;
+                }
                 ErrorEvent?.Invoke(this, error);
                 _result.Errors.Add(error);
             }

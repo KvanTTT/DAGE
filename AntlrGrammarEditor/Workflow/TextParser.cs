@@ -40,7 +40,7 @@ namespace AntlrGrammarEditor
             Processor processor = null;
             try
             {
-                File.WriteAllText(Path.Combine(ParserCompiler.HelperDirectoryName, TextFileName), _result.Text);
+                File.WriteAllText(Path.Combine(ParserGenerator.HelperDirectoryName, TextFileName), _result.Text);
 
                 var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
                 string runtimeDir = Path.Combine(ParserCompiler.RuntimesDirName, runtime.ToString());
@@ -48,7 +48,7 @@ namespace AntlrGrammarEditor
 
                 string toolName = "";
                 string args = "";
-                string workingDirectory = Path.Combine(ParserCompiler.HelperDirectoryName, grammar.Name, runtime.ToString());
+                string workingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName, grammar.Name, runtime.ToString());
                 string parseTextFileName = Path.Combine("..", "..", TextFileName);
 
                 switch (runtime)
