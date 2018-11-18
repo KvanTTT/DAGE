@@ -31,7 +31,6 @@ namespace AntlrGrammarEditor
             Processor processor = null;
             try
             {
-                string arguments = "";
                 string runtimeSource = runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard
                     ? "CSharp"
                     : runtime == Runtime.Python2 || runtime == Runtime.Python3
@@ -49,154 +48,34 @@ namespace AntlrGrammarEditor
                 GetGeneratedFileNames(state.GrammarCheckedState, runtimeInfo, workingDirectory, generatedFiles, compiliedFiles, true);
 
                 string templateName = runtimeInfo.MainFile;
+                string arguments = "";
 
-                if (runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard)
+                switch (runtime)
                 {
-                    string antlrCaseInsensitivePath = Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.cs");
-                    if (_grammar.CaseInsensitive)
-                    {
-                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath);
-                    }
-
-                    File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"), true);
-                    File.Copy(Path.Combine(runtimeDir, "AssemblyInfo.cs"), Path.Combine(workingDirectory, "AssemblyInfo.cs"), true);
-
-                    var projectContent = File.ReadAllText(Path.Combine(runtimeDir, "Project.csproj"));
-                    projectContent = projectContent.Replace("<DefineConstants></DefineConstants>", $"<DefineConstants>{runtime}</DefineConstants>");
-                    File.WriteAllText(Path.Combine(workingDirectory, $"{_grammar.Name}.csproj"), projectContent);
-
-                    arguments = "build";
-                }
-                else if (runtime == Runtime.Java)
-                {
-                    compiliedFiles.Append('"' + templateName + '"');
-                    if (_grammar.CaseInsensitive)
-                    {
-                        compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
-                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.java"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.java"), true);
-                    }
-                    arguments = $@"-cp ""{(Path.Combine("..", "..", "..", runtimeLibraryPath))}"" " + compiliedFiles;
-                }
-                else if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
-                {
-                    var stringBuilder = new StringBuilder();
-
-                    foreach (string file in generatedFiles)
-                    {
-                        var shortFileName = Path.GetFileNameWithoutExtension(file);
-                        stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
-                    }
-
-                    if (_grammar.CaseInsensitive)
-                    {
-                        string antlrCaseInsensitiveInputStream = File.ReadAllText(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.py"));
-                        string superCall, strType, intType;
-
-                        if (runtime == Runtime.Python2)
-                        {
-                            superCall = "type(self), self";
-                            strType = "";
-                            intType = "";
-                        }
-                        else
-                        {
-                            superCall = "";
-                            strType = ": str";
-                            intType = ": int";
-                        }
-
-                        antlrCaseInsensitiveInputStream = antlrCaseInsensitiveInputStream
-                            .Replace("'''SuperCall'''", superCall)
-                            .Replace("''': str'''", strType)
-                            .Replace("''': int'''", intType);
-
-                        File.WriteAllText(Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.py"), antlrCaseInsensitiveInputStream);
-                    }
-                    File.WriteAllText(Path.Combine(workingDirectory, Workflow.PythonHelperFileName), stringBuilder.ToString());
-
-                    if (runtimeInfo.RuntimeToolName == "py")
-                    {
-                        arguments += runtime == Runtime.Python2 ? "-2 " : "-3 ";
-                    }
-
-                    arguments += Workflow.PythonHelperFileName;
-                }
-                else if (runtime == Runtime.JavaScript)
-                {
-                    var stringBuilder = new StringBuilder();
-                    foreach (string file in generatedFiles)
-                    {
-                        var shortFileName = Path.GetFileNameWithoutExtension(file);
-                        stringBuilder.AppendLine($"var {shortFileName} = require('./{shortFileName}');");
-                    }
-                    File.WriteAllText(Path.Combine(workingDirectory, Workflow.JavaScriptHelperFileName), stringBuilder.ToString());
-                    if (_grammar.CaseInsensitive)
-                    {
-                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.js"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);
-                    }
-
-                    arguments = Workflow.JavaScriptHelperFileName;
-                }
-                else if (runtime == Runtime.Go)
-                {
-                    compiliedFiles.Insert(0, '"' + templateName + "\" ");
-                    if (_grammar.CaseInsensitive)
-                    {
-                        compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
-                        File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.go"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.go"), true);
-                    }
-
-                    arguments = "build " + compiliedFiles;
+                    case Runtime.CSharpOptimized:
+                    case Runtime.CSharpStandard:
+                        arguments = PrepareCSharpFiles(workingDirectory, runtimeDir);
+                        break;
+                    
+                    case Runtime.Java:
+                        arguments = PrepareJavaFiles(compiliedFiles, templateName, runtimeDir, workingDirectory, runtimeLibraryPath);
+                        break;
+                    
+                    case Runtime.Python2:
+                    case Runtime.Python3:
+                        arguments = PreparePythonFiles(generatedFiles, runtimeDir, workingDirectory);
+                        break;
+                    
+                    case Runtime.JavaScript:
+                        arguments = PrepareJavaScriptFiles(generatedFiles, workingDirectory, runtimeDir);
+                        break;
+                    
+                    case Runtime.Go:
+                        arguments = PrepareGoFiles(compiliedFiles, templateName, runtimeDir, workingDirectory);
+                        break;
                 }
 
-                string templateFile = Path.Combine(workingDirectory, templateName);
-                string code = File.ReadAllText(Path.Combine(runtimeDir, templateName));
-                code = code.Replace(Workflow.TemplateGrammarName, _grammar.Name);
-                string root = _grammar.Root;
-                if (runtime == Runtime.Go)
-                {
-                    root = char.ToUpper(root[0]) + root.Substring(1);
-                }
-                code = code.Replace(Workflow.TemplateGrammarRoot, root);
-
-                if (_grammar.CaseInsensitive)
-                {
-                    code = code.Replace("from antlr4.InputStream import InputStream", "");
-                    code = code.Replace(runtimeInfo.AntlrInputStream, (runtime == Runtime.Go ? "New" : "") + "AntlrCaseInsensitiveInputStream");
-
-                    if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
-                    {
-                        code = code.Replace("'''AntlrCaseInsensitive'''",
-                            "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
-                    }
-                    else if (runtime == Runtime.JavaScript)
-                    {
-                        code = code.Replace("/*AntlrCaseInsensitive*/",
-                            "var AntlrCaseInsensitiveInputStream = require('./AntlrCaseInsensitiveInputStream').AntlrCaseInsensitiveInputStream;");
-                    }
-                }
-                else
-                {
-                    if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
-                    {
-                        code = code.Replace("'''AntlrCaseInsensitive'''", "");
-                    }
-                    else if (runtime == Runtime.JavaScript)
-                    {
-                        code = code.Replace("/*AntlrCaseInsensitive*/", "");
-                    }
-                }
-
-                if (runtime == Runtime.Python2)
-                {
-                    code = code.Replace("'''PrintTree'''", "print \"Tree \" + tree.toStringTree(recog=parser);");
-                }
-                else if (runtime == Runtime.Python3)
-                {
-                    code = code.Replace("'''PrintTree'''", "print(\"Tree \", tree.toStringTree(recog = parser));");
-                }
-
-                File.WriteAllText(templateFile, code);
+                PrepareParserCode(workingDirectory, templateName, runtimeDir);
 
                 _buffer = new List<string>();
 
@@ -235,7 +114,7 @@ namespace AntlrGrammarEditor
             }
             return _result;
         }
-        
+
         private void GetGeneratedFileNames(GrammarCheckedState grammarCheckedState, RuntimeInfo runtimeInfo, string workingDirectory, List<string> generatedFiles,
             StringBuilder compiliedFiles, bool lexer)
         {
@@ -246,6 +125,171 @@ namespace AntlrGrammarEditor
             compiliedFiles.Append('"' + shortGeneratedFile + "\" ");
             CodeSource codeSource = new CodeSource(generatedFile, File.ReadAllText(generatedFile));
             _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(grammarCheckedState.GrammarActionsTextSpan[grammarNameExt], codeSource, lexer);
+        }
+
+        private string PrepareCSharpFiles(string workingDirectory, string runtimeDir)
+        {
+            string antlrCaseInsensitivePath = Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.cs");
+            if (_grammar.CaseInsensitive)
+            {
+                File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath);
+            }
+
+            File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"), true);
+            File.Copy(Path.Combine(runtimeDir, "AssemblyInfo.cs"), Path.Combine(workingDirectory, "AssemblyInfo.cs"), true);
+
+            var projectContent = File.ReadAllText(Path.Combine(runtimeDir, "Project.csproj"));
+            projectContent = projectContent.Replace("<DefineConstants></DefineConstants>",
+                $"<DefineConstants>{_grammar.MainRuntime}</DefineConstants>");
+            File.WriteAllText(Path.Combine(workingDirectory, $"{_grammar.Name}.csproj"), projectContent);
+
+            return "build";
+        }
+
+        private string PrepareJavaFiles(StringBuilder compiliedFiles, string templateName, string runtimeDir,
+            string workingDirectory, string runtimeLibraryPath)
+        {
+            compiliedFiles.Append('"' + templateName + '"');
+            if (_grammar.CaseInsensitive)
+            {
+                compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
+                File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.java"),
+                    Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.java"), true);
+            }
+
+            return $@"-cp ""{Path.Combine("..", "..", "..", runtimeLibraryPath)}"" " + compiliedFiles;
+        }
+
+        private string PreparePythonFiles(List<string> generatedFiles, string runtimeDir, string workingDirectory)
+        {
+            var stringBuilder = new StringBuilder();
+
+            foreach (string file in generatedFiles)
+            {
+                var shortFileName = Path.GetFileNameWithoutExtension(file);
+                stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
+            }
+
+            if (_grammar.CaseInsensitive)
+            {
+                string antlrCaseInsensitiveInputStream =
+                    File.ReadAllText(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.py"));
+                string superCall, strType, intType;
+
+                if (_grammar.MainRuntime == Runtime.Python2)
+                {
+                    superCall = "type(self), self";
+                    strType = "";
+                    intType = "";
+                }
+                else
+                {
+                    superCall = "";
+                    strType = ": str";
+                    intType = ": int";
+                }
+
+                antlrCaseInsensitiveInputStream = antlrCaseInsensitiveInputStream
+                    .Replace("'''SuperCall'''", superCall)
+                    .Replace("''': str'''", strType)
+                    .Replace("''': int'''", intType);
+
+                File.WriteAllText(Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.py"),
+                    antlrCaseInsensitiveInputStream);
+            }
+
+            File.WriteAllText(Path.Combine(workingDirectory, Workflow.PythonHelperFileName), stringBuilder.ToString());
+
+            return (_grammar.MainRuntime == Runtime.Python2 ? "-2 " : "-3 ") + Workflow.PythonHelperFileName;
+        }
+
+        private string PrepareJavaScriptFiles(List<string> generatedFiles, string workingDirectory, string runtimeDir)
+        {
+            var stringBuilder = new StringBuilder();
+            foreach (string file in generatedFiles)
+            {
+                var shortFileName = Path.GetFileNameWithoutExtension(file);
+                stringBuilder.AppendLine($"var {shortFileName} = require('./{shortFileName}');");
+            }
+
+            File.WriteAllText(Path.Combine(workingDirectory, Workflow.JavaScriptHelperFileName), stringBuilder.ToString());
+            if (_grammar.CaseInsensitive)
+            {
+                File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.js"),
+                    Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);
+            }
+
+            return Workflow.JavaScriptHelperFileName;
+        }
+
+        private string PrepareGoFiles(StringBuilder compiliedFiles, string templateName, string runtimeDir,
+            string workingDirectory)
+        {
+            compiliedFiles.Insert(0, '"' + templateName + "\" ");
+            if (_grammar.CaseInsensitive)
+            {
+                compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
+                File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.go"),
+                    Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.go"), true);
+            }
+
+            return "build " + compiliedFiles;
+        }
+
+        private void PrepareParserCode(string workingDirectory, string templateName, string runtimeDir)
+        {
+            Runtime runtime = _grammar.MainRuntime;
+            string templateFile = Path.Combine(workingDirectory, templateName);
+
+            string code = File.ReadAllText(Path.Combine(runtimeDir, templateName));
+            code = code.Replace(Workflow.TemplateGrammarName, _grammar.Name);
+            string root = _grammar.Root;
+            if (runtime == Runtime.Go)
+            {
+                root = char.ToUpper(root[0]) + root.Substring(1);
+            }
+
+            code = code.Replace(Workflow.TemplateGrammarRoot, root);
+
+            if (_grammar.CaseInsensitive)
+            {
+                code = code.Replace("from antlr4.InputStream import InputStream", "");
+                code = code.Replace(RuntimeInfo.InitOrGetRuntimeInfo(runtime).AntlrInputStream,
+                    (runtime == Runtime.Go ? "New" : "") + "AntlrCaseInsensitiveInputStream");
+
+                if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
+                {
+                    code = code.Replace("'''AntlrCaseInsensitive'''",
+                        "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
+                }
+                else if (runtime == Runtime.JavaScript)
+                {
+                    code = code.Replace("/*AntlrCaseInsensitive*/",
+                        "var AntlrCaseInsensitiveInputStream = require('./AntlrCaseInsensitiveInputStream').AntlrCaseInsensitiveInputStream;");
+                }
+            }
+            else
+            {
+                if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
+                {
+                    code = code.Replace("'''AntlrCaseInsensitive'''", "");
+                }
+                else if (runtime == Runtime.JavaScript)
+                {
+                    code = code.Replace("/*AntlrCaseInsensitive*/", "");
+                }
+            }
+
+            if (runtime == Runtime.Python2)
+            {
+                code = code.Replace("'''PrintTree'''", "print \"Tree \" + tree.toStringTree(recog=parser);");
+            }
+            else if (runtime == Runtime.Python3)
+            {
+                code = code.Replace("'''PrintTree'''", "print(\"Tree \", tree.toStringTree(recog = parser));");
+            }
+
+            File.WriteAllText(templateFile, code);
         }
 
         private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
