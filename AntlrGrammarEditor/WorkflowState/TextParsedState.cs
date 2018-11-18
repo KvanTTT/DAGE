@@ -3,19 +3,23 @@ using System.Collections.Generic;
 
 namespace AntlrGrammarEditor
 {
-    public class TextParsedState : WorkflowState
+    public class TextParsedState : IWorkflowState
     {
-        public override WorkflowStage Stage => WorkflowStage.TextParsed;
+        public WorkflowStage Stage => WorkflowStage.TextParsed;
 
-        public override bool HasErrors => base.HasErrors || TextErrors == null || TextErrors.Count != 0;
+        public bool HasErrors => Exception != null || Errors.Count > 0;
 
-        public override WorkflowState PreviousState => ParserCompiliedState;
+        public IWorkflowState PreviousState => ParserCompiliedState;
 
-        public string Text { get; set; }
+        public Exception Exception { get; set; }
 
-        public ParserCompiliedState ParserCompiliedState { get; set; }
+        public string Text { get; }
+        
+        public string Root { get; set; }
 
-        public IReadOnlyList<ParsingError> TextErrors { get; set; } = new ParsingError[0];
+        public ParserCompiliedState ParserCompiliedState { get; }
+
+        public List<ParsingError> Errors { get; } = new List<ParsingError>();
 
         public TimeSpan LexerTime { get; set; }
 
@@ -24,5 +28,12 @@ namespace AntlrGrammarEditor
         public string Tokens { get; set; }
 
         public string Tree { get; set; }
+
+        public TextParsedState(ParserCompiliedState parserCompiliedState, string text)
+        {
+            ParserCompiliedState =
+                parserCompiliedState ?? throw new ArgumentNullException(nameof(parserCompiliedState));
+            Text = text ?? throw new ArgumentNullException(nameof(text));
+        }
     }
 }

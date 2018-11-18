@@ -1,11 +1,22 @@
-﻿namespace AntlrGrammarEditor
+﻿using System;
+
+namespace AntlrGrammarEditor
 {
-    public class InputState : WorkflowState
+    public class InputState : IWorkflowState
     {
-        public override WorkflowStage Stage => WorkflowStage.Input;
+        public WorkflowStage Stage => WorkflowStage.Input;
 
-        public override bool HasErrors => false;
+        public bool HasErrors => Exception != null;
 
-        public override WorkflowState PreviousState => null;
+        public IWorkflowState PreviousState => null;
+
+        public Exception Exception { get; set; }
+
+        public Grammar Grammar { get; }
+
+        public InputState(Grammar grammar)
+        {
+            Grammar = grammar ?? throw new ArgumentNullException(nameof(grammar));
+        }
     }
 }

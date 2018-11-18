@@ -1,17 +1,25 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace AntlrGrammarEditor
 {
-    public class ParserGeneratedState : WorkflowState
+    public class ParserGeneratedState : IWorkflowState
     {
-        public override WorkflowStage Stage => WorkflowStage.ParserGenerated;
+        public WorkflowStage Stage => WorkflowStage.ParserGenerated;
 
-        public override bool HasErrors => base.HasErrors || Errors.Count != 0;
+        public bool HasErrors => Exception != null || Errors.Count > 0;
 
-        public override WorkflowState PreviousState => GrammarCheckedState;
+        public IWorkflowState PreviousState => GrammarCheckedState;
 
-        public GrammarCheckedState GrammarCheckedState { get; set; }
+        public GrammarCheckedState GrammarCheckedState { get; }
 
-        public IReadOnlyList<ParsingError> Errors { get; set; }
+        public Exception Exception { get; set; }
+
+        public List<ParsingError> Errors { get; } = new List<ParsingError>();
+
+        public ParserGeneratedState(GrammarCheckedState grammarCheckedState)
+        {
+            GrammarCheckedState = grammarCheckedState ?? throw new ArgumentNullException(nameof(grammarCheckedState));
+        }
     }
 }

@@ -14,8 +14,7 @@ namespace AntlrGrammarEditor
             var stop = ruleContext.Stop;
             if (stop == null)
             {
-                var parentParserRuleContext = ruleContext.Parent as ParserRuleContext;
-                if (parentParserRuleContext != null)
+                if (ruleContext.Parent is ParserRuleContext parentParserRuleContext)
                 {
                     stop = parentParserRuleContext.Stop;
                 }

@@ -22,16 +22,19 @@ namespace DesktopAntlrGrammarEditor
 {
     public class MainWindowViewModel : ReactiveObject
     {
-        private Window _window;
-        private Settings _settings;
+        private readonly Window _window;
+        private readonly Settings _settings;
         private Grammar _grammar;
-        private Workflow _workflow;
+        private readonly Workflow _workflow;
         private string _openedGrammarFile = "";
         private FileName _openedTextFile = FileName.Empty;
         private FileState _grammarFileState, _textFileState;
-        private TextEditor _grammarTextBox, _textTextBox;
-        private TextEditor _tokensTextBox, _parseTreeTextBox;
-        private ListBox _grammarErrorsListBox, _textErrorsListBox;
+        private readonly TextEditor _grammarTextBox;
+        private readonly TextEditor _textTextBox;
+        private readonly TextEditor _tokensTextBox;
+        private readonly TextEditor _parseTreeTextBox;
+        private readonly ListBox _grammarErrorsListBox;
+        private readonly ListBox _textErrorsListBox;
         private bool _autoprocessing;
         private bool _indentedTree;
         private WorkflowStage _endStage = WorkflowStage.TextParsed;
@@ -247,6 +250,7 @@ namespace DesktopAntlrGrammarEditor
             set
             {
                 SaveTextFileIfRequired();
+
                 if (!string.IsNullOrEmpty(value?.FullFileName) && !value.Equals(_openedTextFile))
                 {
                     _textTextBox.IsEnabled = true;
@@ -275,6 +279,7 @@ namespace DesktopAntlrGrammarEditor
 
                     this.RaisePropertyChanged();
                 }
+
                 if (string.IsNullOrEmpty(value?.FullFileName))
                 {
                     _textTextBox.IsEnabled = false;
@@ -446,7 +451,7 @@ namespace DesktopAntlrGrammarEditor
 
         private void SetupWorkflowSubscriptions()
         {
-            Observable.FromEventPattern<WorkflowState>(
+            Observable.FromEventPattern<IWorkflowState>(
                 ev => _workflow.StateChanged += ev, ev => _workflow.StateChanged -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev =>
@@ -455,7 +460,7 @@ namespace DesktopAntlrGrammarEditor
                 });
 
             Observable.FromEventPattern<ParsingError>(
-                ev => _workflow.NewErrorEvent += ev, ev => _workflow.NewErrorEvent -= ev)
+                ev => _workflow.ErrorEvent += ev, ev => _workflow.ErrorEvent -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev =>
                 {
@@ -477,7 +482,7 @@ namespace DesktopAntlrGrammarEditor
                     }
                 });
 
-            Observable.FromEventPattern<Tuple<TextParsedOutput, object>>(
+            Observable.FromEventPattern<(TextParsedOutput, object)>(
                  ev => _workflow.TextParsedOutputEvent += ev, ev => _workflow.TextParsedOutputEvent -= ev)
                  .ObserveOn(RxApp.MainThreadScheduler)
                  .Subscribe(ev =>
@@ -577,10 +582,11 @@ namespace DesktopAntlrGrammarEditor
                         new FileDialogFilter
                         {
                             Name = "Antlr Grammar Editor",
-                            Extensions = new List<string>() { Grammar.ProjectDotExt.Substring(1) }
+                            Extensions = new List<string> { Grammar.ProjectDotExt.Substring(1) }
                         }
-                    },
+                    }
                 };
+
                 string[] fileNames = await openDialog.ShowAsync(_window);
                 if (fileNames?.Length > 0)
                 {
@@ -639,7 +645,7 @@ namespace DesktopAntlrGrammarEditor
                 filters.Add(new FileDialogFilter
                 {
                     Name = "All files",
-                    Extensions = new List<string>() { "*" }
+                    Extensions = new List<string> { "*" }
                 });
 
                 var saveFileDialog = new SaveFileDialog
@@ -742,6 +748,7 @@ namespace DesktopAntlrGrammarEditor
             bool grammarErrors = false;
             switch (e)
             {
+                case WorkflowStage.Input:
                 case WorkflowStage.GrammarChecked:
                 case WorkflowStage.ParserGenerated:
                 case WorkflowStage.ParserCompilied:
@@ -760,8 +767,7 @@ namespace DesktopAntlrGrammarEditor
                     int i = 0;
                     while (i < errorsList.Count)
                     {
-                        var parsingError = errorsList[i] as ParsingError;
-                        if (parsingError != null)
+                        if (errorsList[i] is ParsingError parsingError)
                         {
                             if (parsingError.WorkflowStage == e)
                             {
@@ -837,7 +843,7 @@ namespace DesktopAntlrGrammarEditor
         {
             _workflow.RollbackToPreviousStageIfErrors();
 
-            var assemblyPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             Directory.SetCurrentDirectory(assemblyPath);
 
             if (EndStage >= WorkflowStage.ParserGenerated && Helpers.JavaVersion == null)
@@ -860,7 +866,8 @@ namespace DesktopAntlrGrammarEditor
                 string message = $"Install {runtimeInfo.RuntimeToolName}";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    message += $" and make sure path to {runtimeInfo.RuntimeToolName} added to the PATH environment variable";
+                    message +=
+                        $" and make sure path to {runtimeInfo.RuntimeToolName} added to the PATH environment variable";
                 }
 
                 await MessageBox.ShowDialog(message);
@@ -870,15 +877,18 @@ namespace DesktopAntlrGrammarEditor
 
             await _workflow.ProcessAsync();
 
-            if (_workflow.GrammarCheckedState != null)
-            {
-                UpdateRules();
-            }
+            UpdateRules();
         }
 
         private void UpdateRules()
         {
-            var workflowRules = IsPreprocessor ? _workflow.GrammarCheckedState.PreprocessorRules : _workflow.GrammarCheckedState.Rules;
+            var grammarCheckedState = _workflow.CurrentState.GetState<GrammarCheckedState>();
+            if (grammarCheckedState == null)
+            {
+                return;
+            }
+            
+            var workflowRules = IsPreprocessor ? grammarCheckedState.PreprocessorRules : grammarCheckedState.Rules;
             if (!Rules.SequenceEqual(workflowRules))
             {
                 Rules.Clear();

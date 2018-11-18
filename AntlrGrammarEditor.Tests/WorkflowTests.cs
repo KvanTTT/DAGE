@@ -69,7 +69,7 @@ namespace AntlrGrammarEditor.Tests
 
                 RuntimeInfo runtimeInfo = RuntimeInfo.Runtimes[runtime];
                 var extensions = runtimeInfo.Extensions;
-                var allFiles = Directory.GetFiles(Path.Combine(Workflow.HelperDirectoryName, TestGrammarName, runtimeInfo.Runtime.ToString()));
+                var allFiles = Directory.GetFiles(Path.Combine(ParserCompiler.HelperDirectoryName, TestGrammarName, runtimeInfo.Runtime.ToString()));
                 var actualFilesCount = allFiles.Count(file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext)));
                 Assert.Greater(actualFilesCount, 0, $"Failed to initialize {runtime} runtime");
 
@@ -217,11 +217,11 @@ namespace AntlrGrammarEditor.Tests
             var textSource = new CodeSource("", workflow.Text);
             TextParsedState textParsedState = state as TextParsedState;
             CollectionAssert.AreEquivalent(
-                new ParsingError[] {
+                new [] {
                     new ParsingError(1, 1, "line 1:0 token recognition error at: '!'", textSource, WorkflowStage.TextParsed),
                     new ParsingError(1, 4, "line 1:3 extraneous input 'asdf' expecting DIGIT", textSource, WorkflowStage.TextParsed)
                 },
-                textParsedState.TextErrors);
+                textParsedState.Errors);
             Assert.AreEqual("(start asdf 1234)", textParsedState.Tree);
         }
 
@@ -256,7 +256,7 @@ namespace AntlrGrammarEditor.Tests
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.Exception?.ToString());
             TextParsedState textParsedState = state as TextParsedState;
-            Assert.AreEqual(0, textParsedState.TextErrors.Count, string.Join(Environment.NewLine, textParsedState.TextErrors));
+            Assert.AreEqual(0, textParsedState.Errors.Count, string.Join(Environment.NewLine, textParsedState.Errors));
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
         }
 
