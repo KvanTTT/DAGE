@@ -46,65 +46,37 @@ namespace AntlrGrammarEditor
                 string runtimeDir = Path.Combine(ParserCompiler.RuntimesDirName, runtime.ToString());
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
 
-                string parserFileName = "";
-                string arguments = "";
+                string toolName = "";
+                string args = "";
                 string workingDirectory = Path.Combine(ParserCompiler.HelperDirectoryName, grammar.Name, runtime.ToString());
                 string parseTextFileName = Path.Combine("..", "..", TextFileName);
 
-                if (runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard)
+                switch (runtime)
                 {
-                    arguments = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\" {Root} \"{parseTextFileName}\" {OnlyTokenize} {IndentedTree}";
-                    parserFileName = "dotnet";
-                }
-                else if (runtime == Runtime.Java)
-                {
-                    string relativeRuntimeLibraryPath = "\"" + Path.Combine("..", "..", "..", runtimeLibraryPath) + "\"";
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        relativeRuntimeLibraryPath += ";.";
-                    }
-                    else
-                    {
-                        relativeRuntimeLibraryPath = ".:" + relativeRuntimeLibraryPath;
-                    }
-                    arguments = $@"-cp {relativeRuntimeLibraryPath} Main ""{parseTextFileName}""";
-                    parserFileName = "java";
-                }
-                else if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
-                {
-                    parserFileName = runtimeInfo.RuntimeToolName;
-                    if (parserFileName == "py")
-                    {
-                        arguments += runtime == Runtime.Python2 ? "-2 " : "-3 ";
-                    }
-                    arguments += runtimeInfo.MainFile;
-                }
-                else if (runtime == Runtime.JavaScript)
-                {
-                    parserFileName = runtimeInfo.RuntimeToolName;
-                    arguments = runtimeInfo.MainFile;
-                }
-                else if (runtime == Runtime.Go)
-                {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        parserFileName = Path.Combine(workingDirectory, Path.ChangeExtension(runtimeInfo.MainFile, ".exe"));
-                    }
-                    else
-                    {
-                        parserFileName = Path.Combine(workingDirectory, Path.GetFileNameWithoutExtension(runtimeInfo.MainFile));
-                    }
-                    /* Another way of starting.
-                    parserFileName = CompilerPaths[Runtime];
-                    var extension = runtimeInfo.Extensions.First();
-                    var compiliedFiles = new StringBuilder();
-                    compiliedFiles.Append('"' + runtimeInfo.MainFile + "\" ");
-                    compiliedFiles.Append('"' + _grammar.Name + runtimeInfo.LexerPostfix + "." + extension + "\" ");
-                    compiliedFiles.Append('"' + _grammar.Name + runtimeInfo.ParserPostfix + "." + extension + "\" ");
-                    arguments = "run " + compiliedFiles.ToString();*/
+                    case Runtime.CSharpOptimized:
+                    case Runtime.CSharpStandard:
+                        toolName = PrepareCSharpToolAndArgs(grammar, parseTextFileName, out args);
+                        break;
+                    
+                    case Runtime.Java:
+                        toolName = PrepareJavaToolAndArgs(runtimeLibraryPath, parseTextFileName, out args);
+                        break;
+                    
+                    case Runtime.Python2:
+                    case Runtime.Python3:
+                        toolName = PreparePythonToolAndArgs(runtimeInfo, out args);
+                        break;
+                    
+                    case Runtime.JavaScript:
+                        toolName = PrepareJavaScriptToolAndArgs(runtimeInfo, out args);
+                        break;
+
+                    case Runtime.Go:
+                        toolName = PrepareGoToolAndArgs(workingDirectory, runtimeInfo);
+                        break;
                 }
 
-                processor = new Processor(parserFileName, arguments, workingDirectory);
+                processor = new Processor(toolName, args, workingDirectory);
                 processor.CancellationToken = cancellationToken;
                 processor.ErrorDataReceived += TextParsing_ErrorDataReceived;
                 processor.OutputDataReceived += TextParsing_OutputDataReceived;
@@ -126,6 +98,70 @@ namespace AntlrGrammarEditor
                 processor?.Dispose();
             }
             return _result;
+        }
+
+        private string PrepareCSharpToolAndArgs(Grammar grammar, string parseTextFileName, out string args)
+        {
+            args = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\" {Root} \"{parseTextFileName}\" {OnlyTokenize} {IndentedTree}";
+            return "dotnet";
+        }
+
+        private static string PrepareJavaToolAndArgs(string runtimeLibraryPath, string parseTextFileName,
+            out string args)
+        {
+            string relativeRuntimeLibraryPath = "\"" + Path.Combine("..", "..", "..", runtimeLibraryPath) + "\"";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                relativeRuntimeLibraryPath += ";.";
+            }
+            else
+            {
+                relativeRuntimeLibraryPath = ".:" + relativeRuntimeLibraryPath;
+            }
+
+            args = $@"-cp {relativeRuntimeLibraryPath} Main ""{parseTextFileName}""";
+            return "java";
+        }
+
+        private static string PreparePythonToolAndArgs(RuntimeInfo runtimeInfo, out string args)
+        {
+            args = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                args += runtimeInfo.Runtime == Runtime.Python2 ? "-2 " : "-3 ";
+            }
+            args += runtimeInfo.MainFile;
+            return runtimeInfo.RuntimeToolName;
+        }
+
+        private static string PrepareJavaScriptToolAndArgs(RuntimeInfo runtimeInfo, out string args)
+        {
+            args = runtimeInfo.MainFile;
+            return runtimeInfo.RuntimeToolName;
+        }
+
+        private static string PrepareGoToolAndArgs(string workingDirectory, RuntimeInfo runtimeInfo)
+        {
+            string parserFileName;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                parserFileName = Path.Combine(workingDirectory, Path.ChangeExtension(runtimeInfo.MainFile, ".exe"));
+            }
+            else
+            {
+                parserFileName = Path.Combine(workingDirectory, Path.GetFileNameWithoutExtension(runtimeInfo.MainFile));
+            }
+
+            /* Another way of starting.
+                    parserFileName = CompilerPaths[Runtime];
+                    var extension = runtimeInfo.Extensions.First();
+                    var compiliedFiles = new StringBuilder();
+                    compiliedFiles.Append('"' + runtimeInfo.MainFile + "\" ");
+                    compiliedFiles.Append('"' + _grammar.Name + runtimeInfo.LexerPostfix + "." + extension + "\" ");
+                    compiliedFiles.Append('"' + _grammar.Name + runtimeInfo.ParserPostfix + "." + extension + "\" ");
+                    arguments = "run " + compiliedFiles.ToString();*/
+            
+            return parserFileName;
         }
 
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
