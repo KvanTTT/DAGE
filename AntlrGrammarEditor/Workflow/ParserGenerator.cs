@@ -5,22 +5,17 @@ using System.Threading;
 
 namespace AntlrGrammarEditor
 {
-    public class ParserGenerator
+    public class ParserGenerator : StageProcessor
     {
         private CodeSource _currentGrammarSource;
-        private EventHandler<ParsingError> _errorEvent;
         private ParserGeneratedState _result;
 
-        public ParserGeneratedState GenerateParser(Grammar grammar, GrammarCheckedState state,
-            EventHandler<ParsingError> errorEvent,
+        public ParserGeneratedState Generate(GrammarCheckedState state,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            _errorEvent = errorEvent;
-            
-            _result = new ParserGeneratedState
-            {
-                GrammarCheckedState = state
-            };
+            Grammar grammar = state.InputState.Grammar;
+
+            _result = new ParserGeneratedState(state);
             Processor processor = null;
             try
             {
@@ -36,7 +31,7 @@ namespace AntlrGrammarEditor
                 var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(grammar.MainRuntime);
 
                 var jarGenerator = Path.Combine("Generators", runtimeInfo.JarGenerator);
-                foreach (string grammarFileName in state.Grammar.Files)
+                foreach (string grammarFileName in state.InputState.Grammar.Files)
                 {
                     _currentGrammarSource = state.GrammarFilesData[grammarFileName];
                     var arguments = $@"-jar ""{jarGenerator}"" ""{Path.Combine(grammar.GrammarPath, grammarFileName)}"" -o ""{runtimeDirectoryName}"" " +
@@ -61,7 +56,7 @@ namespace AntlrGrammarEditor
                 _result.Exception = ex;
                 if (!(ex is OperationCanceledException))
                 {
-                    errorEvent?.Invoke(this, new ParsingError(ex, WorkflowStage.ParserGenerated));
+                    ErrorEvent?.Invoke(this, new ParsingError(ex, WorkflowStage.ParserGenerated));
                 }
             }
             finally
@@ -90,7 +85,7 @@ namespace AntlrGrammarEditor
                     }
                 }
                 error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated);
-                _errorEvent?.Invoke(this, error);
+                ErrorEvent?.Invoke(this, error);
                 _result.Errors.Add(error);
             }
         }

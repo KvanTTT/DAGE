@@ -23,7 +23,7 @@ namespace AntlrGrammarEditor
 
         private Grammar _grammar = new Grammar();
         private string _text = "";
-        private WorkflowState _currentState;
+        private IWorkflowState _currentState;
 
         private string _outputTree;
         private string _outputTokens;
@@ -34,12 +34,9 @@ namespace AntlrGrammarEditor
         private bool _indentedTree;
 
         private CancellationTokenSource _cancellationTokenSource;
-        private InputState _inputState = new InputState();
         private object _lockObj = new object();
 
-        public GrammarCheckedState GrammarCheckedState { get; private set; }
-
-        public WorkflowState CurrentState
+        public IWorkflowState CurrentState
         {
             get => _currentState;
             private set
@@ -56,6 +53,7 @@ namespace AntlrGrammarEditor
             {
                 StopIfRequired();
                 _grammar = value;
+                CurrentState = new InputState(_grammar);
                 RollbackToStage(WorkflowStage.Input);
             }
         }
@@ -133,7 +131,7 @@ namespace AntlrGrammarEditor
             }
         }
 
-        public event EventHandler<WorkflowState> StateChanged;
+        public event EventHandler<IWorkflowState> StateChanged;
 
         public event EventHandler<ParsingError> NewErrorEvent
         {
@@ -185,20 +183,15 @@ namespace AntlrGrammarEditor
             }
         }
 
-        public Workflow() 
-        {
-            CurrentState = _inputState;
-        }
-
-        public Task<WorkflowState> ProcessAsync()
+        public Task<IWorkflowState> ProcessAsync()
         {
             StopIfRequired();
 
-            Func<WorkflowState> func = Process;
+            Func<IWorkflowState> func = Process;
             return Task.Run(func);
         }
 
-        public WorkflowState Process()
+        public IWorkflowState Process()
         {
             _cancellationTokenSource = new CancellationTokenSource();
 
@@ -227,6 +220,24 @@ namespace AntlrGrammarEditor
                     }
                 }
             }
+        }
+
+        public T GetState<T>()
+            where T : IWorkflowState
+        {
+            IWorkflowState state = CurrentState;
+            
+            while (state != null)
+            {
+                if (state is T stateT)
+                {
+                    return stateT;
+                }
+                
+                state = state.PreviousState;
+            }
+
+            return default(T);
         }
 
         public void RollbackToPreviousStageIfErrors()
@@ -270,30 +281,34 @@ namespace AntlrGrammarEditor
             switch (CurrentState.Stage)
             {
                 case WorkflowStage.Input:
-                    var grammarChecker = new GrammarChecker();
-                    GrammarCheckedState = grammarChecker.Check(_grammar, _inputState, _newErrorEvent, _cancellationTokenSource.Token);
-                    CurrentState = GrammarCheckedState;
+                    var grammarChecker = new GrammarChecker {ErrorEvent = _newErrorEvent};
+                    CurrentState = grammarChecker.Check((InputState)CurrentState, _cancellationTokenSource.Token);
                     break;
+
                 case WorkflowStage.GrammarChecked:
-                    var parserGenerator = new ParserGenerator();
-                    CurrentState = parserGenerator.Generate(_grammar, GrammarCheckedState, _newErrorEvent, _cancellationTokenSource.Token);
+                    var parserGenerator = new ParserGenerator {ErrorEvent = _newErrorEvent};
+                    CurrentState = parserGenerator.Generate((GrammarCheckedState)CurrentState, _cancellationTokenSource.Token);
                     break;
+
                 case WorkflowStage.ParserGenerated:
-                    var parserCompiler = new ParserCompiler();
-                    CurrentState = parserCompiler.Compile(_grammar, GrammarCheckedState, (ParserGeneratedState)CurrentState, _newErrorEvent, _cancellationTokenSource.Token);
+                    var parserCompiler = new ParserCompiler {ErrorEvent = _newErrorEvent};
+                    CurrentState = parserCompiler.Compile((ParserGeneratedState)CurrentState, _cancellationTokenSource.Token);
                     break;
+
                 case WorkflowStage.ParserCompilied:
-                    var textParser = new TextParser
+                    var textParser = new TextParser(Text)
                     {
+                        Root = Root,
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
-                        IndentedTree = IndentedTree
+                        IndentedTree = IndentedTree,
+                        ErrorEvent = _newErrorEvent
                     };
-                    TextParsedState parsedState = textParser.Parse(_grammar, Root, (ParserCompiliedState)CurrentState, Text, _newErrorEvent, _cancellationTokenSource.Token);
-                    OutputLexerTime = parsedState.LexerTime;
-                    OutputParserTime = parsedState.ParserTime;
-                    OutputTokens = parsedState.Tokens;
-                    OutputTree = parsedState.Tree;
-                    CurrentState = parsedState;
+                    var textParsedState = textParser.Parse((ParserCompiliedState)CurrentState, _cancellationTokenSource.Token);
+                    OutputLexerTime = textParsedState.LexerTime;
+                    OutputParserTime = textParsedState.ParserTime;
+                    OutputTokens = textParsedState.Tokens;
+                    OutputTree = textParsedState.Tree;
+                    CurrentState = textParsedState;
                     break;
             }
         }

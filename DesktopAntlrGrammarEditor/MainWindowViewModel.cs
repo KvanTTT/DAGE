@@ -247,6 +247,7 @@ namespace DesktopAntlrGrammarEditor
             set
             {
                 SaveTextFileIfRequired();
+
                 if (!string.IsNullOrEmpty(value?.FullFileName) && !value.Equals(_openedTextFile))
                 {
                     _textTextBox.IsEnabled = true;
@@ -275,6 +276,7 @@ namespace DesktopAntlrGrammarEditor
 
                     this.RaisePropertyChanged();
                 }
+
                 if (string.IsNullOrEmpty(value?.FullFileName))
                 {
                     _textTextBox.IsEnabled = false;
@@ -446,7 +448,7 @@ namespace DesktopAntlrGrammarEditor
 
         private void SetupWorkflowSubscriptions()
         {
-            Observable.FromEventPattern<WorkflowState>(
+            Observable.FromEventPattern<IWorkflowState>(
                 ev => _workflow.StateChanged += ev, ev => _workflow.StateChanged -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev =>
@@ -577,10 +579,11 @@ namespace DesktopAntlrGrammarEditor
                         new FileDialogFilter
                         {
                             Name = "Antlr Grammar Editor",
-                            Extensions = new List<string>() { Grammar.ProjectDotExt.Substring(1) }
+                            Extensions = new List<string> { Grammar.ProjectDotExt.Substring(1) }
                         }
-                    },
+                    }
                 };
+
                 string[] fileNames = await openDialog.ShowAsync(_window);
                 if (fileNames?.Length > 0)
                 {
@@ -639,7 +642,7 @@ namespace DesktopAntlrGrammarEditor
                 filters.Add(new FileDialogFilter
                 {
                     Name = "All files",
-                    Extensions = new List<string>() { "*" }
+                    Extensions = new List<string> { "*" }
                 });
 
                 var saveFileDialog = new SaveFileDialog
@@ -760,8 +763,7 @@ namespace DesktopAntlrGrammarEditor
                     int i = 0;
                     while (i < errorsList.Count)
                     {
-                        var parsingError = errorsList[i] as ParsingError;
-                        if (parsingError != null)
+                        if (errorsList[i] is ParsingError parsingError)
                         {
                             if (parsingError.WorkflowStage == e)
                             {
@@ -837,7 +839,7 @@ namespace DesktopAntlrGrammarEditor
         {
             _workflow.RollbackToPreviousStageIfErrors();
 
-            var assemblyPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             Directory.SetCurrentDirectory(assemblyPath);
 
             if (EndStage >= WorkflowStage.ParserGenerated && Helpers.JavaVersion == null)
@@ -860,7 +862,8 @@ namespace DesktopAntlrGrammarEditor
                 string message = $"Install {runtimeInfo.RuntimeToolName}";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    message += $" and make sure path to {runtimeInfo.RuntimeToolName} added to the PATH environment variable";
+                    message +=
+                        $" and make sure path to {runtimeInfo.RuntimeToolName} added to the PATH environment variable";
                 }
 
                 await MessageBox.ShowDialog(message);
@@ -870,15 +873,12 @@ namespace DesktopAntlrGrammarEditor
 
             await _workflow.ProcessAsync();
 
-            if (_workflow.GrammarCheckedState != null)
-            {
-                UpdateRules();
-            }
+            UpdateRules();
         }
 
         private void UpdateRules()
         {
-            var grammarCheckedState = _workflow.GrammarCheckedState;
+            var grammarCheckedState = _workflow.GetState<GrammarCheckedState>();
             if (grammarCheckedState == null)
             {
                 return;

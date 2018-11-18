@@ -2,14 +2,14 @@
 
 namespace AntlrGrammarEditor
 {
-    public abstract class WorkflowState
+    public interface IWorkflowState
     {
-        public abstract WorkflowStage Stage { get; }
+        WorkflowStage Stage { get; }
 
-        public virtual bool HasErrors => Exception != null;
+        bool HasErrors { get; }
 
-        public abstract WorkflowState PreviousState { get; }
+        IWorkflowState PreviousState { get; }
 
-        public Exception Exception { get; set; }
+        Exception Exception { get; set; }
     }
 }

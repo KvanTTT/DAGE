@@ -8,29 +8,23 @@ using System.Threading;
 
 namespace AntlrGrammarEditor
 {
-    public class ParserCompiler
+    public class ParserCompiler : StageProcessor
     {
         private Grammar _grammar;
-        private EventHandler<ParsingError> _errorEvent;
-        private GrammarCheckedState _grammarCheckedState;
         private ParserCompiliedState _result;
         private List<string> _buffer;
         private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping;
-        
-        public ParserCompiliedState Compile(Grammar grammar, GrammarCheckedState grammarCheckedState, ParserGeneratedState state,
-            EventHandler<ParsingError> errorEvent,
+
+        public ParserCompiliedState Compile(ParserGeneratedState state,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            _grammar = grammar;
-            _grammarCheckedState = grammarCheckedState;
-            _errorEvent = errorEvent;
-            Runtime runtime = grammar.MainRuntime;
+            _grammar = state.GrammarCheckedState.InputState.Grammar;
+            Runtime runtime = _grammar.MainRuntime;
 
-            _result = new ParserCompiliedState
+            _result = new ParserCompiliedState(state)
             {
-                ParserGeneratedState = state,
-                Root = grammar.Root,
-                PreprocessorRoot = grammar.PreprocessorRoot
+                Root = _grammar.Root,
+                PreprocessorRoot = _grammar.PreprocessorRoot
             };
             RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
 
@@ -45,7 +39,7 @@ namespace AntlrGrammarEditor
                     : runtime.ToString();
                 string runtimeDir = Path.Combine(Workflow.RuntimesDirName, runtimeSource);
                 string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
-                string workingDirectory = Path.Combine(Workflow.HelperDirectoryName, grammar.Name, runtime.ToString());
+                string workingDirectory = Path.Combine(Workflow.HelperDirectoryName, _grammar.Name, runtime.ToString());
 
                 var compiliedFiles = new StringBuilder();
                 var generatedFiles = new List<string>();
@@ -59,7 +53,7 @@ namespace AntlrGrammarEditor
                 if (runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard)
                 {
                     string antlrCaseInsensitivePath = Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.cs");
-                    if (grammar.CaseInsensitive)
+                    if (_grammar.CaseInsensitive)
                     {
                         File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath);
                     }
@@ -69,14 +63,14 @@ namespace AntlrGrammarEditor
 
                     var projectContent = File.ReadAllText(Path.Combine(runtimeDir, "Project.csproj"));
                     projectContent = projectContent.Replace("<DefineConstants></DefineConstants>", $"<DefineConstants>{runtime}</DefineConstants>");
-                    File.WriteAllText(Path.Combine(workingDirectory, $"{grammar.Name}.csproj"), projectContent);
+                    File.WriteAllText(Path.Combine(workingDirectory, $"{_grammar.Name}.csproj"), projectContent);
 
                     arguments = "build";
                 }
                 else if (runtime == Runtime.Java)
                 {
                     compiliedFiles.Append('"' + templateName + '"');
-                    if (grammar.CaseInsensitive)
+                    if (_grammar.CaseInsensitive)
                     {
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
                         File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.java"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.java"), true);
@@ -93,7 +87,7 @@ namespace AntlrGrammarEditor
                         stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
                     }
 
-                    if (grammar.CaseInsensitive)
+                    if (_grammar.CaseInsensitive)
                     {
                         string antlrCaseInsensitiveInputStream = File.ReadAllText(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.py"));
                         string superCall, strType, intType;
@@ -136,7 +130,7 @@ namespace AntlrGrammarEditor
                         stringBuilder.AppendLine($"var {shortFileName} = require('./{shortFileName}');");
                     }
                     File.WriteAllText(Path.Combine(workingDirectory, Workflow.JavaScriptHelperFileName), stringBuilder.ToString());
-                    if (grammar.CaseInsensitive)
+                    if (_grammar.CaseInsensitive)
                     {
                         File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.js"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);
                     }
@@ -146,7 +140,7 @@ namespace AntlrGrammarEditor
                 else if (runtime == Runtime.Go)
                 {
                     compiliedFiles.Insert(0, '"' + templateName + "\" ");
-                    if (grammar.CaseInsensitive)
+                    if (_grammar.CaseInsensitive)
                     {
                         compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
                         File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.go"), Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.go"), true);
@@ -157,15 +151,15 @@ namespace AntlrGrammarEditor
 
                 string templateFile = Path.Combine(workingDirectory, templateName);
                 string code = File.ReadAllText(Path.Combine(runtimeDir, templateName));
-                code = code.Replace(Workflow.TemplateGrammarName, state.GrammarCheckedState.Grammar.Name);
-                string root = grammar.Root;
+                code = code.Replace(Workflow.TemplateGrammarName, _grammar.Name);
+                string root = _grammar.Root;
                 if (runtime == Runtime.Go)
                 {
                     root = char.ToUpper(root[0]) + root.Substring(1);
                 }
                 code = code.Replace(Workflow.TemplateGrammarRoot, root);
 
-                if (grammar.CaseInsensitive)
+                if (_grammar.CaseInsensitive)
                 {
                     code = code.Replace("from antlr4.InputStream import InputStream", "");
                     code = code.Replace(runtimeInfo.AntlrInputStream, (runtime == Runtime.Go ? "New" : "") + "AntlrCaseInsensitiveInputStream");
@@ -317,7 +311,7 @@ namespace AntlrGrammarEditor
                     string rest = string.Join(":", strs.Skip(1));
                     var grammarTextSpan = TextHelpers.GetSourceTextSpanForLineColumn(_grammarCodeMapping[codeFileName], line, column);
 
-                    grammarSource = _grammarCheckedState.GrammarFilesData[grammarFileName];
+                    grammarSource = _result.ParserGeneratedState.GrammarCheckedState.GrammarFilesData[grammarFileName];
                     if (!grammarTextSpan.IsEmpty)
                     {
                         error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.StartLineColumn.Line}:{rest}", WorkflowStage.ParserCompilied);
@@ -554,7 +548,7 @@ namespace AntlrGrammarEditor
 
         private void AddError(ParsingError error)
         {
-            _errorEvent?.Invoke(this, error);
+            ErrorEvent?.Invoke(this, error);
             _result.Errors.Add(error);
         }
     }

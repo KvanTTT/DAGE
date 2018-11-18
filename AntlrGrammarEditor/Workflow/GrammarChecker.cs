@@ -6,23 +6,25 @@ using System.Threading;
 
 namespace AntlrGrammarEditor
 {
-    public class GrammarChecker
+    public class GrammarChecker : StageProcessor
     {
-        public GrammarCheckedState Check(Grammar grammar, InputState inputState,
-            EventHandler<ParsingError> errorEvent,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public GrammarCheckedState Check(InputState inputState,
+            CancellationToken cancellationToken = default(CancellationToken)) 
         {
-            var result = new GrammarCheckedState
-            {
-                Grammar = grammar,
-                InputState = inputState,
-                Rules = new List<string>()
-            };
+            var grammar = inputState.Grammar;
+            var result = new GrammarCheckedState(inputState);
             try
             {
                 var antlrErrorListener = new AntlrErrorListener();
-                antlrErrorListener.ErrorEvent += errorEvent;
-
+                antlrErrorListener.ErrorEvent += ErrorEvent;
+                antlrErrorListener.ErrorEvent += (sender, error) =>
+                {
+                    lock (result.Errors)
+                    {
+                        result.Errors.Add(error);                        
+                    }
+                };
+                
                 foreach (string grammarFileName in grammar.Files)
                 {
                     string code = File.ReadAllText(Path.Combine(grammar.GrammarPath, grammarFileName));
@@ -85,14 +87,13 @@ namespace AntlrGrammarEditor
                         cancellationToken.ThrowIfCancellationRequested();
                     }
                 }
-                result.Errors = antlrErrorListener.Errors;
             }
             catch (Exception ex)
             {
                 result.Exception = ex;
                 if (!(ex is OperationCanceledException))
                 {
-                    errorEvent?.Invoke(this, new ParsingError(ex, WorkflowStage.GrammarChecked));
+                    ErrorEvent?.Invoke(this, new ParsingError(ex, WorkflowStage.GrammarChecked));
                 }
             }
 

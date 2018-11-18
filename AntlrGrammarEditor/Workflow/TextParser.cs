@@ -6,31 +6,34 @@ using System.Threading;
 
 namespace AntlrGrammarEditor
 {
-    public class TextParser
+    public class TextParser : StageProcessor
     {
-        private string _text;
-        private Grammar _grammar;
-        private EventHandler<ParsingError> _errorEvent;
         private TextParsedState _result;
+
+        public string Text { get; }
         
+        public string Root { get; set; }
+ 
         public bool OnlyTokenize { get; set; }
 
         public bool IndentedTree { get; set; }
+        
+        
 
-        public TextParsedState Parse(Grammar grammar, string root, ParserCompiliedState state,
-            string text, 
-            EventHandler<ParsingError> errorEvent,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public TextParser(string text)
         {
-            _grammar = grammar;
-            _text = text;
-            _errorEvent = errorEvent;
+            Text = text ?? throw new ArgumentNullException(nameof(text));
+        }
+
+        public TextParsedState Parse(ParserCompiliedState state,
+             CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
             Runtime runtime = grammar.MainRuntime;
             
-            _result = new TextParsedState
+            _result = new TextParsedState(state, Text)
             {
-                ParserCompiliedState = state,
-                Text = text,
+                Root = Root
             };
             Processor processor = null;
             try
@@ -43,12 +46,12 @@ namespace AntlrGrammarEditor
 
                 string parserFileName = "";
                 string arguments = "";
-                string workingDirectory = Path.Combine(Workflow.HelperDirectoryName, _grammar.Name, runtime.ToString());
+                string workingDirectory = Path.Combine(Workflow.HelperDirectoryName, grammar.Name, runtime.ToString());
                 string parseTextFileName = Path.Combine("..", "..", Workflow.TextFileName);
 
                 if (runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard)
                 {
-                    arguments = $"\"{Path.Combine("bin", "netcoreapp2.1", _grammar.Name + ".dll")}\" {root} \"{parseTextFileName}\" {OnlyTokenize} {IndentedTree}";
+                    arguments = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\" {Root} \"{parseTextFileName}\" {OnlyTokenize} {IndentedTree}";
                     parserFileName = "dotnet";
                 }
                 else if (runtime == Runtime.Java)
@@ -129,7 +132,7 @@ namespace AntlrGrammarEditor
             { 
                 var errorString = Helpers.FixEncoding(e.Data);
                 ParsingError error;
-                var codeSource = new CodeSource("", _text);  // TODO: fix fileName
+                var codeSource = new CodeSource("", Text);  // TODO: fix fileName
                 try
                 {
                     var words = errorString.Split(new[] { ' ' }, 3);
@@ -180,7 +183,7 @@ namespace AntlrGrammarEditor
 
         private void AddError(ParsingError error)
         {
-            _errorEvent?.Invoke(this, error);
+            ErrorEvent?.Invoke(this, error);
             _result.Errors.Add(error);
         }
     }
