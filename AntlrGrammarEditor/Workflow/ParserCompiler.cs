@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -207,7 +208,14 @@ namespace AntlrGrammarEditor
 
             File.WriteAllText(Path.Combine(workingDirectory, PythonHelperFileName), stringBuilder.ToString());
 
-            return (_grammar.MainRuntime == Runtime.Python2 ? "-2 " : "-3 ") + PythonHelperFileName;
+            string arguments = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                arguments += _grammar.MainRuntime == Runtime.Python2 ? "-2 " : "-3 ";
+            }
+            arguments += PythonHelperFileName;
+
+            return arguments;
         }
 
         private string PrepareJavaScriptFiles(List<string> generatedFiles, string workingDirectory, string runtimeDir)
@@ -549,7 +557,6 @@ namespace AntlrGrammarEditor
                 var strs = data.Split(':');
                 try
                 {
-                    var runtimeInfo = RuntimeInfo.Runtimes[Runtime.Go];
                     string codeFileName = strs[0].Substring(2);
                     List<TextSpanMapping> mapping;
                     if (_grammarCodeMapping.TryGetValue(codeFileName, out mapping))
