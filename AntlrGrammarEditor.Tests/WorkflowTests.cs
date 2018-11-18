@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -69,7 +70,7 @@ namespace AntlrGrammarEditor.Tests
 
                 RuntimeInfo runtimeInfo = RuntimeInfo.Runtimes[runtime];
                 var extensions = runtimeInfo.Extensions;
-                var allFiles = Directory.GetFiles(Path.Combine(ParserCompiler.HelperDirectoryName, TestGrammarName, runtimeInfo.Runtime.ToString()));
+                var allFiles = Directory.GetFiles(Path.Combine(ParserGenerator.HelperDirectoryName, TestGrammarName, runtimeInfo.Runtime.ToString()));
                 var actualFilesCount = allFiles.Count(file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext)));
                 Assert.Greater(actualFilesCount, 0, $"Failed to initialize {runtime} runtime");
 
@@ -125,7 +126,7 @@ namespace AntlrGrammarEditor.Tests
             var testParserSource = new CodeSource(TestGrammarName + "Parser.g4", File.ReadAllText(TestGrammarName + "Parser.g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
-                new ParsingError[] {
+                new [] {
                     new ParsingError(2, 25, $"error: {TestGrammarName}Lexer.g4:2:25: token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
                     new ParsingError(2, 27, $"error: {TestGrammarName}Lexer.g4:2:27: token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
                     new ParsingError(2, 28, $"error: {TestGrammarName}Lexer.g4:2:28: mismatched input '+' expecting {{ASSIGN, PLUS_ASSIGN}}", testLexerSource, WorkflowStage.GrammarChecked),
@@ -153,7 +154,7 @@ namespace AntlrGrammarEditor.Tests
             var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
             ParserGeneratedState parserGeneratedState = state as ParserGeneratedState;
             CollectionAssert.AreEquivalent(
-                new ParsingError[] {
+                new [] {
                     new ParsingError(2, 24, $"error(56): {TestGrammarName}.g4:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
                 },
                 parserGeneratedState.Errors);
@@ -258,6 +259,24 @@ namespace AntlrGrammarEditor.Tests
             TextParsedState textParsedState = state as TextParsedState;
             Assert.AreEqual(0, textParsedState.Errors.Count, string.Join(Environment.NewLine, textParsedState.Errors));
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
+        }
+
+        [Test]
+        public void DoNotStopProcessingIfWarnings()
+        {
+            var workflow = new Workflow();
+            var grammarText =
+                $@"grammar {TestGrammarName};
+                t: T;
+                T:  ['' ]+;";
+            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
+            grammar.Runtimes = new HashSet<Runtime> {Runtime.Java};
+            workflow.Grammar = grammar;
+            workflow.Text = @" ";
+            
+            var state = workflow.Process();
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
+            Assert.IsTrue(((TextParsedState)state).ParserCompiliedState.ParserGeneratedState.Errors[0].IsWarning);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
