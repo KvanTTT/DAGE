@@ -12,6 +12,10 @@ namespace AntlrGrammarEditor
         private CodeSource _currentGrammarSource;
         private ParserGeneratedState _result;
 
+        public bool GenerateListener { get; set; } = true;
+
+        public bool GenerateVisitor { get; set; } = true;
+
         public string GeneratorTool { get; set; }
 
         public ParserGeneratedState Generate(GrammarCheckedState state,
@@ -19,7 +23,7 @@ namespace AntlrGrammarEditor
         {
             Grammar grammar = state.InputState.Grammar;
 
-            _result = new ParserGeneratedState(state);
+            _result = new ParserGeneratedState(state, GenerateListener, GenerateVisitor);
 
             foreach (Runtime runtime in grammar.Runtimes)
             {
@@ -51,8 +55,11 @@ namespace AntlrGrammarEditor
                 {
                     _currentGrammarSource = state.GrammarFilesData[grammarFileName];
                     var arguments =
-                        $@"-jar ""{jarGenerator}"" ""{Path.Combine(grammar.GrammarPath, grammarFileName)}"" -o ""{runtimeDirectoryName}"" " +
-                        $"-Dlanguage={runtimeInfo.DLanguage} -no-visitor -no-listener";
+                        $@"-jar ""{jarGenerator}"" ""{Path.Combine(grammar.GrammarPath, grammarFileName)}"" " +
+                        $@"-o ""{runtimeDirectoryName}"" " +
+                        $"-Dlanguage={runtimeInfo.DLanguage} " +
+                        $"{(GenerateVisitor ? "-visitor" : "-no-visitor")} " + 
+                        $"{(GenerateListener ? "-listener" : "-no-listener")}";
                     if (runtime == Runtime.Go)
                     {
                         arguments += " -package main";

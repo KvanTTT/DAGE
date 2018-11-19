@@ -24,6 +24,10 @@ namespace AntlrGrammarEditor
         private event EventHandler<ParsingError> _errorEvent;
         private event EventHandler<(TextParsedOutput, object)> _textParsedOutputEvent;
 
+        public bool GenerateListener { get; set; }
+
+        public bool GenerateVisitor { get; set; }
+
         public WorkflowStage EndStage { get; set; } = WorkflowStage.TextParsed;
 
         public event EventHandler<IWorkflowState> StateChanged;
@@ -221,7 +225,9 @@ namespace AntlrGrammarEditor
                     var parserGenerator = new ParserGenerator
                     {
                         ErrorEvent = _errorEvent,
-                        GeneratorTool = GeneratorTool
+                        GeneratorTool = GeneratorTool,
+                        GenerateListener = GenerateListener,
+                        GenerateVisitor = GenerateVisitor
                     };
                     _currentState = parserGenerator.Generate((GrammarCheckedState)_currentState, _cancellationTokenSource.Token);
                     break;

@@ -14,13 +14,19 @@ namespace AntlrGrammarEditor
 
         public GrammarCheckedState GrammarCheckedState { get; }
 
+        public bool IncludeListener { get; }
+
+        public bool IncludeVisitor { get; }
+
         public Exception Exception { get; set; }
 
         public List<ParsingError> Errors { get; } = new List<ParsingError>();
 
-        public ParserGeneratedState(GrammarCheckedState grammarCheckedState)
+        public ParserGeneratedState(GrammarCheckedState grammarCheckedState, bool includeListener, bool includeVisitor)
         {
             GrammarCheckedState = grammarCheckedState ?? throw new ArgumentNullException(nameof(grammarCheckedState));
+            IncludeListener = includeListener;
+            IncludeVisitor = includeVisitor;
         }
     }
 }
