@@ -56,6 +56,8 @@ namespace AntlrGrammarEditor
                 extensions: new[] { "py" },
                 mainFile: "main.py",
                 antlrInputStream: "InputStream",
+                baseListenerPostfix: null,
+                baseVisitorPostfix: null,
                 interpreted: true,
                 runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python2",
                 versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-2 " : "") + "--version",
@@ -70,6 +72,8 @@ namespace AntlrGrammarEditor
                 extensions: new[] { "py" },
                 mainFile: "main.py",
                 antlrInputStream: "InputStream",
+                baseListenerPostfix: null,
+                baseVisitorPostfix: null,
                 interpreted: true,
                 runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python3",
                 versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-3 " : "") + "--version",
@@ -84,6 +88,8 @@ namespace AntlrGrammarEditor
                 extensions: new[] { "js" },
                 mainFile: "main.js",
                 antlrInputStream: "antlr4.InputStream",
+                baseListenerPostfix: null,
+                baseVisitorPostfix: null,
                 interpreted: true,
                 runtimeToolName: "node",
                 versionArg: "-v",
@@ -114,6 +120,10 @@ namespace AntlrGrammarEditor
                 versionArg: "version",
                 lexerPostfix: "_lexer",
                 parserPostfix: "_parser",
+                baseListenerPostfix: "_base_listener",
+                listenerPostfix: "_listener",
+                baseVisitorPostfix: "_base_visitor",
+                visitorPostfix: "_visitor",
                 errorVersionStream: false
             ),
             [Runtime.Swift] = new RuntimeInfo
@@ -142,6 +152,10 @@ namespace AntlrGrammarEditor
         public string RuntimeToolName { get; }
         public string LexerPostfix { get; }
         public string ParserPostfix { get; }
+        public string BaseListenerPostfix { get; }
+        public string ListenerPostfix { get; }
+        public string BaseVisitorPostfix { get; }
+        public string VisitorPostfix { get; }
         public string VersionArg { get; }
         public bool ErrorVersionStream { get; }
 
@@ -189,6 +203,8 @@ namespace AntlrGrammarEditor
             string runtimeToolName, string versionArg, bool interpreted = false,
             string jarGenerator = "antlr-4.7-complete.jar",
             string lexerPostfix = "Lexer", string parserPostfix = "Parser",
+            string baseListenerPostfix = "BaseListener", string listenerPostfix = "Listener",
+            string baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor",
             bool errorVersionStream = false)
         {
             Runtime = runtime;
@@ -203,15 +219,12 @@ namespace AntlrGrammarEditor
             RuntimeToolName = runtimeToolName ?? throw new ArgumentNullException(nameof(runtimeToolName));
             LexerPostfix = lexerPostfix ?? throw new ArgumentNullException(nameof(lexerPostfix));
             ParserPostfix = parserPostfix ?? throw new ArgumentNullException(nameof(parserPostfix));
+            BaseListenerPostfix = baseListenerPostfix;
+            ListenerPostfix = listenerPostfix ?? throw new ArgumentNullException(nameof(listenerPostfix));
+            BaseVisitorPostfix = baseVisitorPostfix;
+            VisitorPostfix = visitorPostfix ?? throw new ArgumentNullException(nameof(visitorPostfix));
             VersionArg = versionArg ?? throw new ArgumentNullException(nameof(versionArg));
             ErrorVersionStream = errorVersionStream;
-        }
-
-        public string GetGeneratedLexerParserName(Grammar grammar, bool lexer)
-        {
-            return (Runtime != Runtime.Go ? grammar.Name : grammar.Name.ToLowerInvariant())
-                   + (lexer ? LexerPostfix : ParserPostfix)
-                   + "." + Extensions[0];
         }
 
         public override string ToString()
