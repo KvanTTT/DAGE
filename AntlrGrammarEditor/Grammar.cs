@@ -2,7 +2,6 @@
 using Newtonsoft.Json.Converters;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace AntlrGrammarEditor
 {
@@ -10,6 +9,8 @@ namespace AntlrGrammarEditor
     {
         public const string AntlrDotExt = ".g4";
         public const string ProjectDotExt = ".age";
+        public const string LexerPostfix = "Lexer";
+        public const string ParserPostfix = "Parser";
 
         private static JsonConverter[] _jsonConverter = new JsonConverter[] { new StringEnumConverter() };
         private string _ageFileName;

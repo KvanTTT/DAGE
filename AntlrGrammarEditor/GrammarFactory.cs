@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AntlrGrammarEditor
 {
     public class GrammarFactory
     {
         public const string PreprocessorPostfix = "Preprocessor";
-        public const string LexerPostfix = "Lexer";
-        public const string ParserPostfix = "Parser";
 
         public static Grammar CreateDefault()
         {
@@ -64,7 +59,7 @@ namespace AntlrGrammarEditor
 
             foreach (var file in result.Files)
             {
-                string text = file.Contains(LexerPostfix) ? lexerText : parserText;
+                string text = file.Contains(Grammar.LexerPostfix) ? lexerText : parserText;
                 File.WriteAllText(Path.Combine(directory, file), text);
             }
 
@@ -89,24 +84,24 @@ namespace AntlrGrammarEditor
                 {
                     var fileWithoutExtension = Path.GetFileNameWithoutExtension(file);
                     var text = new StringBuilder();
-                    if (fileWithoutExtension.Contains(LexerPostfix))
+                    if (fileWithoutExtension.Contains(Grammar.LexerPostfix))
                     {
                         text.Append("lexer ");
                     }
-                    else if (fileWithoutExtension.Contains(ParserPostfix))
+                    else if (fileWithoutExtension.Contains(Grammar.ParserPostfix))
                     {
                         text.Append("parser ");
                     }
                     text.AppendLine($"grammar {fileWithoutExtension};");
                     text.AppendLine();
 
-                    if (fileWithoutExtension.Contains(ParserPostfix))
+                    if (fileWithoutExtension.Contains(Grammar.ParserPostfix))
                     {
-                        text.AppendLine($"options {{ tokenVocab = {fileWithoutExtension.Replace(ParserPostfix, LexerPostfix)}; }}");
+                        text.AppendLine($"options {{ tokenVocab = {fileWithoutExtension.Replace(Grammar.ParserPostfix, Grammar.LexerPostfix)}; }}");
                         text.AppendLine();
                     }
 
-                    if (!fileWithoutExtension.Contains(LexerPostfix) && !string.IsNullOrEmpty(grammar.Root))
+                    if (!fileWithoutExtension.Contains(Grammar.LexerPostfix) && !string.IsNullOrEmpty(grammar.Root))
                     {
                         text.AppendLine($"{(fileWithoutExtension.Contains(PreprocessorPostfix) ? grammar.PreprocessorRoot : grammar.Root)}");
                         text.AppendLine("    : tokensOrRules* EOF");
@@ -118,7 +113,7 @@ namespace AntlrGrammarEditor
                         text.AppendLine();
                     }
 
-                    if (!fileWithoutExtension.Contains(GrammarFactory.ParserPostfix))
+                    if (!fileWithoutExtension.Contains(Grammar.ParserPostfix))
                     {
                         text.AppendLine("TOKEN: [a-z]+;");
                         text.AppendLine();
@@ -148,8 +143,8 @@ namespace AntlrGrammarEditor
             {
                 if (grammar.PreprocessorSeparatedLexerAndParser)
                 {
-                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + LexerPostfix + Grammar.AntlrDotExt);
-                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + ParserPostfix + Grammar.AntlrDotExt);
+                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + Grammar.LexerPostfix + Grammar.AntlrDotExt);
+                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + Grammar.ParserPostfix + Grammar.AntlrDotExt);
                 }
                 else
                 {
@@ -158,8 +153,8 @@ namespace AntlrGrammarEditor
             }
             if (grammar.SeparatedLexerAndParser)
             {
-                grammar.Files.Add(grammar.Name + LexerPostfix + Grammar.AntlrDotExt);
-                grammar.Files.Add(grammar.Name + ParserPostfix + Grammar.AntlrDotExt);
+                grammar.Files.Add(grammar.Name + Grammar.LexerPostfix + Grammar.AntlrDotExt);
+                grammar.Files.Add(grammar.Name + Grammar.ParserPostfix + Grammar.AntlrDotExt);
             }
             else
             {

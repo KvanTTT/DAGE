@@ -52,7 +52,7 @@ namespace AntlrGrammarEditor
                     var shortFileName = Path.GetFileNameWithoutExtension(grammarFileName);
                     result.GrammarActionsTextSpan[grammarFileName] = grammarInfoCollectorListener.CodeInsertions;
 
-                    if (!shortFileName.Contains(GrammarFactory.LexerPostfix))
+                    if (!shortFileName.Contains(Grammar.LexerPostfix))
                     {
                         string root;
                         bool preprocessor;

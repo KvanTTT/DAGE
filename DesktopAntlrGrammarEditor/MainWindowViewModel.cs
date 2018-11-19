@@ -176,7 +176,7 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public bool IsParserOpened => !OpenedGrammarFile.Contains(GrammarFactory.LexerPostfix);
+        public bool IsParserOpened => !OpenedGrammarFile.Contains(Grammar.LexerPostfix);
 
         public bool IsPreprocessor => OpenedGrammarFile.Contains(GrammarFactory.PreprocessorPostfix);
 
