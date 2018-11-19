@@ -22,6 +22,8 @@ namespace AntlrGrammarEditor
 
         public EventHandler<(TextParsedOutput, object)> TextParsedOutputEvent { get; set; }
 
+        public string RuntimeLibrary { get; set; }
+
         public TextParser(string text)
         {
             Text = text ?? throw new ArgumentNullException(nameof(text));
@@ -54,7 +56,7 @@ namespace AntlrGrammarEditor
 
                 var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
                 string runtimeDir = Path.Combine(ParserCompiler.RuntimesDirName, runtime.ToString());
-                string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
+                string runtimeLibraryPath = RuntimeLibrary ?? Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
 
                 string toolName = "";
                 string args = "";

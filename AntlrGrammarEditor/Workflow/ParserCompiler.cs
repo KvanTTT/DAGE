@@ -23,6 +23,8 @@ namespace AntlrGrammarEditor
         private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping;
         private Runtime _currentRuntime;
 
+        public string RuntimeLibrary { get; set; }
+
         public ParserCompiliedState Compile(ParserGeneratedState state,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -55,7 +57,7 @@ namespace AntlrGrammarEditor
                         ? "Python"
                         : runtime.ToString();
                 string runtimeDir = Path.Combine(RuntimesDirName, runtimeSource);
-                string runtimeLibraryPath = Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
+                string runtimeLibraryPath = RuntimeLibrary ?? Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
                 string workingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName, _grammar.Name, runtime.ToString());
 
                 var compiliedFiles = new StringBuilder();

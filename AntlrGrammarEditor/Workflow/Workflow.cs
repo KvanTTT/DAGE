@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -100,6 +100,10 @@ namespace AntlrGrammarEditor
                 }
             }
         }
+
+        public string GeneratorTool { get; set; }
+
+        public string RuntimeLibrary { get; set; }
 
         public bool IndentedTree
         {
@@ -214,12 +218,20 @@ namespace AntlrGrammarEditor
                     break;
 
                 case WorkflowStage.GrammarChecked:
-                    var parserGenerator = new ParserGenerator {ErrorEvent = _errorEvent};
+                    var parserGenerator = new ParserGenerator
+                    {
+                        ErrorEvent = _errorEvent,
+                        GeneratorTool = GeneratorTool
+                    };
                     _currentState = parserGenerator.Generate((GrammarCheckedState)_currentState, _cancellationTokenSource.Token);
                     break;
 
                 case WorkflowStage.ParserGenerated:
-                    var parserCompiler = new ParserCompiler {ErrorEvent = _errorEvent};
+                    var parserCompiler = new ParserCompiler
+                    {
+                        ErrorEvent = _errorEvent,
+                        RuntimeLibrary = RuntimeLibrary,
+                    };
                     _currentState = parserCompiler.Compile((ParserGeneratedState)_currentState, _cancellationTokenSource.Token);
                     break;
 
@@ -229,6 +241,7 @@ namespace AntlrGrammarEditor
                         Root = Root,
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         IndentedTree = IndentedTree,
+                        RuntimeLibrary = RuntimeLibrary,
                         ErrorEvent = _errorEvent
                     };
                     textParser.TextParsedOutputEvent += _textParsedOutputEvent;

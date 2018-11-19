@@ -12,6 +12,8 @@ namespace AntlrGrammarEditor
         private CodeSource _currentGrammarSource;
         private ParserGeneratedState _result;
 
+        public string GeneratorTool { get; set; }
+
         public ParserGeneratedState Generate(GrammarCheckedState state,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -44,7 +46,7 @@ namespace AntlrGrammarEditor
 
                 var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
 
-                var jarGenerator = Path.Combine("Generators", runtimeInfo.JarGenerator);
+                var jarGenerator = GeneratorTool ?? Path.Combine("Generators", runtimeInfo.JarGenerator);
                 foreach (string grammarFileName in state.InputState.Grammar.Files)
                 {
                     _currentGrammarSource = state.GrammarFilesData[grammarFileName];
