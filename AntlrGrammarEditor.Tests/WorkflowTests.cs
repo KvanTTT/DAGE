@@ -300,11 +300,43 @@ namespace AntlrGrammarEditor.Tests
             };
             workflow.Grammar = grammar;
             workflow.Text = @"asdf";
-            
+
             var state = workflow.Process();
             TextParsedState textParsedState = state as TextParsedState;
             Assert.AreEqual(0, textParsedState.Errors.Count, string.Join(Environment.NewLine, textParsedState.Errors));
             Assert.AreEqual("(t asdf)", textParsedState.Tree);
+        }
+
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
+        [TestCase(Runtime.Java)]
+        [TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python3)]
+        [TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Go)]
+        public void CheckListenersAndVisitors(Runtime runtime)
+        {
+            var workflow = new Workflow();
+            var grammarText =
+                $@"grammar {TestGrammarName};
+                t: T;
+                T: [a-z]+;";
+            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
+            workflow.GenerateListener = true;
+            workflow.GenerateVisitor = true;
+            workflow.Grammar = grammar;
+            workflow.Runtime = runtime;
+            workflow.Text = @"asdf";
+
+            var state = workflow.Process();
+            TextParsedState textParsedState = state as TextParsedState;
+            Assert.IsNotNull(textParsedState);
+            Assert.IsFalse(state.HasErrors);
+
+            var allFiles = Directory.GetFiles(Path.Combine(ParserGenerator.HelperDirectoryName, TestGrammarName, runtime.ToString()));
+
+            Assert.IsTrue(allFiles.Any(file => file.Contains("listener", StringComparison.OrdinalIgnoreCase)));
+            Assert.IsTrue(allFiles.Any(file => file.Contains("visitor", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestCase(Runtime.CSharpOptimized)]
