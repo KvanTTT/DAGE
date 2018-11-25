@@ -76,7 +76,7 @@ namespace DesktopAntlrGrammarEditor
             _workflow = new Workflow();
 
             bool openDefaultGrammar = false;
-            if (string.IsNullOrEmpty(_settings.AgeFileName))
+            if (string.IsNullOrEmpty(_settings.GrammarFileOrDirectory))
             {
                 openDefaultGrammar = true;
             }
@@ -84,11 +84,11 @@ namespace DesktopAntlrGrammarEditor
             {
                 try
                 {
-                    _grammar = Grammar.Load(_settings.AgeFileName);
+                    _grammar = GrammarFactory.Open(_settings.GrammarFileOrDirectory);
                 }
                 catch (Exception ex)
                 {
-                    ShowOpenFileErrorMessage(_settings.AgeFileName, ex.Message);
+                    ShowOpenFileErrorMessage(_settings.GrammarFileOrDirectory, ex.Message);
 
                     _settings.OpenedGrammarFile = "";
                     openDefaultGrammar = true;
@@ -99,7 +99,7 @@ namespace DesktopAntlrGrammarEditor
             {
                 _grammar = GrammarFactory.CreateDefault();
                 GrammarFactory.FillGrammarFiles(_grammar, Settings.Directory, false);
-                _settings.AgeFileName = _grammar.AgeFileName;
+                _settings.GrammarFileOrDirectory = _grammar.Directory;
                 _settings.Save();
             }
 
@@ -202,7 +202,6 @@ namespace DesktopAntlrGrammarEditor
                     {
                         Process();
                     }
-                    _grammar.Save();
                     this.RaisePropertyChanged();
                 }
             }
@@ -220,7 +219,6 @@ namespace DesktopAntlrGrammarEditor
                     _workflow.Runtime = value.Runtime;
                     _grammar.Runtimes.Clear();
                     _grammar.Runtimes.Add(value.Runtime);
-                    _grammar.Save();
                     this.RaisePropertyChanged();
                     if (AutoProcessing)
                     {
@@ -574,30 +572,23 @@ namespace DesktopAntlrGrammarEditor
 
             OpenGrammarCommand = ReactiveCommand.Create(async () =>
             {
-                var openDialog = new OpenFileDialog
+                var openGrammarDialog = new OpenFolderDialog
                 {
-                    Title = "Enter file name",
-                    Filters = new List<FileDialogFilter>
-                    {
-                        new FileDialogFilter
-                        {
-                            Name = "Antlr Grammar Editor",
-                            Extensions = new List<string> { Grammar.ProjectDotExt.Substring(1) }
-                        }
-                    }
+                    Title = "Enter grammar directory name"
                 };
 
-                string[] fileNames = await openDialog.ShowAsync(_window);
-                if (fileNames?.Length > 0)
+                string folderName = await openGrammarDialog.ShowAsync(_window);
+
+                if (!string.IsNullOrEmpty(folderName))
                 {
                     try
                     {
-                        var grammar = Grammar.Load(fileNames[0]);
+                        var grammar = GrammarFactory.Open(folderName);
                         OpenGrammar(grammar);
                     }
                     catch (Exception ex)
                     {
-                        await ShowOpenFileErrorMessage(fileNames[0], ex.Message);
+                        await ShowOpenFileErrorMessage(folderName, ex.Message);
                     }
                 }
             });
@@ -653,7 +644,7 @@ namespace DesktopAntlrGrammarEditor
                     Title = "Enter file name",
                     DefaultExtension = _grammar.FileExtension,
                     Filters = filters,
-                    InitialDirectory = _grammar.GrammarPath,
+                    InitialDirectory = _grammar.Directory,
                     InitialFileName = Path.GetFileName(GrammarFactory.GenerateTextFileName(_grammar))
                 };
 
@@ -666,7 +657,6 @@ namespace DesktopAntlrGrammarEditor
                     {
                         TextFiles.Add(newFile);
                         _grammar.TextFiles.Add(newFile.FullFileName);
-                        _grammar.Save();
                         OpenedTextFile = TextFiles.Last();
                     }
                 }
@@ -694,7 +684,6 @@ namespace DesktopAntlrGrammarEditor
                     }
                     if (atLeastOneFileHasBeenAdded)
                     {
-                        _grammar.Save();
                         OpenedTextFile = TextFiles.Last();
                     }
                 }
@@ -705,7 +694,6 @@ namespace DesktopAntlrGrammarEditor
                 string shortFileName = OpenedTextFile.ShortFileName;
                 string fullFileName = OpenedTextFile.FullFileName;
                 _grammar.TextFiles.Remove(OpenedTextFile.FullFileName);
-                _grammar.Save();
                 var index = TextFiles.IndexOf(OpenedTextFile);
                 TextFiles.Remove(OpenedTextFile);
                 index = Math.Min(index, TextFiles.Count - 1);
@@ -731,7 +719,7 @@ namespace DesktopAntlrGrammarEditor
         {
             _grammar = grammar;
             _workflow.Grammar = grammar;
-            _settings.AgeFileName = grammar.AgeFileName;
+            _settings.GrammarFileOrDirectory = grammar.Directory;
             _settings.Save();
             _openedGrammarFile = "";
             _openedTextFile = FileName.Empty;
@@ -896,12 +884,11 @@ namespace DesktopAntlrGrammarEditor
                 {
                     Rules.Add(rule);
                 }
-                _grammar.Save();
                 this.RaisePropertyChanged(nameof(Root));
             }
         }
 
-        private string GetFullGrammarFileName(string fileName) => Path.Combine(_grammar.GrammarPath, fileName);
+        private string GetFullGrammarFileName(string fileName) => Path.Combine(_grammar.Directory, fileName);
 
         private async Task ShowOpenFileErrorMessage(string fileName, string exceptionMessage)
         {
