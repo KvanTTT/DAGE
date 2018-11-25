@@ -12,9 +12,6 @@ namespace AntlrGrammarEditor
         public const string LexerPostfix = "Lexer";
         public const string ParserPostfix = "Parser";
 
-        private static JsonConverter[] _jsonConverter = new JsonConverter[] { new StringEnumConverter() };
-        private string _ageFileName;
-
         public string Name { get; set; }
 
         public string Root { get; set; }
@@ -39,30 +36,6 @@ namespace AntlrGrammarEditor
 
         public List<string> TextFiles { get; set; } = new List<string>();
 
-        [JsonIgnore]
-        public string GrammarPath { get; set; } = "";
-
-        [JsonIgnore]
-        public string AgeFileName
-        {
-            get => _ageFileName;
-            set
-            {
-                _ageFileName = value;
-                GrammarPath = Path.GetDirectoryName(_ageFileName);
-            }
-        }
-
-        public static Grammar Load(string fileName)
-        {
-            var result = JsonConvert.DeserializeObject<Grammar>(File.ReadAllText(fileName), _jsonConverter);
-            result.AgeFileName = fileName;
-            return result;
-        }
-
-        public void Save()
-        {
-            File.WriteAllText(AgeFileName, JsonConvert.SerializeObject(this, Formatting.Indented, _jsonConverter));
-        }
+        public string Directory { get; set; } = "";
     }
 }

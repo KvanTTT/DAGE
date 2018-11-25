@@ -27,7 +27,7 @@ namespace AntlrGrammarEditor
                 
                 foreach (string grammarFileName in grammar.Files)
                 {
-                    string code = File.ReadAllText(Path.Combine(grammar.GrammarPath, grammarFileName));
+                    string code = File.ReadAllText(Path.Combine(grammar.Directory, grammarFileName));
                     var inputStream = new AntlrInputStream(code);
                     antlrErrorListener.CodeSource = new CodeSource(grammarFileName, inputStream.ToString());
                     result.GrammarFilesData[grammarFileName] = antlrErrorListener.CodeSource;

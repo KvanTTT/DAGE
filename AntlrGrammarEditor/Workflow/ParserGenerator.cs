@@ -55,7 +55,7 @@ namespace AntlrGrammarEditor
                 {
                     _currentGrammarSource = state.GrammarFilesData[grammarFileName];
                     var arguments =
-                        $@"-jar ""{jarGenerator}"" ""{Path.Combine(grammar.GrammarPath, grammarFileName)}"" " +
+                        $@"-jar ""{jarGenerator}"" ""{Path.Combine(grammar.Directory, grammarFileName)}"" " +
                         $@"-o ""{runtimeDirectoryName}"" " +
                         $"-Dlanguage={runtimeInfo.DLanguage} " +
                         $"{(GenerateVisitor ? "-visitor" : "-no-visitor")} " + 
