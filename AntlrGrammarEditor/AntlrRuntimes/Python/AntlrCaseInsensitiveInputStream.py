@@ -2,9 +2,9 @@
 
 class AntlrCaseInsensitiveInputStream(InputStream):
 
-    def __init__(self, input''': str'''):
+    def __init__(self, input''': str''', lowerCase''': bool'''):
         super('''SuperCall''').__init__(input)
-        inputLower = input.lower()
+        inputLower = input.lower() if lowerCase else input.upper()
         self._lookaheadData = [ord(c) for c in inputLower]
 
     def LA(self, offset''': int'''):

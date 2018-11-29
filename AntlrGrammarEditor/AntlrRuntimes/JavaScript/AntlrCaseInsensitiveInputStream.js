@@ -1,11 +1,11 @@
 var antlr4 = require('antlr4/index');
 
-function AntlrCaseInsensitiveInputStream(data) {
+function AntlrCaseInsensitiveInputStream(data, lowerCase) {
     antlr4.InputStream.call(this, data);
     this._lookaheadData = [];
-    var inputLower = data.toLowerCase();
-    for (var i = 0; i < inputLower.length; i++) {
-        this._lookaheadData.push(inputLower.charCodeAt(i));
+    var input = lowerCase ? data.toLowerCase() : data.toUpperCase();
+    for (var i = 0; i < input.length; i++) {
+        this._lookaheadData.push(input.charCodeAt(i));
     }
     return this;
 }
