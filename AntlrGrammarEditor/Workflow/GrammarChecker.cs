@@ -21,7 +21,7 @@ namespace AntlrGrammarEditor
                 {
                     lock (result.Errors)
                     {
-                        result.Errors.Add(error);                        
+                        result.Errors.Add(error);
                     }
                 };
                 

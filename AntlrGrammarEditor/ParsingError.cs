@@ -7,7 +7,7 @@ namespace AntlrGrammarEditor
         public TextSpan TextSpan { get; set; }
 
         public string Message { get; set; }
-        
+
         public bool IsWarning { get; set; }
 
         public WorkflowStage WorkflowStage { get; set; } = WorkflowStage.GrammarChecked;

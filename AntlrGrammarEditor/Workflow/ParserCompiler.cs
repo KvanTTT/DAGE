@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace AntlrGrammarEditor
@@ -37,7 +38,7 @@ namespace AntlrGrammarEditor
 
             foreach (Runtime runtime in _grammar.Runtimes)
             {
-                Compile(state, runtime, cancellationToken);                
+                Compile(state, runtime, cancellationToken);
             }
 
             return _result;
@@ -175,7 +176,7 @@ namespace AntlrGrammarEditor
         private string PrepareCSharpFiles(string workingDirectory, string runtimeDir)
         {
             string antlrCaseInsensitivePath = Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.cs");
-            if (_grammar.CaseInsensitive)
+            if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath);
             }
@@ -201,14 +202,14 @@ namespace AntlrGrammarEditor
             }
 
             compiliedFiles.Append('"' + _currentRuntimeInfo.MainFile + '"');
-            if (_grammar.CaseInsensitive)
+            if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
                 File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.java"),
                     Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.java"), true);
             }
 
-            return $@"-cp ""{Path.Combine("..", "..", "..", runtimeLibraryPath)}"" " + compiliedFiles;
+            return $@"-cp ""{Path.Combine("..", "..", "..", runtimeLibraryPath)}"" -Xlint:deprecation " + compiliedFiles;
         }
 
         private string PreparePythonFiles(List<string> generatedFiles, string runtimeDir, string workingDirectory)
@@ -221,29 +222,32 @@ namespace AntlrGrammarEditor
                 stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
             }
 
-            if (_grammar.CaseInsensitive)
+            if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 string antlrCaseInsensitiveInputStream =
                     File.ReadAllText(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.py"));
-                string superCall, strType, intType;
+                string superCall, strType, intType, boolType;
 
                 if (_currentRuntimeInfo.Runtime == Runtime.Python2)
                 {
                     superCall = "type(self), self";
                     strType = "";
                     intType = "";
+                    boolType = "";
                 }
                 else
                 {
                     superCall = "";
                     strType = ": str";
                     intType = ": int";
+                    boolType = ": bool";
                 }
 
                 antlrCaseInsensitiveInputStream = antlrCaseInsensitiveInputStream
                     .Replace("'''SuperCall'''", superCall)
                     .Replace("''': str'''", strType)
-                    .Replace("''': int'''", intType);
+                    .Replace("''': int'''", intType)
+                    .Replace("''': bool'''", boolType);
 
                 File.WriteAllText(Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.py"),
                     antlrCaseInsensitiveInputStream);
@@ -271,7 +275,7 @@ namespace AntlrGrammarEditor
             }
 
             File.WriteAllText(Path.Combine(workingDirectory, JavaScriptHelperFileName), stringBuilder.ToString());
-            if (_grammar.CaseInsensitive)
+            if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.js"),
                     Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);
@@ -289,7 +293,7 @@ namespace AntlrGrammarEditor
                 compiliedFiles.Append($" \"{Path.GetFileName(generatedFile)}\"");
             }
 
-            if (_grammar.CaseInsensitive)
+            if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
                 File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.go"),
@@ -303,27 +307,45 @@ namespace AntlrGrammarEditor
         {
             string templateFile = Path.Combine(workingDirectory, _currentRuntimeInfo.MainFile);
             Runtime runtime = _currentRuntimeInfo.Runtime;
-            
+
             string code = File.ReadAllText(Path.Combine(runtimeDir, _currentRuntimeInfo.MainFile));
             code = code.Replace(TemplateGrammarName, _grammar.Name);
             string root = _grammar.Root;
             if (runtime == Runtime.Go)
             {
-                root = char.ToUpper(root[0]) + root.Substring(1);
+                root = char.ToUpperInvariant(root[0]) + root.Substring(1);
             }
 
             code = code.Replace(TemplateGrammarRoot, root);
 
-            if (_grammar.CaseInsensitive)
+            if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
-                code = code.Replace("from antlr4.InputStream import InputStream", "");
-                code = code.Replace(RuntimeInfo.InitOrGetRuntimeInfo(runtime).AntlrInputStream,
-                    (runtime == Runtime.Go ? "New" : "") + "AntlrCaseInsensitiveInputStream");
+                string antlrInputStream = RuntimeInfo.InitOrGetRuntimeInfo(runtime).AntlrInputStream;
+                string caseInsensitiveStream = "AntlrCaseInsensitiveInputStream";
+                if (runtime == Runtime.Java)
+                {
+                    caseInsensitiveStream = "new " + caseInsensitiveStream;
+                }
+                else if (runtime == Runtime.Go)
+                {
+                    caseInsensitiveStream = "New" + caseInsensitiveStream;
+                }
+                var antlrInputStreamRegex = new Regex($@"{antlrInputStream}\(([^\)]+)\)");
+                string isLowerBool = (_grammar.CaseInsensitiveType == CaseInsensitiveType.lower).ToString();
+                if (runtime != Runtime.Python2 && runtime != Runtime.Python3)
+                {
+                    isLowerBool = isLowerBool.ToLowerInvariant();
+                }
+
+                code = antlrInputStreamRegex.Replace(code, m =>
+                {
+                    return $"{caseInsensitiveStream}({m.Groups[1].Value}, {isLowerBool})";
+                });
 
                 if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
                 {
-                    code = code.Replace("'''AntlrCaseInsensitive'''",
-                        "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
+                    code = code.Replace("from antlr4.InputStream import InputStream", "")
+                               .Replace("'''AntlrCaseInsensitive'''", "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
                 }
                 else if (runtime == Runtime.JavaScript)
                 {
@@ -449,18 +471,21 @@ namespace AntlrGrammarEditor
                     string[] strs = data.Split(':');
                     string codeFileName = strs[0];
                     int codeLine = int.Parse(strs[1]);
+                    bool isWarning = strs[2].Trim() == "warning";
                     string rest = string.Join(":", strs.Skip(2));
-                    TextSpan grammarTextSpan = TextHelpers.GetSourceTextSpanForLine(_grammarCodeMapping[codeFileName], codeLine);
-                    grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Java], codeFileName);
-                    if (grammarTextSpan != null)
+
+                    if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> textSpanMappings))
                     {
+                        TextSpan grammarTextSpan = TextHelpers.GetSourceTextSpanForLine(textSpanMappings, codeLine);
+                        grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Java], codeFileName);
                         error = new ParsingError(grammarTextSpan, $"{grammarFileName}:{grammarTextSpan.StartLineColumn.Line}:{rest}", WorkflowStage.ParserCompilied);
                     }
                     else
                     {
-                        // FIXME later (_grammarFilesData) !
-                        //error = new ParsingError($"{grammarFileName}:{rest}", _grammarFilesData[grammarFileName], WorkflowStage.ParserCompilied);
+                        error = new ParsingError(data, CodeSource.Empty, WorkflowStage.ParserCompilied);
                     }
+                    
+                    error.IsWarning = isWarning;
                 }
                 catch
                 {

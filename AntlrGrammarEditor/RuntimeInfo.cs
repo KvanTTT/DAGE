@@ -42,7 +42,7 @@ namespace AntlrGrammarEditor
                 runtimeLibrary: "antlr-runtime-4.7.jar",
                 extensions: new[] { "java" },
                 mainFile: "Main.java",
-                antlrInputStream: "ANTLRInputStream",
+                antlrInputStream: "CharStreams.fromFileName",
                 runtimeToolName: "javac",
                 versionArg: "-version",
                 errorVersionStream: true
