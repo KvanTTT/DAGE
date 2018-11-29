@@ -1,14 +1,17 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.Collections.Generic;
 
 namespace AntlrGrammarEditor
 {
+    public enum CaseInsensitiveType
+    {
+        None,
+        lower,
+        UPPER
+    }
+
     public class Grammar
     {
         public const string AntlrDotExt = ".g4";
-        public const string ProjectDotExt = ".age";
         public const string LexerPostfix = "Lexer";
         public const string ParserPostfix = "Parser";
 
@@ -22,7 +25,7 @@ namespace AntlrGrammarEditor
 
         public bool SeparatedLexerAndParser { get; set; }
 
-        public bool CaseInsensitive { get; set; }
+        public CaseInsensitiveType CaseInsensitiveType { get; set; }
 
         public bool Preprocessor { get; set; }
 
