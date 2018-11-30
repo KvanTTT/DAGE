@@ -26,11 +26,11 @@ namespace AntlrGrammarEditor
 
         public CancellationToken CancellationToken { get; set; }
 
-        public Processor(string toolName, string arguments = "", string workingDirecotry = "", int timeout = 0)
+        public Processor(string toolName, string arguments = "", string workingDirectory = "", int timeout = 0)
         {
             ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
             Arguments = arguments ?? throw new ArgumentNullException(nameof(arguments));
-            WorkingDirectory = workingDirecotry;
+            WorkingDirectory = workingDirectory;
             Timeout = timeout;
         }
 

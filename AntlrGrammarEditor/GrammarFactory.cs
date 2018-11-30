@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace AntlrGrammarEditor
 {
@@ -15,13 +18,16 @@ namespace AntlrGrammarEditor
             string grammarName = "";
             string directoryName;
             bool separatedLexerAndParser = false;
-
+            CaseInsensitiveType caseInsensitiveType = CaseInsensitiveType.None;
+            string lexerOrCombinedGrammarFile = null;
+            
             if (File.Exists(fileOrDirectoryName))
             {
                 directoryName = Path.GetDirectoryName(fileOrDirectoryName);
                 string grammarFile = Path.GetFileName(fileOrDirectoryName);
                 grammarName = Path.GetFileNameWithoutExtension(grammarFile);
                 grammarFiles = new List<string> { grammarFile };
+                lexerOrCombinedGrammarFile = fileOrDirectoryName;
             }
             else if (Directory.Exists(fileOrDirectoryName))
             {
@@ -35,6 +41,7 @@ namespace AntlrGrammarEditor
                     string grammarFile = Path.GetFileName(g4Files[0]);
                     grammarName = Path.GetFileNameWithoutExtension(grammarFile);
                     grammarFiles.Add(grammarFile);
+                    lexerOrCombinedGrammarFile = g4Files[0];
                 }
                 else if (g4Files.Length > 1)
                 {
@@ -49,6 +56,7 @@ namespace AntlrGrammarEditor
                     {
                         grammarFiles.Add(Path.GetFileName(lexerFileName));
                         grammarName = Path.GetFileNameWithoutExtension(lexerFileName).Replace(Grammar.LexerPostfix, "");
+                        lexerOrCombinedGrammarFile = lexerFileName;
                     }
 
                     string parserFileName =
@@ -68,6 +76,30 @@ namespace AntlrGrammarEditor
                 throw new FileNotFoundException($"Not file nor directory exists at path {fileOrDirectoryName}");
             }
 
+            string pomFile = Path.Combine(directoryName, "pom.xml");
+            if (File.Exists(pomFile))
+            {
+                string content = File.ReadAllText(pomFile);
+                // TODO: fix with XPath
+                var caseInsensitiveRegex = new Regex("<caseInsensitiveType>(\\w+)</caseInsensitiveType>");
+
+                var match = caseInsensitiveRegex.Match(content);
+                if (match.Success)
+                {
+                    Enum.TryParse(match.Groups[1].Value, out caseInsensitiveType);
+                }
+            }
+            else if (!string.IsNullOrEmpty(lexerOrCombinedGrammarFile))
+            {
+                string lexerOrCombinedGrammar = File.ReadAllText(lexerOrCombinedGrammarFile);
+                var caseInsensitiveTypeRegex = new Regex(@"/\*\s*CaseInsensitiveType:\s*(\w+)\s*\*/");
+                var match = caseInsensitiveTypeRegex.Match(lexerOrCombinedGrammar);
+                if (match.Success)
+                {
+                    Enum.TryParse(match.Groups[1].Value, out caseInsensitiveType);
+                }
+            }
+
             string[] textFiles;
             string examplesDir = Path.Combine(directoryName, "examples");
             if (Directory.Exists(examplesDir))
@@ -83,6 +115,7 @@ namespace AntlrGrammarEditor
             {
                 Name = grammarName,
                 Directory = fileOrDirectoryName,
+                CaseInsensitiveType = caseInsensitiveType,
                 Runtimes = new HashSet<Runtime> {Runtime.Java},
                 Files = grammarFiles,
                 SeparatedLexerAndParser = separatedLexerAndParser,
@@ -100,7 +133,6 @@ namespace AntlrGrammarEditor
                 Root = "rootRule",
                 Runtimes = new HashSet<Runtime> { Runtime.CSharpOptimized },
                 SeparatedLexerAndParser = false,
-                CaseInsensitive = false,
                 Preprocessor = false,
                 PreprocessorRoot = "preprocessorRootRule",
                 PreprocessorSeparatedLexerAndParser = false,
@@ -166,7 +198,10 @@ namespace AntlrGrammarEditor
                 {
                     var fileWithoutExtension = Path.GetFileNameWithoutExtension(file);
                     var text = new StringBuilder();
-                    if (fileWithoutExtension.Contains(Grammar.LexerPostfix))
+
+                    bool lexerOrCombinedGrammar = !fileWithoutExtension.Contains(Grammar.ParserPostfix);
+
+                    if (lexerOrCombinedGrammar)
                     {
                         text.Append("lexer ");
                     }
@@ -174,7 +209,14 @@ namespace AntlrGrammarEditor
                     {
                         text.Append("parser ");
                     }
-                    text.AppendLine($"grammar {fileWithoutExtension};");
+                    text.Append($"grammar {fileWithoutExtension};");
+
+                    if (lexerOrCombinedGrammar && grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+                    {
+                        text.Append($" /* CaseInsensitiveType: {grammar.CaseInsensitiveType} */");
+                    }
+
+                    text.AppendLine();
                     text.AppendLine();
 
                     if (fileWithoutExtension.Contains(Grammar.ParserPostfix))
