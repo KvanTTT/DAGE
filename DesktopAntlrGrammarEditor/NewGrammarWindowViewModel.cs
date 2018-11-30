@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using ReactiveUI;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -143,18 +144,26 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public bool CaseInsensitive
+        public CaseInsensitiveType CaseInsensitiveType
         {
-            get => _grammar.CaseInsensitive;
+            get => _grammar.CaseInsensitiveType;
             set
             {
-                if (_grammar.CaseInsensitive != value)
+                if (_grammar.CaseInsensitiveType != value)
                 {
-                    _grammar.CaseInsensitive = value;
+                    _grammar.CaseInsensitiveType = value;
                     this.RaisePropertyChanged();
                 }
             }
         }
+
+        public ObservableCollection<CaseInsensitiveType> CaseInsensitiveTypes { get; } =
+            new ObservableCollection<CaseInsensitiveType>(new List<CaseInsensitiveType>
+        {
+            CaseInsensitiveType.None,
+            CaseInsensitiveType.lower,
+            CaseInsensitiveType.UPPER,
+        });
 
         public bool Preprocessor
         {
