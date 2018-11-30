@@ -235,20 +235,22 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Go)]
         public void CaseInsensitive(Runtime runtime)
         {
-            if (runtime == Runtime.Java)
-            {
-                Assert.Ignore("Java 4.7 custom streams are not supported yet.");
-            }
+            CheckCaseInsensitiveWorkflow(runtime, true);
+            CheckCaseInsensitiveWorkflow(runtime, false);
+        }
 
+        private static void CheckCaseInsensitiveWorkflow(Runtime runtime, bool lowerCase)
+        {
+            char c = lowerCase ? 'a' : 'A'; 
             var workflow = new Workflow();
             var grammarText =
                 $@"grammar {TestGrammarName};
                 start:  A A DIGIT;
-                A:      'a';
+                A:      '{c}';
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
-            grammar.CaseInsensitive = true;
+            grammar.CaseInsensitiveType = lowerCase ? CaseInsensitiveType.lower : CaseInsensitiveType.UPPER;
             grammar.Runtimes.Clear();
             grammar.Runtimes.Add(runtime);
             workflow.Grammar = grammar;
