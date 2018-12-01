@@ -54,15 +54,27 @@ namespace AntlrGrammarEditor
                 foreach (string grammarFileName in state.InputState.Grammar.Files)
                 {
                     _currentGrammarSource = state.GrammarFilesData[grammarFileName];
+
                     var arguments =
                         $@"-jar ""{jarGenerator}"" ""{Path.Combine(grammar.Directory, grammarFileName)}"" " +
                         $@"-o ""{runtimeDirectoryName}"" " +
                         $"-Dlanguage={runtimeInfo.DLanguage} " +
-                        $"{(GenerateVisitor ? "-visitor" : "-no-visitor")} " + 
+                        $"{(GenerateVisitor ? "-visitor" : "-no-visitor")} " +
                         $"{(GenerateListener ? "-listener" : "-no-listener")}";
+
                     if (runtime == Runtime.Go)
                     {
                         arguments += " -package main";
+                    }
+
+                    if (grammarFileName.Contains(Grammar.LexerPostfix) && grammar.LexerSuperClass != null)
+                    {
+                        arguments += " -DsuperClass=" + grammar.LexerSuperClass;
+                    }
+
+                    if (grammarFileName.Contains(Grammar.ParserPostfix) && grammar.ParserSuperClass != null)
+                    {
+                        arguments += " -DsuperClass=" + grammar.ParserSuperClass;
                     }
 
                     processor = new Processor("java", arguments, ".");

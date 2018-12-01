@@ -51,11 +51,7 @@ namespace AntlrGrammarEditor
             Processor processor = null;
             try
             {
-                string runtimeSource = runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard
-                    ? "CSharp"
-                    : runtime == Runtime.Python2 || runtime == Runtime.Python3
-                        ? "Python"
-                        : runtime.ToString();
+                string runtimeSource = runtime.GetGeneralRuntimeName();
                 string runtimeDir = Path.Combine(RuntimesDirName, runtimeSource);
                 string runtimeLibraryPath = RuntimeLibrary ?? Path.Combine(runtimeDir, _currentRuntimeInfo.RuntimeLibrary);
                 string workingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName, _grammar.Name, runtime.ToString());
@@ -68,6 +64,9 @@ namespace AntlrGrammarEditor
 
                 GetGeneratedFileNames(state.GrammarCheckedState, generatedGrammarName, workingDirectory, generatedFiles, false);
                 GetGeneratedFileNames(state.GrammarCheckedState, generatedGrammarName, workingDirectory, generatedFiles, true);
+
+                CopyBaseClass(runtime, workingDirectory, false);
+                CopyBaseClass(runtime, workingDirectory, true);
 
                 if (state.IncludeListener)
                 {
@@ -87,7 +86,7 @@ namespace AntlrGrammarEditor
                     case Runtime.CSharpStandard:
                         arguments = PrepareCSharpFiles(workingDirectory, runtimeDir);
                         break;
- 
+
                     case Runtime.Java:
                         arguments = PrepareJavaFiles(generatedFiles, runtimeDir, workingDirectory, runtimeLibraryPath);
                         break;
@@ -119,7 +118,7 @@ namespace AntlrGrammarEditor
 
                 if (_buffer.Count > 0)
                 {
-                    if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
+                    if (runtime.IsPythonRuntime())
                     {
                         AddPythonError();
                     }
@@ -157,7 +156,26 @@ namespace AntlrGrammarEditor
             CodeSource codeSource = new CodeSource(generatedFile, File.ReadAllText(generatedFile));
             _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(grammarCheckedState.GrammarActionsTextSpan[grammarNameExt], codeSource, lexer);
         }
-        
+
+        private void CopyBaseClass(Runtime runtime, string workingDirectory, bool lexer)
+        {
+            string superClassName = lexer ? _grammar.LexerSuperClass : _grammar.ParserSuperClass;
+            if (superClassName != null)
+            {
+                RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
+                string superClassFile = superClassName + "." + runtimeInfo.Extensions[0];
+                string sourceFileName = Path.Combine(_grammar.Directory, runtime.ToString(), superClassFile);
+                string destFileName = Path.Combine(workingDirectory, superClassFile);
+
+                if (!File.Exists(sourceFileName) && (runtime.IsCSharpRuntime() || runtime.IsPythonRuntime()))
+                {
+                    sourceFileName = Path.Combine(_grammar.Directory, runtime.GetGeneralRuntimeName(), superClassFile);
+                }
+
+                File.Copy(sourceFileName, destFileName);
+            }
+        }
+
         private void GetGeneratedListenerOrVisitorFiles(string generatedGrammarName, string workingDirectory,
             List<string> generatedFiles, bool visitor)
         {
@@ -207,6 +225,16 @@ namespace AntlrGrammarEditor
                 compiliedFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
                 File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.java"),
                     Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.java"), true);
+            }
+
+            if (_grammar.LexerSuperClass != null)
+            {
+                compiliedFiles.Append($" \"{_grammar.LexerSuperClass + ".java"}\"");
+            }
+
+            if (_grammar.ParserSuperClass != null)
+            {
+                compiliedFiles.Append($" \"{_grammar.ParserSuperClass + ".java"}\"");
             }
 
             return $@"-cp ""{Path.Combine("..", "..", "..", runtimeLibraryPath)}"" -Xlint:deprecation " + compiliedFiles;
@@ -332,7 +360,7 @@ namespace AntlrGrammarEditor
                 }
                 var antlrInputStreamRegex = new Regex($@"{antlrInputStream}\(([^\)]+)\)");
                 string isLowerBool = (_grammar.CaseInsensitiveType == CaseInsensitiveType.lower).ToString();
-                if (runtime != Runtime.Python2 && runtime != Runtime.Python3)
+                if (!runtime.IsPythonRuntime())
                 {
                     isLowerBool = isLowerBool.ToLowerInvariant();
                 }
@@ -342,7 +370,7 @@ namespace AntlrGrammarEditor
                     return $"{caseInsensitiveStream}({m.Groups[1].Value}, {isLowerBool})";
                 });
 
-                if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
+                if (runtime.IsPythonRuntime())
                 {
                     code = code.Replace("from antlr4.InputStream import InputStream", "")
                                .Replace("'''AntlrCaseInsensitive'''", "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
@@ -355,7 +383,7 @@ namespace AntlrGrammarEditor
             }
             else
             {
-                if (runtime == Runtime.Python2 || runtime == Runtime.Python3)
+                if (runtime.IsPythonRuntime())
                 {
                     code = code.Replace("'''AntlrCaseInsensitive'''", "");
                 }
@@ -383,7 +411,7 @@ namespace AntlrGrammarEditor
             {
                 Console.WriteLine(e.Data);
                 Runtime runtime = _currentRuntimeInfo.Runtime;
-                if (runtime == Runtime.CSharpStandard || runtime == Runtime.CSharpOptimized)
+                if (runtime.IsCSharpRuntime())
                 {
                     AddCSharpError(e.Data);
                 }
@@ -391,7 +419,7 @@ namespace AntlrGrammarEditor
                 {
                     AddJavaError(e.Data);
                 }
-                else if (runtime == Runtime.Python2 || runtime == Runtime.Python3 || runtime == Runtime.JavaScript)
+                else if (runtime.IsPythonRuntime() || runtime == Runtime.JavaScript)
                 {
                     lock (_buffer)
                     {

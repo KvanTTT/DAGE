@@ -40,7 +40,7 @@ namespace AntlrGrammarEditor
             Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
             foreach (var runtime in grammar.Runtimes)
             {
-                Parse(state, runtime, cancellationToken);                
+                Parse(state, runtime, cancellationToken);
             }
 
             return _result;

@@ -8,22 +8,32 @@ namespace AntlrGrammarEditor
     {
         private bool _question;
         private bool _lexer, _parser;
-        private List<string> _rules = new List<string>();
-        private List<CodeInsertion> _codeInsertions = new List<CodeInsertion>();
 
-        public List<string> Rules => _rules;
+        public List<string> Rules { get; } = new List<string>();
 
-        public List<CodeInsertion> CodeInsertions => _codeInsertions;
+        public List<CodeInsertion> CodeInsertions { get; } = new List<CodeInsertion>();
 
         public string GrammarName { get; private set; }
 
         public CodeSource GrammarSource { get; private set; }
+
+        public string SuperClass { get; private set; }
 
         public void CollectInfo(CodeSource grammarSource, ANTLRv4Parser.GrammarSpecContext context)
         {
             GrammarSource = grammarSource;
             var walker = new ParseTreeWalker();
             walker.Walk(this, context);
+        }
+
+        public override void EnterOption([NotNull] ANTLRv4Parser.OptionContext context)
+        {
+            string optionName = context.identifier()?.GetText();
+
+            if (optionName == "superClass")
+            {
+                SuperClass = context.optionValue()?.GetText();
+            }
         }
 
         public override void EnterAction([NotNull] ANTLRv4Parser.ActionContext context)
@@ -73,7 +83,7 @@ namespace AntlrGrammarEditor
 
         public override void EnterParserRuleSpec([NotNull] ANTLRv4Parser.ParserRuleSpecContext context)
         {
-            _rules.Add(context.RULE_REF().GetText());
+            Rules.Add(context.RULE_REF().GetText());
             _parser = true;
         }
 
@@ -129,7 +139,7 @@ namespace AntlrGrammarEditor
                     Lexer = _lexer,
                     Predicate = _question
                 };
-                _codeInsertions.Add(codeInsertion);
+                CodeInsertions.Add(codeInsertion);
             }
         }
     }

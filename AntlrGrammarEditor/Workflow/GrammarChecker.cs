@@ -52,6 +52,16 @@ namespace AntlrGrammarEditor
                     var shortFileName = Path.GetFileNameWithoutExtension(grammarFileName);
                     result.GrammarActionsTextSpan[grammarFileName] = grammarInfoCollectorListener.CodeInsertions;
 
+                    if (grammarFileName.Contains(Grammar.LexerPostfix))
+                    {
+                        grammar.LexerSuperClass = grammarInfoCollectorListener.SuperClass;
+                    }
+
+                    if (grammarFileName.Contains(Grammar.ParserPostfix))
+                    {
+                        grammar.ParserSuperClass = grammarInfoCollectorListener.SuperClass;
+                    }
+
                     if (!shortFileName.Contains(Grammar.LexerPostfix))
                     {
                         string root;
@@ -71,6 +81,7 @@ namespace AntlrGrammarEditor
                             root = grammar.PreprocessorRoot;
                             preprocessor = true;
                         }
+
                         if (rules.Count > 0 && !rules.Contains(root))
                         {
                             root = rules[0];
