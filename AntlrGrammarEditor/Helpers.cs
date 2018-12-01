@@ -63,5 +63,30 @@ namespace AntlrGrammarEditor
         {
             return message.Data?.Contains("Picked up JAVA_TOOL_OPTIONS") == true;
         }
+
+        public static string GetGeneralRuntimeName(this Runtime runtime)
+        {
+            if (runtime.IsCSharpRuntime())
+            {
+                return "CSharp";
+            }
+
+            if (runtime.IsPythonRuntime())
+            {
+                return "Python";
+            }
+
+            return runtime.ToString();
+        }
+
+        public static bool IsCSharpRuntime(this Runtime runtime)
+        {
+            return runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard;
+        }
+
+        public static bool IsPythonRuntime(this Runtime runtime)
+        {
+            return runtime == Runtime.Python2 || runtime == Runtime.Python3;
+        }
     }
 }
