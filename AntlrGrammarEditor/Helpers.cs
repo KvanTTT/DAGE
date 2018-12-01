@@ -25,7 +25,7 @@ namespace AntlrGrammarEditor
                         string version = "";
                         processor.ErrorDataReceived += (sender, e) =>
                         {
-                            if (!e.IsIgnoreError())
+                            if (!e.IsIgnoreJavaError())
                                 version += e.Data + Environment.NewLine;
                         };
                         processor.Start();
@@ -59,7 +59,7 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        public static bool IsIgnoreError(this DataReceivedEventArgs message)
+        public static bool IsIgnoreJavaError(this DataReceivedEventArgs message)
         {
             return message.Data?.Contains("Picked up JAVA_TOOL_OPTIONS") == true;
         }

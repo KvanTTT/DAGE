@@ -182,7 +182,7 @@ namespace AntlrGrammarEditor
                     
                     void VersionCollectFunc(object sender, DataReceivedEventArgs e)
                     {
-                        if (!e.IsIgnoreError())
+                        if (!(runtime == Runtime.Java && e.IsIgnoreJavaError()))
                             version += e.Data + Environment.NewLine;
                     }
 

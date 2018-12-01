@@ -407,7 +407,7 @@ namespace AntlrGrammarEditor
 
         private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
+            if (!string.IsNullOrEmpty(e.Data))
             {
                 Console.WriteLine(e.Data);
                 Runtime runtime = _currentRuntimeInfo.Runtime;
@@ -435,10 +435,11 @@ namespace AntlrGrammarEditor
 
         private void ParserCompilation_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
+            if (!string.IsNullOrEmpty(e.Data))
             {
                 Console.WriteLine(e.Data);
-                if (_currentRuntimeInfo.Runtime == Runtime.CSharpOptimized || _currentRuntimeInfo.Runtime == Runtime.CSharpStandard)
+
+                if (_currentRuntimeInfo.Runtime.IsCSharpRuntime())
                 {
                     AddCSharpError(e.Data);
                 }
@@ -501,6 +502,11 @@ namespace AntlrGrammarEditor
                     int codeLine = int.Parse(strs[1]);
                     bool isWarning = strs[2].Trim() == "warning";
                     string rest = string.Join(":", strs.Skip(2));
+
+                    if (rest.Contains("warning: [deprecation] ANTLRInputStream"))
+                    {
+                        return;
+                    }
 
                     if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> textSpanMappings))
                     {
