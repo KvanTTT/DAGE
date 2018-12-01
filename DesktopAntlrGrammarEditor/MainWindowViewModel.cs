@@ -22,6 +22,14 @@ namespace DesktopAntlrGrammarEditor
 {
     public class MainWindowViewModel : ReactiveObject
     {
+        private readonly static Dictionary<string, string> _highlightings = new Dictionary<string, string>
+        {
+            [".cs"] = "C#",
+            [".java"] = "Java",
+            [".php"] = "PHP",
+            [".js"] = "JavaScript",
+        };
+
         private readonly Window _window;
         private readonly Settings _settings;
         private Grammar _grammar;
@@ -49,13 +57,7 @@ namespace DesktopAntlrGrammarEditor
             _parseTreeTextBox = _window.Find<TextEditor>("ParseTreeTextBox");
             _tokensTextBox = _window.Find<TextEditor>("TokensTextBox");
 
-            using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("DesktopAntlrGrammarEditor.Antlr4.xshd"))
-            {
-                using (XmlTextReader reader = new XmlTextReader(s))
-                {
-                    _grammarTextBox.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
-                }
-            }
+            SetAntlrHighlighting();
 
             _settings = Settings.Load();
 
@@ -134,6 +136,17 @@ namespace DesktopAntlrGrammarEditor
             IndentedTree = _settings.IndentedTree;
         }
 
+        private void SetAntlrHighlighting()
+        {
+            using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("DesktopAntlrGrammarEditor.Antlr4.xshd"))
+            {
+                using (XmlTextReader reader = new XmlTextReader(s))
+                {
+                    _grammarTextBox.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+                }
+            }
+        }
+
         public string OpenedGrammarFile
         {
             get => _openedGrammarFile;
@@ -163,6 +176,16 @@ namespace DesktopAntlrGrammarEditor
 
                         _settings.OpenedGrammarFile = value;
                         _settings.Save();
+
+                        string extension = Path.GetExtension(value).ToLowerInvariant();
+                        if (_highlightings.TryGetValue(extension, out string highlighting))
+                        {
+                            _grammarTextBox.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition(highlighting);
+                        }
+                        else if (extension == ".g4")
+                        {
+                            SetAntlrHighlighting();
+                        }
 
                         this.RaisePropertyChanged(nameof(IsParserOpened));
                         this.RaisePropertyChanged(nameof(IsPreprocessor));
@@ -219,6 +242,28 @@ namespace DesktopAntlrGrammarEditor
                     _workflow.Runtime = value.Runtime;
                     _grammar.Runtimes.Clear();
                     _grammar.Runtimes.Add(value.Runtime);
+
+                    int index = 0;
+                    while (index < GrammarFiles.Count)
+                    {
+                        string grammarFile = GrammarFiles[index];
+                        if (!Path.GetExtension(grammarFile).Equals(".g4", StringComparison.OrdinalIgnoreCase))
+                        {
+                            GrammarFiles.Remove(grammarFile);
+                        }
+                        else
+                        {
+                            index++;
+                        }
+                    }
+
+                    InitGrammarRuntimeFiles();
+
+                    if (!GrammarFiles.Contains(OpenedGrammarFile))
+                    {
+                        OpenedGrammarFile = GrammarFiles.First();
+                    }
+
                     this.RaisePropertyChanged();
                     if (AutoProcessing)
                     {
@@ -798,14 +843,41 @@ namespace DesktopAntlrGrammarEditor
         private void InitFiles()
         {
             GrammarFiles.Clear();
+
             foreach (var file in _grammar.Files)
             {
                 GrammarFiles.Add(file);
             }
+
+            InitGrammarRuntimeFiles();
+
             TextFiles.Clear();
             foreach (var file in _grammar.TextFiles)
             {
                 TextFiles.Add(new FileName(file));
+            }
+        }
+
+        private void InitGrammarRuntimeFiles()
+        {
+            RuntimeInfo value = SelectedRuntime;
+            string[] runtimeFiles = new string[0];
+            string runtimeName = value.Runtime.ToString();
+            string runtimeFilesPath = Path.Combine(_grammar.Directory, runtimeName);
+            if (!Directory.Exists(runtimeFilesPath))
+            {
+                runtimeName = value.Runtime.GetGeneralRuntimeName();
+                runtimeFilesPath = Path.Combine(_grammar.Directory, runtimeName);
+            }
+
+            if (Directory.Exists(runtimeFilesPath))
+            {
+                runtimeFiles = Directory.GetFiles(runtimeFilesPath, "*." + value.Extensions[0]);
+            }
+
+            foreach (string runtimeFile in runtimeFiles)
+            {
+                GrammarFiles.Add(Path.Combine(runtimeName, Path.GetFileName(runtimeFile)));
             }
         }
 
