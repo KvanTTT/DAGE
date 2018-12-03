@@ -186,7 +186,7 @@ namespace AntlrGrammarEditor.Tests
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
-            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.StartLineColumn.Line);
+            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.GetLineColumn().BeginLine);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -374,10 +374,10 @@ namespace AntlrGrammarEditor.Tests
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             var errors = parserGeneratedState.Errors;
             Assert.AreEqual(8, errors.Count);
-            Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 3).Count());
-            Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 6).Count());
-            Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 8).Count());
-            Assert.AreEqual(2, errors.Where(e => e.TextSpan.StartLineColumn.Line == 9).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.GetLineColumn().BeginLine == 3).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.GetLineColumn().BeginLine == 6).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.GetLineColumn().BeginLine == 8).Count());
+            Assert.AreEqual(2, errors.Where(e => e.TextSpan.GetLineColumn().BeginLine == 9).Count());
         }
     }
 }

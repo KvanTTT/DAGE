@@ -23,6 +23,7 @@ namespace AntlrGrammarEditor
         private List<string> _buffer;
         private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping;
         private RuntimeInfo _currentRuntimeInfo;
+        private HashSet<string> _processedMessages;
 
         public string RuntimeLibrary { get; set; }
 
@@ -107,6 +108,7 @@ namespace AntlrGrammarEditor
                 PrepareParserCode(workingDirectory, runtimeDir);
 
                 _buffer = new List<string>();
+                _processedMessages = new HashSet<string>();
 
                 processor = new Processor(_currentRuntimeInfo.RuntimeToolName, arguments, workingDirectory);
                 processor.CancellationToken = cancellationToken;
@@ -446,6 +448,12 @@ namespace AntlrGrammarEditor
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
+                if (_processedMessages.Contains(e.Data))
+                {
+                    return;
+                }
+
+                _processedMessages.Add(e.Data);
                 Console.WriteLine(e.Data);
 
                 if (_currentRuntimeInfo.Runtime.IsCSharpRuntime())
@@ -527,7 +535,7 @@ namespace AntlrGrammarEditor
             {
                 string grammarFileName = GetGrammarFromCodeFileName(_currentRuntimeInfo, codeFileName);
                 textSpan = TextHelpers.GetSourceTextSpanForLine(textSpanMappings, line, grammarFileName);
-                error = new ParsingError(textSpan, $"{grammarFileName}:{textSpan.StartLineColumn.Line}:{rest}", WorkflowStage.ParserCompilied);
+                error = new ParsingError(textSpan, $"{grammarFileName}:{textSpan.GetLineColumn().BeginLine}:{rest}", WorkflowStage.ParserCompilied);
             }
             else
             {
@@ -536,7 +544,7 @@ namespace AntlrGrammarEditor
                     grammarFilesData.FirstOrDefault(file => file.Key.EndsWith(codeFileName, StringComparison.OrdinalIgnoreCase)).Value;
 
                 textSpan = codeSource != null
-                    ? new TextSpan(codeSource, codeSource.LineColumnToPosition(new LineColumn(line, column)), 0)
+                    ? new LineColumnTextSpan(line, column, codeSource).GetTextSpan()
                     : TextSpan.Empty;
                 error = new ParsingError(textSpan, data, WorkflowStage.ParserCompilied);
             }
@@ -608,7 +616,7 @@ namespace AntlrGrammarEditor
             }
             if (!errorSpan.IsEmpty)
             {
-                finalMessage += errorSpan.StartLineColumn.Line + ":";
+                finalMessage += errorSpan.GetLineColumn().BeginLine + ":";
             }
             finalMessage += message == "" ? "Unknown Error" : message;
             AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));
@@ -661,7 +669,7 @@ namespace AntlrGrammarEditor
             }
             if (!errorSpan.IsEmpty)
             {
-                finalMessage += errorSpan.StartLineColumn.Line + ":";
+                finalMessage += errorSpan.GetLineColumn().BeginLine + ":";
             }
             finalMessage += message == "" ? "Unknown Error" : message;
             AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));
@@ -699,7 +707,7 @@ namespace AntlrGrammarEditor
                 }
                 if (!errorSpan.IsEmpty)
                 {
-                    finalMessage += errorSpan.StartLineColumn.Line + ":";
+                    finalMessage += errorSpan.GetLineColumn().BeginLine + ":";
                 }
                 finalMessage += message == "" ? "Unknown Error" : message;
                 AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));

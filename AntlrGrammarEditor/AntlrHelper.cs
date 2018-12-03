@@ -20,7 +20,7 @@ namespace AntlrGrammarEditor
                 }
             }
 
-            var result = new TextSpan(source, start.StartIndex, stop.StopIndex - start.StartIndex + 1);
+            var result = new TextSpan(start.StartIndex, stop.StopIndex - start.StartIndex + 1, source);
             return result;
         }
 
@@ -31,7 +31,7 @@ namespace AntlrGrammarEditor
 
         public static TextSpan GetTextSpan(this IToken token, CodeSource source)
         {
-            var result = new TextSpan(source, token.StartIndex, token.StopIndex - token.StartIndex + 1);
+            var result = new TextSpan(token.StartIndex, token.StopIndex - token.StartIndex + 1, source);
             return result;
         }
     }

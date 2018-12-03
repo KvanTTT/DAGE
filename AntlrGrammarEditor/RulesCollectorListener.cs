@@ -128,7 +128,7 @@ namespace AntlrGrammarEditor
             var text = context.GetText();
             text = text.Substring(1, text.Length - 2);
             var textSpan = context.GetTextSpan(GrammarSource);
-            textSpan = new TextSpan(GrammarSource, textSpan.Start + 1, textSpan.Length - 2);
+            textSpan = new TextSpan(textSpan.Start + 1, textSpan.Length - 2, GrammarSource);
 
             if (_lexer || _parser)
             {

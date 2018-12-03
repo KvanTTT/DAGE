@@ -25,7 +25,7 @@ namespace AntlrGrammarEditor
         }
 
         public ParsingError(int line, int column, string message, CodeSource codeSource, WorkflowStage stage)
-            : this(new TextSpan(codeSource, codeSource.LineColumnToPosition(new LineColumn(line, column)), 1), message, stage)
+            : this(new LineColumnTextSpan(line, column, codeSource).GetTextSpan(), message, stage)
         {
             Message = message;
             WorkflowStage = stage;

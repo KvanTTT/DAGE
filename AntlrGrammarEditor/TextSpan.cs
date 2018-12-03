@@ -2,18 +2,19 @@
 
 namespace AntlrGrammarEditor
 {
-    /// <summary>
-    /// Source: Roslyn, http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis/Text/TextSpan.cs
-    /// </summary>
     public struct TextSpan : IEquatable<TextSpan>, IComparable<TextSpan>
     {
-        public static TextSpan Empty => new TextSpan(CodeSource.Empty, 0, 0);
+        public static TextSpan Empty => new TextSpan(0, 0, CodeSource.Empty);
 
-        private readonly CodeSource source;
+        public int Start { get; }
 
-        public TextSpan(CodeSource codeSource, int start, int length)
+        public int Length { get; }
+
+        public CodeSource Source { get; }
+
+        public TextSpan(int start, int length, CodeSource codeSource)
         {
-            source = codeSource ?? throw new ArgumentNullException(nameof(codeSource));
+            Source = codeSource ?? throw new ArgumentNullException(nameof(codeSource));
 
             if (start < 0)
             {
@@ -31,76 +32,25 @@ namespace AntlrGrammarEditor
 
         public TextSpan(TextSpan textSpan)
         {
-            source = textSpan.Source;
+            Source = textSpan.Source;
             Start = textSpan.Start;
             Length = textSpan.Length;
         }
 
-        public CodeSource Source => source ?? CodeSource.Empty;
-
-        public int Start { get; }
-
         public int End => Start + Length;
 
-        public int Length { get; }
+        public bool IsEmpty => Start == 0 && Length == 0;
 
-        public bool IsEmpty => this.Length == 0;
-
-        public LineColumn StartLineColumn => Source.PositionToLineColumn(Start);
-
-        public LineColumn EndLineColumn => Source.PositionToLineColumn(End);
-
-        public bool Contains(int position)
+        public LineColumnTextSpan GetLineColumn()
         {
-            return unchecked((uint)(position - Start) < (uint)Length);
+            Source.PositionToLineColumn(Start, out int startLine, out int startColumn);
+            Source.PositionToLineColumn(End, out int endLine, out int endColumn);
+            return new LineColumnTextSpan(startLine, startColumn, endLine, endColumn, Source);
         }
 
-        public bool Contains(TextSpan span)
+        public static TextSpan FromBounds(int start, int end, CodeSource source)
         {
-            return span.Start >= Start && span.End <= End;
-        }
-
-        public bool IntersectsWith(TextSpan span)
-        {
-            return span.Start <= End && span.End >= Start;
-        }
-
-        public bool IntersectsWith(int position)
-        {
-            return unchecked((uint)(position - Start) <= (uint)Length);
-        }
-
-        public TextSpan Intersection(TextSpan span)
-        {
-            int intersectStart = Math.Max(Start, span.Start);
-            int intersectEnd = Math.Min(End, span.End);
-
-            return intersectStart <= intersectEnd
-                ? FromBounds(source, intersectStart, intersectEnd)
-                : default(TextSpan);
-        }
-
-        public TextSpan Union(TextSpan span)
-        {
-            int unionStart = Math.Min(Start, span.Start);
-            int unionEnd = Math.Max(End, span.End);
-
-            return FromBounds(source, unionStart, unionEnd);
-        }
-
-        public static TextSpan FromBounds(CodeSource source, int start, int end)
-        {
-            return new TextSpan(source, start, end - start);
-        }
-
-        public static bool operator ==(TextSpan left, TextSpan right)
-        {
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(TextSpan left, TextSpan right)
-        {
-            return !left.Equals(right);
+            return new TextSpan(start, end - start, source);
         }
 
         public bool Equals(TextSpan other)
@@ -110,7 +60,7 @@ namespace AntlrGrammarEditor
 
         public override bool Equals(object obj)
         {
-            return obj is TextSpan && Equals((TextSpan)obj);
+            return obj is TextSpan textSpan && Equals(textSpan);
         }
 
         public override int GetHashCode()
@@ -131,7 +81,7 @@ namespace AntlrGrammarEditor
 
         public override string ToString()
         {
-            return $"[{Start}..{End})";
+            return Start == End ? $"[{Start})" : $"[{Start}..{End})";
         }
     }
 }

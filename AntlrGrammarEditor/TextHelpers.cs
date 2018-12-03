@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace AntlrGrammarEditor
@@ -11,16 +10,18 @@ namespace AntlrGrammarEditor
             var result = new List<TextSpanMapping>(source.Count);
             int destInd = 0;
             IEnumerable<CodeInsertion> sortedSource = source.Where(s => s.Lexer == lexer).OrderBy(s => s.Predicate);
+
             foreach (CodeInsertion s in sortedSource)
             {
                 destInd = destinationSource.Text.IgnoreWhitespaceIndexOf(s.Text, destInd);
                 result.Add(new TextSpanMapping
                 {
                     SourceTextSpan = s.TextSpan,
-                    DestinationTextSpan = new TextSpan(destinationSource, destInd, s.Text.Length)
+                    DestTextSpan = new TextSpan(destInd, s.Text.Length, destinationSource)
                 });
                 destInd += s.Text.Length;
             }
+
             return result;
         }
 
@@ -64,8 +65,9 @@ namespace AntlrGrammarEditor
         {
             foreach (TextSpanMapping textSpanMapping in textSpanMappings)
             {
-                if (destinationLine >= textSpanMapping.DestinationTextSpan.StartLineColumn.Line &&
-                    destinationLine <= textSpanMapping.DestinationTextSpan.EndLineColumn.Line)
+                LineColumnTextSpan destLineColumnTextSpan = textSpanMapping.DestTextSpan.GetLineColumn();
+                if (destinationLine >= destLineColumnTextSpan.BeginLine &&
+                    destinationLine <= destLineColumnTextSpan.EndLine)
                 {
                     return textSpanMapping.SourceTextSpan;
                 }
@@ -73,7 +75,7 @@ namespace AntlrGrammarEditor
 
             if (textSpanMappings.Count > 0)
             {
-                return new TextSpan(textSpanMappings[0].SourceTextSpan.Source, 0, 0);
+                return new TextSpan(0, 0, textSpanMappings[0].SourceTextSpan.Source);
             }
 
             return TextSpan.Empty;
@@ -83,8 +85,9 @@ namespace AntlrGrammarEditor
         {
             foreach (var m in mapping)
             {
-                if (destLine >= m.DestinationTextSpan.StartLineColumn.Line &&
-                    destLine <= m.DestinationTextSpan.EndLineColumn.Line)
+                LineColumnTextSpan destLineColumnTextSpan = m.DestTextSpan.GetLineColumn();
+                if (destLine >= destLineColumnTextSpan.BeginLine &&
+                    destLine <= destLineColumnTextSpan.EndLine)
                 {
                     return m.SourceTextSpan;
                 }
