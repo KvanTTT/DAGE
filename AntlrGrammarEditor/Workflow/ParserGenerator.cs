@@ -53,6 +53,12 @@ namespace AntlrGrammarEditor
                 var jarGenerator = GeneratorTool ?? Path.Combine("Generators", runtimeInfo.JarGenerator);
                 foreach (string grammarFileName in state.InputState.Grammar.Files)
                 {
+                    string extension = Path.GetExtension(grammarFileName);
+                    if (extension != Grammar.AntlrDotExt)
+                    {
+                        continue;
+                    }
+
                     _currentGrammarSource = state.GrammarFilesData[grammarFileName];
 
                     var arguments =

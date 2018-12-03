@@ -8,9 +8,9 @@ namespace AntlrGrammarEditor
     {
         public static List<TextSpanMapping> Map(List<CodeInsertion> source, CodeSource destinationSource, bool lexer)
         {
-            var result = new List<TextSpanMapping>();
+            var result = new List<TextSpanMapping>(source.Count);
             int destInd = 0;
-            CodeInsertion[] sortedSource = source.Where(s => s.Lexer == lexer).OrderBy(s => s.Predicate).ToArray();
+            IEnumerable<CodeInsertion> sortedSource = source.Where(s => s.Lexer == lexer).OrderBy(s => s.Predicate);
             foreach (CodeInsertion s in sortedSource)
             {
                 destInd = destinationSource.Text.IgnoreWhitespaceIndexOf(s.Text, destInd);
@@ -60,15 +60,22 @@ namespace AntlrGrammarEditor
             return destInd;
         }
 
-        public static TextSpan GetSourceTextSpanForLine(List<TextSpanMapping> mapping, int destinationLine)
+        public static TextSpan GetSourceTextSpanForLine(List<TextSpanMapping> textSpanMappings, int destinationLine, string sourceFileName)
         {
-            foreach (var m in mapping)
+            foreach (TextSpanMapping textSpanMapping in textSpanMappings)
             {
-                if (destinationLine >= m.DestinationTextSpan.StartLineColumn.Line && destinationLine <= m.DestinationTextSpan.EndLineColumn.Line)
+                if (destinationLine >= textSpanMapping.DestinationTextSpan.StartLineColumn.Line &&
+                    destinationLine <= textSpanMapping.DestinationTextSpan.EndLineColumn.Line)
                 {
-                    return m.SourceTextSpan;
+                    return textSpanMapping.SourceTextSpan;
                 }
             }
+
+            if (textSpanMappings.Count > 0)
+            {
+                return new TextSpan(textSpanMappings[0].SourceTextSpan.Source, 0, 0);
+            }
+
             return TextSpan.Empty;
         }
 
@@ -76,7 +83,8 @@ namespace AntlrGrammarEditor
         {
             foreach (var m in mapping)
             {
-                if (destLine >= m.DestinationTextSpan.StartLineColumn.Line && destLine <= m.DestinationTextSpan.EndLineColumn.Line)
+                if (destLine >= m.DestinationTextSpan.StartLineColumn.Line &&
+                    destLine <= m.DestinationTextSpan.EndLineColumn.Line)
                 {
                     return m.SourceTextSpan;
                 }

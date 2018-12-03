@@ -29,8 +29,16 @@ namespace AntlrGrammarEditor
                 {
                     string code = File.ReadAllText(Path.Combine(grammar.Directory, grammarFileName));
                     var inputStream = new AntlrInputStream(code);
-                    antlrErrorListener.CodeSource = new CodeSource(grammarFileName, inputStream.ToString());
-                    result.GrammarFilesData[grammarFileName] = antlrErrorListener.CodeSource;
+                    var codeSource = new CodeSource(grammarFileName, inputStream.ToString());
+                    result.GrammarFilesData.Add(grammarFileName, codeSource);
+
+                    string extension = Path.GetExtension(grammarFileName);
+                    if (extension != Grammar.AntlrDotExt)
+                    {
+                        continue;
+                    }
+
+                    antlrErrorListener.CodeSource = codeSource;
                     var antlr4Lexer = new ANTLRv4Lexer(inputStream);
                     antlr4Lexer.RemoveErrorListeners();
                     antlr4Lexer.AddErrorListener(antlrErrorListener);

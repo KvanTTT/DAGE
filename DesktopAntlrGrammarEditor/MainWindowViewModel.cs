@@ -109,9 +109,9 @@ namespace DesktopAntlrGrammarEditor
             SelectedRuntime = RuntimeInfo.Runtimes[_grammar.Runtimes.First()];
 
             InitFiles();
-            if (string.IsNullOrEmpty(_settings.OpenedGrammarFile))
+            if (string.IsNullOrEmpty(_settings.OpenedGrammarFile) || !_grammar.Files.Contains(_settings.OpenedGrammarFile))
             {
-                OpenedGrammarFile = GrammarFiles.First();
+                OpenedGrammarFile = GrammarFiles.FirstOrDefault();
             }
             else
             {
@@ -243,21 +243,7 @@ namespace DesktopAntlrGrammarEditor
                     _grammar.Runtimes.Clear();
                     _grammar.Runtimes.Add(value.Runtime);
 
-                    int index = 0;
-                    while (index < GrammarFiles.Count)
-                    {
-                        string grammarFile = GrammarFiles[index];
-                        if (!Path.GetExtension(grammarFile).Equals(".g4", StringComparison.OrdinalIgnoreCase))
-                        {
-                            GrammarFiles.Remove(grammarFile);
-                        }
-                        else
-                        {
-                            index++;
-                        }
-                    }
-
-                    InitGrammarRuntimeFiles();
+                    InitGrammarAndCompiliedFiles();
 
                     if (!GrammarFiles.Contains(OpenedGrammarFile))
                     {
@@ -265,6 +251,7 @@ namespace DesktopAntlrGrammarEditor
                     }
 
                     this.RaisePropertyChanged();
+                    this.RaisePropertyChanged(nameof(OpenedGrammarFile));
                     if (AutoProcessing)
                     {
                         Process();
@@ -810,16 +797,23 @@ namespace DesktopAntlrGrammarEditor
                         }
                         i++;
                     }
+
+                    string errorsTextPropertyName;
+                    string errorsExpandedPropertyName;
+
                     if (grammarErrors)
                     {
-                        this.RaisePropertyChanged(nameof(GrammarErrorsText));
-                        this.RaisePropertyChanged(nameof(GrammarErrorsExpanded));
+                        errorsTextPropertyName = nameof(GrammarErrorsText);
+                        errorsExpandedPropertyName = nameof(GrammarErrorsExpanded);
                     }
                     else
                     {
-                        this.RaisePropertyChanged(nameof(TextErrorsText));
-                        this.RaisePropertyChanged(nameof(TextErrorsExpanded));
+                        errorsTextPropertyName = nameof(TextErrorsText);
+                        errorsExpandedPropertyName = nameof(TextErrorsExpanded);
                     }
+
+                    this.RaisePropertyChanged(errorsTextPropertyName);
+                    this.RaisePropertyChanged(errorsExpandedPropertyName);
                 });
             }
         }
@@ -842,14 +836,9 @@ namespace DesktopAntlrGrammarEditor
 
         private void InitFiles()
         {
-            GrammarFiles.Clear();
+            RuntimeInfo selectedRuntime = SelectedRuntime;
 
-            foreach (var file in _grammar.Files)
-            {
-                GrammarFiles.Add(file);
-            }
-
-            InitGrammarRuntimeFiles();
+            InitGrammarAndCompiliedFiles();
 
             TextFiles.Clear();
             foreach (var file in _grammar.TextFiles)
@@ -858,27 +847,64 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private void InitGrammarRuntimeFiles()
+        private void InitGrammarAndCompiliedFiles()
         {
             RuntimeInfo value = SelectedRuntime;
-            string[] runtimeFiles = new string[0];
+
             string runtimeName = value.Runtime.ToString();
             string runtimeFilesPath = Path.Combine(_grammar.Directory, runtimeName);
+
             if (!Directory.Exists(runtimeFilesPath))
             {
                 runtimeName = value.Runtime.GetGeneralRuntimeName();
                 runtimeFilesPath = Path.Combine(_grammar.Directory, runtimeName);
             }
 
+            var runtimeGrammarAndCompiliedFiles = new List<string>();
             if (Directory.Exists(runtimeFilesPath))
             {
-                runtimeFiles = Directory.GetFiles(runtimeFilesPath, "*." + value.Extensions[0]);
+                runtimeGrammarAndCompiliedFiles = GetGrammarAndCompiliedFiles(runtimeFilesPath, runtimeName, value.Extensions[0]);
             }
 
-            foreach (string runtimeFile in runtimeFiles)
+            List<string> grammarAndCompiliedFiles = GetGrammarAndCompiliedFiles(_grammar.Directory, "", value.Extensions[0]);
+
+            _grammar.Files.Clear();
+            GrammarFiles.Clear();
+
+            foreach (string fileName in grammarAndCompiliedFiles)
             {
-                GrammarFiles.Add(Path.Combine(runtimeName, Path.GetFileName(runtimeFile)));
+                string runtimeFile = runtimeGrammarAndCompiliedFiles
+                    .FirstOrDefault(f => Path.GetFileName(f) == fileName);
+
+                string addedFile;
+                if (runtimeFile != null)
+                {
+                    addedFile = runtimeFile;
+                    runtimeGrammarAndCompiliedFiles.Remove(runtimeFile);
+                }
+                else
+                {
+                    addedFile = fileName;
+                }
+
+                _grammar.Files.Add(addedFile);
+                GrammarFiles.Add(addedFile);
             }
+
+            foreach (string fileName in runtimeGrammarAndCompiliedFiles)
+            {
+                _grammar.Files.Add(fileName);
+                GrammarFiles.Add(fileName);
+            }
+        }
+
+        private List<string> GetGrammarAndCompiliedFiles(string path, string runtimeName, string extension)
+        {
+            return Directory.GetFiles(path, "*.*")
+                            .Where(file => file.EndsWith(extension, StringComparison.OrdinalIgnoreCase)
+                                        || file.EndsWith(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase))
+                            .Select(file => Path.Combine(runtimeName, Path.GetFileName(file)))
+                            .ToList();
         }
 
         private void SaveGrammarFileIfRequired()

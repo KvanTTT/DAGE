@@ -58,7 +58,7 @@ namespace AntlrGrammarEditor
                     StopIfRequired();
                     _grammar.Runtimes.Clear();
                     _grammar.Runtimes.Add(value);
-                    RollbackToStage(WorkflowStage.GrammarChecked);
+                    RollbackToStage(WorkflowStage.Input);
                 }
             }
         }
