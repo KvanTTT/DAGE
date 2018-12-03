@@ -830,7 +830,19 @@ namespace DesktopAntlrGrammarEditor
                 {
                     OpenedGrammarFile = parsingError.TextSpan.Source.Name;
                 }
-                textBox.Select(parsingError.TextSpan.Start, parsingError.TextSpan.Length);
+
+                TextSpan selectTextSpan;
+                if (parsingError.TextSpan.Length != 0)
+                {
+                    selectTextSpan = parsingError.TextSpan;
+                }
+                else
+                {
+                    TextSpan lineTextSpan = parsingError.TextSpan.Source.GetTextSpanAtLine(parsingError.TextSpan.GetLineColumn().BeginLine);
+                    selectTextSpan = lineTextSpan;
+                }
+
+                textBox.Select(selectTextSpan.Start, selectTextSpan.Length);
             }
         }
 
