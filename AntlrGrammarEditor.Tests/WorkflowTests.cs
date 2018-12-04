@@ -172,9 +172,8 @@ namespace AntlrGrammarEditor.Tests
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "Test", ".");
-            grammar.Runtimes.Clear();
-            grammar.Runtimes.Add(runtime);
             var workflow = new Workflow(grammar);
+            workflow.Runtime = runtime;
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage, state.Exception?.ToString());
@@ -200,9 +199,8 @@ namespace AntlrGrammarEditor.Tests
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
-            grammar.Runtimes.Clear();
-            grammar.Runtimes.Add(runtime);
             var workflow = new Workflow(grammar);
+            workflow.Runtime = runtime;
             workflow.Text =
                 @"!  asdf  1234";
 
@@ -244,9 +242,8 @@ namespace AntlrGrammarEditor.Tests
                 WS:     [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
             grammar.CaseInsensitiveType = lowerCase ? CaseInsensitiveType.lower : CaseInsensitiveType.UPPER;
-            grammar.Runtimes.Clear();
-            grammar.Runtimes.Add(runtime);
             var workflow = new Workflow(grammar);
+            workflow.Runtime = runtime;
             workflow.Text = @"A a 1234";
 
             var state = workflow.Process();
@@ -264,40 +261,13 @@ namespace AntlrGrammarEditor.Tests
                 t: T;
                 T:  ['' ]+;";
             var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
-            grammar.Runtimes = new HashSet<Runtime> {Runtime.Java};
             var workflow = new Workflow(grammar);
+            workflow.Runtime = Runtime.Java;
             workflow.Text = @" ";
             
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
             Assert.IsTrue(((TextParsedState)state).ParserCompiliedState.ParserGeneratedState.Errors[0].IsWarning);
-        }
-
-        [Test]
-        public void MultiruntimeGrammar()
-        {
-            var grammarText =
-                $@"grammar {TestGrammarName};
-                t: T;
-                T: [a-z]+;";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
-            grammar.Runtimes = new HashSet<Runtime>
-            {
-                Runtime.CSharpOptimized,
-                Runtime.CSharpStandard,
-                Runtime.Java,
-                Runtime.Python2,
-                Runtime.Python3,
-                Runtime.JavaScript,
-                Runtime.Go
-            };
-            var workflow = new Workflow(grammar);
-            workflow.Text = @"asdf";
-
-            var state = workflow.Process();
-            TextParsedState textParsedState = state as TextParsedState;
-            Assert.AreEqual(0, textParsedState.Errors.Count, string.Join(Environment.NewLine, textParsedState.Errors));
-            Assert.AreEqual("(t asdf)", textParsedState.Tree);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -355,9 +325,8 @@ namespace AntlrGrammarEditor.Tests
                   TOKEN: {b==0}? [a-z]+ {b++;};
                   DIGIT: {b==0}? [0-9]+ {b++;};";
             var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
-            grammar.Runtimes.Clear();
-            grammar.Runtimes.Add(runtime);
             var workflow = new Workflow(grammar);
+            workflow.Runtime = runtime;
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage, state.Exception?.ToString());

@@ -25,8 +25,6 @@ namespace AntlrGrammarEditor
 
         public string FileExtension { get; set; } = "txt";
 
-        public HashSet<Runtime> Runtimes = new HashSet<Runtime>();
-
         public bool SeparatedLexerAndParser { get; set; }
 
         public CaseInsensitiveType CaseInsensitiveType { get; set; }

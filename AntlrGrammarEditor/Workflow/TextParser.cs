@@ -38,17 +38,8 @@ namespace AntlrGrammarEditor
             };
 
             Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
-            foreach (var runtime in grammar.Runtimes)
-            {
-                Parse(state, runtime, cancellationToken);
-            }
+            Runtime runtime = state.ParserGeneratedState.Runtime;
 
-            return _result;
-        }
-
-        private void Parse(ParserCompiliedState state, Runtime runtime, CancellationToken cancellationToken)
-        {
-            Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
             Processor processor = null;
             try
             {
@@ -109,6 +100,8 @@ namespace AntlrGrammarEditor
             {
                 processor?.Dispose();
             }
+
+            return _result;
         }
 
         private string PrepareCSharpToolAndArgs(Grammar grammar, string parseTextFileName, out string args)

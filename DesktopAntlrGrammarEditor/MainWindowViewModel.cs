@@ -107,7 +107,7 @@ namespace DesktopAntlrGrammarEditor
             }
 
             _workflow = new Workflow(grammar);
-            SelectedRuntime = RuntimeInfo.Runtimes[Grammar.Runtimes.First()];
+            SelectedRuntime = RuntimeInfo.InitOrGetRuntimeInfo(_workflow.Runtime);
 
             InitFiles();
             if (string.IsNullOrEmpty(_settings.OpenedGrammarFile) || !Grammar.Files.Contains(_settings.OpenedGrammarFile))
@@ -235,14 +235,12 @@ namespace DesktopAntlrGrammarEditor
 
         public RuntimeInfo SelectedRuntime
         {
-            get => RuntimeInfo.Runtimes[Grammar.Runtimes.First()];
+            get => RuntimeInfo.Runtimes[_workflow.Runtime];
             set
             {
-                if (RuntimeInfo.Runtimes[Grammar.Runtimes.First()] != value)
+                if (RuntimeInfo.Runtimes[_workflow.Runtime] != value)
                 {
                     _workflow.Runtime = value.Runtime;
-                    Grammar.Runtimes.Clear();
-                    Grammar.Runtimes.Add(value.Runtime);
 
                     InitGrammarAndCompiliedFiles();
 

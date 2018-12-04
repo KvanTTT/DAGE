@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
 
 namespace AntlrGrammarEditor
 {
@@ -20,7 +19,7 @@ namespace AntlrGrammarEditor
             bool separatedLexerAndParser = false;
             CaseInsensitiveType caseInsensitiveType = CaseInsensitiveType.None;
             string lexerOrCombinedGrammarFile = null;
-            
+
             if (File.Exists(fileOrDirectoryName))
             {
                 directoryName = Path.GetDirectoryName(fileOrDirectoryName);
@@ -100,28 +99,22 @@ namespace AntlrGrammarEditor
                 }
             }
 
-            string[] textFiles;
             string examplesDir = Path.Combine(directoryName, "examples");
-            if (Directory.Exists(examplesDir))
-            {
-                textFiles = Directory.GetFiles(examplesDir, "*.*", SearchOption.AllDirectories);
-            }
-            else
-            {
-                textFiles = new string[0];
-            }
+
+            string[] textFiles = Directory.Exists(examplesDir)
+                ? Directory.GetFiles(examplesDir, "*.*", SearchOption.AllDirectories)
+                : new string[0];
 
             var result = new Grammar
             {
                 Name = grammarName,
                 Directory = fileOrDirectoryName,
                 CaseInsensitiveType = caseInsensitiveType,
-                Runtimes = new HashSet<Runtime> {Runtime.Java},
                 Files = grammarFiles,
                 SeparatedLexerAndParser = separatedLexerAndParser,
                 TextFiles = textFiles.ToList()
             };
-                
+
             return result;
         }
 
@@ -131,7 +124,6 @@ namespace AntlrGrammarEditor
             {
                 Name = "NewGrammar",
                 Root = "rootRule",
-                Runtimes = new HashSet<Runtime> { Runtime.CSharpOptimized },
                 SeparatedLexerAndParser = false,
                 Preprocessor = false,
                 PreprocessorRoot = "preprocessorRootRule",
@@ -145,8 +137,7 @@ namespace AntlrGrammarEditor
         {
             var result = new Grammar
             {
-                Name = grammarName,
-                Runtimes = new HashSet<Runtime> { Runtime.CSharpOptimized }
+                Name = grammarName
             };
 
             result.Directory = directory;
@@ -165,7 +156,6 @@ namespace AntlrGrammarEditor
             var result = new Grammar
             {
                 Name = grammarName,
-                Runtimes = new HashSet<Runtime> { Runtime.CSharpOptimized },
                 SeparatedLexerAndParser = true,
             };
 

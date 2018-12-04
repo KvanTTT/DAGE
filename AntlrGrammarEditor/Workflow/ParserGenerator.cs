@@ -12,33 +12,38 @@ namespace AntlrGrammarEditor
         private CodeSource _currentGrammarSource;
         private ParserGeneratedState _result;
 
+        public Runtime Runtime { get; }
+
         public bool GenerateListener { get; set; } = true;
 
         public bool GenerateVisitor { get; set; } = true;
 
         public string GeneratorTool { get; set; }
 
+        public ParserGenerator(Runtime runtime)
+        {
+            Runtime = runtime;
+        }
+
         public ParserGeneratedState Generate(GrammarCheckedState state,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Grammar grammar = state.InputState.Grammar;
 
-            _result = new ParserGeneratedState(state, GenerateListener, GenerateVisitor);
+            _result = new ParserGeneratedState(state, Runtime, GenerateListener, GenerateVisitor);
 
-            foreach (Runtime runtime in grammar.Runtimes)
-            {
-                Generate(grammar, runtime, state, cancellationToken);
-            }
+            Generate(grammar, state, cancellationToken);
 
             return _result;
         }
 
-        private void Generate(Grammar grammar, Runtime runtime, GrammarCheckedState state, CancellationToken cancellationToken)
+        private void Generate(Grammar grammar, GrammarCheckedState state, CancellationToken cancellationToken)
         {
             Processor processor = null;
+
             try
             {
-                string runtimeDirectoryName = Path.Combine(HelperDirectoryName, grammar.Name, runtime.ToString());
+                string runtimeDirectoryName = Path.Combine(HelperDirectoryName, grammar.Name, Runtime.ToString());
                 if (Directory.Exists(runtimeDirectoryName))
                 {
                     Directory.Delete(runtimeDirectoryName, true);
@@ -48,7 +53,7 @@ namespace AntlrGrammarEditor
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
+                RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Runtime);
 
                 var jarGenerator = GeneratorTool ?? Path.Combine("Generators", runtimeInfo.JarGenerator);
                 foreach (string grammarFileName in state.InputState.Grammar.Files)
@@ -68,7 +73,7 @@ namespace AntlrGrammarEditor
                         $"{(GenerateVisitor ? "-visitor" : "-no-visitor")} " +
                         $"{(GenerateListener ? "-listener" : "-no-listener")}";
 
-                    if (runtime == Runtime.Go)
+                    if (Runtime == Runtime.Go)
                     {
                         arguments += " -package main";
                     }

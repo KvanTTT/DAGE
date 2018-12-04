@@ -13,6 +13,7 @@ namespace DesktopAntlrGrammarEditor
     {
         private Window _window;
         private Grammar _grammar = GrammarFactory.CreateDefault();
+        private Runtime _runtime;
         private string _grammarDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DAGE Grammars");
 
         public NewGrammarWindowViewModel(Window window)
@@ -117,13 +118,12 @@ namespace DesktopAntlrGrammarEditor
 
         public RuntimeInfo Runtime
         {
-            get => RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First());
+            get => RuntimeInfo.InitOrGetRuntimeInfo(_runtime);
             set
             {
-                if (RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First()) != value)
+                if (_runtime != value.Runtime)
                 {
-                    _grammar.Runtimes.Clear();
-                    _grammar.Runtimes.Add(value.Runtime);
+                    _runtime = value.Runtime;
                     this.RaisePropertyChanged();
                 }
             }

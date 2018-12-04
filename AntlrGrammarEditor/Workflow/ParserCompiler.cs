@@ -31,22 +31,14 @@ namespace AntlrGrammarEditor
             CancellationToken cancellationToken = default(CancellationToken))
         {
             _grammar = state.GrammarCheckedState.InputState.Grammar;
+            Runtime runtime = state.Runtime;
+
             _result = new ParserCompiliedState(state)
             {
                 Root = _grammar.Root,
                 PreprocessorRoot = _grammar.PreprocessorRoot
             };
 
-            foreach (Runtime runtime in _grammar.Runtimes)
-            {
-                Compile(state, runtime, cancellationToken);
-            }
-
-            return _result;
-        }
-
-        private void Compile(ParserGeneratedState state, Runtime runtime, CancellationToken cancellationToken)
-        {
             _currentRuntimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
 
             Processor processor = null;
@@ -143,6 +135,8 @@ namespace AntlrGrammarEditor
             {
                 processor?.Dispose();
             }
+
+            return _result;
         }
 
         private void GetGeneratedFileNames(GrammarCheckedState grammarCheckedState, string generatedGrammarName, string workingDirectory,

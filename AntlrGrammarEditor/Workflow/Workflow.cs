@@ -8,6 +8,7 @@ namespace AntlrGrammarEditor
     public class Workflow
     {
         private Grammar _grammar = new Grammar();
+        private Runtime _runtime = Runtime.Java;
         private string _text = "";
         private bool _indentedTree;
 
@@ -35,14 +36,13 @@ namespace AntlrGrammarEditor
 
         public Runtime Runtime
         {
-            get => _grammar.Runtimes.First();
+            get => _runtime;
             set
             {
-                if (_grammar.Runtimes.First() != value)
+                if (_runtime != value)
                 {
                     StopIfRequired();
-                    _grammar.Runtimes.Clear();
-                    _grammar.Runtimes.Add(value);
+                    _runtime = value;
                     RollbackToStage(WorkflowStage.Input);
                 }
             }
@@ -213,7 +213,7 @@ namespace AntlrGrammarEditor
                     break;
 
                 case WorkflowStage.GrammarChecked:
-                    var parserGenerator = new ParserGenerator
+                    var parserGenerator = new ParserGenerator(Runtime)
                     {
                         ErrorEvent = _errorEvent,
                         GeneratorTool = GeneratorTool,
