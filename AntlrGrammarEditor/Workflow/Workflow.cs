@@ -1,10 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -36,17 +31,7 @@ namespace AntlrGrammarEditor
 
         public IWorkflowState CurrentState => _currentState;
 
-        public Grammar Grammar
-        {
-            get => _grammar;
-            set
-            {
-                StopIfRequired();
-                RollbackToStage(WorkflowStage.Input);
-                _grammar = value;
-                _currentState = new InputState(_grammar);
-            }
-        }
+        public Grammar Grammar { get; }
 
         public Runtime Runtime
         {
@@ -135,6 +120,12 @@ namespace AntlrGrammarEditor
             remove => _textParsedOutputEvent -= value;
         }
 
+        public Workflow(Grammar grammar)
+        {
+            Grammar = grammar ?? throw new ArgumentException(nameof(grammar));
+            _currentState = new InputState(grammar);
+        }
+
         public Task<IWorkflowState> ProcessAsync()
         {
             StopIfRequired();
@@ -212,7 +203,7 @@ namespace AntlrGrammarEditor
             }
         }
 
-        private void ProcessOneStep()
+        private void ProcessOneStep(WorkflowStage endStage = WorkflowStage.TextParsed)
         {
             switch (_currentState.Stage)
             {

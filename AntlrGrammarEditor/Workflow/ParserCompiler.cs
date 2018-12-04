@@ -182,7 +182,7 @@ namespace AntlrGrammarEditor
                     string sourceFileName = Path.Combine(_grammar.Directory, fileName);
                     string destFileName = Path.Combine(workingDirectory, Path.GetFileName(fileName));
 
-                    File.Copy(sourceFileName, destFileName);
+                    File.Copy(sourceFileName, destFileName, true);
                 }
             }
         }
@@ -207,7 +207,7 @@ namespace AntlrGrammarEditor
             string antlrCaseInsensitivePath = Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.cs");
             if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
-                File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath);
+                File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath, true);
             }
 
             File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"), true);
