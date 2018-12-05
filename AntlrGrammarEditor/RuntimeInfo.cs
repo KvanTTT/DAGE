@@ -161,8 +161,6 @@ namespace AntlrGrammarEditor
 
         public bool Initialized { get; private set; }
 
-        public bool Installed => Version != null;
-
         public string Version { get; private set; }
 
         public static RuntimeInfo InitOrGetRuntimeInfo(Runtime runtime)

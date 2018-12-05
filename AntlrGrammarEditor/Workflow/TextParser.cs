@@ -165,7 +165,8 @@ namespace AntlrGrammarEditor
 
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) &&
+                !(_result.ParserCompiliedState.ParserGeneratedState.Runtime == Runtime.Java && e.IsIgnoreJavaError()))
             { 
                 var errorString = Helpers.FixEncoding(e.Data);
                 ParsingError error;
@@ -188,7 +189,8 @@ namespace AntlrGrammarEditor
 
         private void TextParsing_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) &&
+                !(_result.ParserCompiliedState.ParserGeneratedState.Runtime == Runtime.Java && e.IsIgnoreJavaError()))
             {
                 var strs = e.Data.Split(new [] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
 

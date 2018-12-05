@@ -114,7 +114,7 @@ namespace AntlrGrammarEditor
 
         private void ParserGeneration_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreJavaError())
             {
                 var strs = e.Data.Split(':');
                 int line = 1, column = 1;
@@ -142,7 +142,7 @@ namespace AntlrGrammarEditor
 
         private void ParserGeneration_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data))
+            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreJavaError())
             {
             }
         }
