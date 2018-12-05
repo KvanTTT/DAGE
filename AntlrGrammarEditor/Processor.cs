@@ -26,17 +26,16 @@ namespace AntlrGrammarEditor
 
         public CancellationToken CancellationToken { get; set; }
 
-        public Processor(string toolName, string arguments = "", string workingDirecotry = "", int timeout = 0)
+        public Processor(string toolName, string arguments = "", string workingDirectory = "", int timeout = 0)
         {
             ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
             Arguments = arguments ?? throw new ArgumentNullException(nameof(arguments));
-            WorkingDirectory = workingDirecotry;
+            WorkingDirectory = workingDirectory;
             Timeout = timeout;
         }
 
-        public ProcessExecutionResult Start()
+        public void Start()
         {
-            var result = new ProcessExecutionResult();
             _process = new Process();
 
             var startInfo = _process.StartInfo;
@@ -93,8 +92,6 @@ namespace AntlrGrammarEditor
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
 
-            result.ProcessId = _process.Id;
-
             long timeout = Timeout == 0 ? long.MaxValue : Timeout;
 
             while (stopwatch.ElapsedMilliseconds < timeout &&
@@ -103,10 +100,6 @@ namespace AntlrGrammarEditor
                 Thread.Sleep(CheckTimeout);
                 CancellationToken.ThrowIfCancellationRequested();
             }
-
-            result.ExitCode = _process.ExitCode;
-
-            return result;
         }
 
         public void Dispose()

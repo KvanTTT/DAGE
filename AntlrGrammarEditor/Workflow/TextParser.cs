@@ -13,8 +13,6 @@ namespace AntlrGrammarEditor
         private TextParsedState _result;
 
         public string Text { get; }
-
-        public string Root { get; set; }
  
         public bool OnlyTokenize { get; set; }
 
@@ -32,23 +30,11 @@ namespace AntlrGrammarEditor
         public TextParsedState Parse(ParserCompiliedState state,
              CancellationToken cancellationToken = default(CancellationToken))
         {
-            _result = new TextParsedState(state, Text)
-            {
-                Root = Root
-            };
+            _result = new TextParsedState(state, Text);
 
             Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
-            foreach (var runtime in grammar.Runtimes)
-            {
-                Parse(state, runtime, cancellationToken);                
-            }
+            Runtime runtime = state.ParserGeneratedState.Runtime;
 
-            return _result;
-        }
-
-        private void Parse(ParserCompiliedState state, Runtime runtime, CancellationToken cancellationToken)
-        {
-            Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
             Processor processor = null;
             try
             {
@@ -109,11 +95,13 @@ namespace AntlrGrammarEditor
             {
                 processor?.Dispose();
             }
+
+            return _result;
         }
 
         private string PrepareCSharpToolAndArgs(Grammar grammar, string parseTextFileName, out string args)
         {
-            args = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\" {Root} \"{parseTextFileName}\" {OnlyTokenize} {IndentedTree}";
+            args = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\" {_result.ParserCompiliedState.RootOrDefault} \"{parseTextFileName}\" {OnlyTokenize} {IndentedTree}";
             return "dotnet";
         }
 
@@ -177,7 +165,8 @@ namespace AntlrGrammarEditor
 
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
+            if (!string.IsNullOrEmpty(e.Data) &&
+                !(_result.ParserCompiliedState.ParserGeneratedState.Runtime == Runtime.Java && e.IsIgnoreJavaError()))
             { 
                 var errorString = Helpers.FixEncoding(e.Data);
                 ParsingError error;
@@ -200,7 +189,8 @@ namespace AntlrGrammarEditor
 
         private void TextParsing_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreError())
+            if (!string.IsNullOrEmpty(e.Data) &&
+                !(_result.ParserCompiliedState.ParserGeneratedState.Runtime == Runtime.Java && e.IsIgnoreJavaError()))
             {
                 var strs = e.Data.Split(new [] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
 

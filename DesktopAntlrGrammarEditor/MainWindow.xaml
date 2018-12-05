@@ -18,7 +18,7 @@
         <DropDown Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" ></DropDown>
         <StackPanel Grid.Column="5" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal">
           <TextBlock HorizontalAlignment="Right" Text="Root" IsVisible="{Binding IsParserOpened}" />
-          <DropDown Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" IsVisible="{Binding IsParserOpened}" ></DropDown>
+          <DropDown Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" ></DropDown>
           <TextBlock HorizontalAlignment="Right" Text="Runtime" />
           <DropDown Width="90" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></DropDown>
         </StackPanel>

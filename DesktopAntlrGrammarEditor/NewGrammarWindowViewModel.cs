@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using ReactiveUI;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -11,7 +12,9 @@ namespace DesktopAntlrGrammarEditor
     public class NewGrammarWindowViewModel : ReactiveObject
     {
         private Window _window;
+        private string _grammarRoot;
         private Grammar _grammar = GrammarFactory.CreateDefault();
+        private Runtime _runtime;
         private string _grammarDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DAGE Grammars");
 
         public NewGrammarWindowViewModel(Window window)
@@ -22,6 +25,7 @@ namespace DesktopAntlrGrammarEditor
             {
                 string grammarFileName = Path.Combine(GrammarDirectory, _grammar.Name);
                 bool success = false;
+
                 if (Directory.Exists(grammarFileName))
                 {
                     if (await MessageBox.ShowDialog($"Do you want to replace existed grammar {_grammar.Name}?", "", MessageBoxType.YesNo))
@@ -90,12 +94,12 @@ namespace DesktopAntlrGrammarEditor
 
         public string GrammarRoot
         {
-            get => _grammar.Root;
+            get => _grammarRoot;
             set
             {
-                if (_grammar.Root != value)
+                if (_grammarRoot != value)
                 {
-                    _grammar.Root = value;
+                    _grammarRoot = value;
                     this.RaisePropertyChanged();
                 }
             }
@@ -116,13 +120,12 @@ namespace DesktopAntlrGrammarEditor
 
         public RuntimeInfo Runtime
         {
-            get => RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First());
+            get => RuntimeInfo.InitOrGetRuntimeInfo(_runtime);
             set
             {
-                if (RuntimeInfo.InitOrGetRuntimeInfo(_grammar.Runtimes.First()) != value)
+                if (_runtime != value.Runtime)
                 {
-                    _grammar.Runtimes.Clear();
-                    _grammar.Runtimes.Add(value.Runtime);
+                    _runtime = value.Runtime;
                     this.RaisePropertyChanged();
                 }
             }
@@ -143,69 +146,25 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public bool CaseInsensitive
+        public CaseInsensitiveType CaseInsensitiveType
         {
-            get => _grammar.CaseInsensitive;
+            get => _grammar.CaseInsensitiveType;
             set
             {
-                if (_grammar.CaseInsensitive != value)
+                if (_grammar.CaseInsensitiveType != value)
                 {
-                    _grammar.CaseInsensitive = value;
+                    _grammar.CaseInsensitiveType = value;
                     this.RaisePropertyChanged();
                 }
             }
         }
 
-        public bool Preprocessor
+        public ObservableCollection<CaseInsensitiveType> CaseInsensitiveTypes { get; } =
+            new ObservableCollection<CaseInsensitiveType>(new List<CaseInsensitiveType>
         {
-            get => _grammar.Preprocessor;
-            set
-            {
-                if (_grammar.Preprocessor != value)
-                {
-                    _grammar.Preprocessor = value;
-                    this.RaisePropertyChanged();
-                }
-            }
-        }
-
-        public string PreprocessorGrammarRoot
-        {
-            get => _grammar.PreprocessorRoot;
-            set
-            {
-                if (_grammar.PreprocessorRoot != value)
-                {
-                    _grammar.PreprocessorRoot = value;
-                    this.RaisePropertyChanged();
-                }
-            }
-        }
-
-        public bool PreprocessorSeparatedLexerAndParser
-        {
-            get => _grammar.PreprocessorSeparatedLexerAndParser;
-            set
-            {
-                if (_grammar.PreprocessorSeparatedLexerAndParser != value)
-                {
-                    _grammar.PreprocessorSeparatedLexerAndParser = value;
-                    this.RaisePropertyChanged();
-                }
-            }
-        }
-
-        public bool PreprocessorCaseInsensitive
-        {
-            get => _grammar.PreprocessorCaseInsensitive;
-            set
-            {
-                if (_grammar.PreprocessorCaseInsensitive != value)
-                {
-                    _grammar.PreprocessorCaseInsensitive = value;
-                    this.RaisePropertyChanged();
-                }
-            }
-        }
+            CaseInsensitiveType.None,
+            CaseInsensitiveType.lower,
+            CaseInsensitiveType.UPPER,
+        });
     }
 }

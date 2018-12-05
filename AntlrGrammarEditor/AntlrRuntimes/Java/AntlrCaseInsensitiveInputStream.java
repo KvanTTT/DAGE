@@ -28,6 +28,9 @@
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.IntStream;
 
@@ -36,12 +39,16 @@ import org.antlr.v4.runtime.IntStream;
  * @author Sam Harwell
  */
 public class AntlrCaseInsensitiveInputStream extends ANTLRInputStream {
-
 	protected char[] lookaheadData;
 
-	public AntlrCaseInsensitiveInputStream(String input) {
-		super(input);
-		lookaheadData = input.toLowerCase().toCharArray();
+	public AntlrCaseInsensitiveInputStream(String fileName, boolean lowerCase) throws IOException {
+		super(new String(Files.readAllBytes(Paths.get(fileName))));
+		lookaheadData = new char[data.length];
+		for (int i = 0; i < data.length; i++) {
+			lookaheadData[i] = lowerCase
+				? Character.toLowerCase(data[i])
+				: Character.toUpperCase(data[i]);
+		}
 	}
 
 	@Override

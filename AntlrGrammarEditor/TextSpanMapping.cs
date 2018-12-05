@@ -4,7 +4,7 @@
     {
         public TextSpan SourceTextSpan { get; set; }
 
-        public TextSpan DestinationTextSpan { get; set; }
+        public TextSpan DestTextSpan { get; set; }
 
         public TextSpanMapping()
         {
@@ -13,12 +13,12 @@
         public TextSpanMapping(TextSpan sourceTextSpan, TextSpan destinationTextSpan)
         {
             SourceTextSpan = sourceTextSpan;
-            DestinationTextSpan = destinationTextSpan;
+            DestTextSpan = destinationTextSpan;
         }
 
         public override string ToString()
         {
-            return $"Source: {SourceTextSpan}; Dest: {DestinationTextSpan}";
+            return $"Source: {SourceTextSpan}; Dest: {DestTextSpan}";
         }
     }
 }

@@ -14,7 +14,7 @@ namespace DesktopAntlrGrammarEditor
         private static string _settingsFileName;
         private static readonly object _saveLock = new object();
 
-        public static string Directory { get; private set; }
+        public static string Directory { get; }
 
         public double Left { get; set; } = -1;
 
@@ -27,7 +27,7 @@ namespace DesktopAntlrGrammarEditor
         public WindowState WindowState { get; set; } = WindowState.Normal;
 
         // Antlr Grammar Editor FileName
-        public string AgeFileName { get; set; }
+        public string GrammarFileOrDirectory { get; set; }
 
         public string OpenedGrammarFile { get; set; }
 
@@ -57,7 +57,9 @@ namespace DesktopAntlrGrammarEditor
             {
                 try
                 {
-                    var settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(_settingsFileName), _converters) ?? new Settings();
+                    var settings =
+                        JsonConvert.DeserializeObject<Settings>(File.ReadAllText(_settingsFileName), _converters) ??
+                        new Settings();
                     return settings;
                 }
                 catch
@@ -65,10 +67,8 @@ namespace DesktopAntlrGrammarEditor
                     return new Settings();
                 }
             }
-            else
-            {
-                return new Settings();
-            }
+
+            return new Settings();
         }
 
         public void Save()

@@ -1,10 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,7 +6,9 @@ namespace AntlrGrammarEditor
 {
     public class Workflow
     {
-        private Grammar _grammar = new Grammar();
+        private Grammar _grammar;
+        private Runtime _runtime = Runtime.Java;
+        private string _root = "";
         private string _text = "";
         private bool _indentedTree;
 
@@ -41,52 +37,36 @@ namespace AntlrGrammarEditor
             get => _grammar;
             set
             {
-                StopIfRequired();
                 RollbackToStage(WorkflowStage.Input);
-                _grammar = value;
+                _grammar = value ?? throw new ArgumentException(nameof(Grammar));
                 _currentState = new InputState(_grammar);
             }
         }
 
         public Runtime Runtime
         {
-            get => _grammar.Runtimes.First();
+            get => _runtime;
             set
             {
-                if (_grammar.Runtimes.First() != value)
+                if (_runtime != value)
                 {
                     StopIfRequired();
-                    _grammar.Runtimes.Clear();
-                    _grammar.Runtimes.Add(value);
-                    RollbackToStage(WorkflowStage.GrammarChecked);
+                    _runtime = value;
+                    RollbackToStage(WorkflowStage.Input);
                 }
             }
         }
 
         public string Root
         {
-            get => _grammar.Root;
+            get => _root;
             set
             {
-                if (_grammar.Root != value)
+                if (_root != value)
                 {
                     StopIfRequired();
-                    _grammar.Root = value;
+                    _root = value;
                     RollbackToStage(WorkflowStage.ParserCompilied);
-                }
-            }
-        }
-
-        public string PreprocessorRoot
-        {
-            get => _grammar.PreprocessorRoot;
-            set
-            {
-                if (_grammar.PreprocessorRoot != value)
-                {
-                    StopIfRequired();
-                    _grammar.PreprocessorRoot = value;
-                    RollbackToStage(WorkflowStage.ParserGenerated);
                 }
             }
         }
@@ -133,6 +113,11 @@ namespace AntlrGrammarEditor
         {
             add => _textParsedOutputEvent += value;
             remove => _textParsedOutputEvent -= value;
+        }
+
+        public Workflow(Grammar grammar)
+        {
+            Grammar = grammar;
         }
 
         public Task<IWorkflowState> ProcessAsync()
@@ -222,7 +207,7 @@ namespace AntlrGrammarEditor
                     break;
 
                 case WorkflowStage.GrammarChecked:
-                    var parserGenerator = new ParserGenerator
+                    var parserGenerator = new ParserGenerator(Runtime)
                     {
                         ErrorEvent = _errorEvent,
                         GeneratorTool = GeneratorTool,
@@ -233,7 +218,7 @@ namespace AntlrGrammarEditor
                     break;
 
                 case WorkflowStage.ParserGenerated:
-                    var parserCompiler = new ParserCompiler
+                    var parserCompiler = new ParserCompiler(Root)
                     {
                         ErrorEvent = _errorEvent,
                         RuntimeLibrary = RuntimeLibrary,
@@ -244,7 +229,6 @@ namespace AntlrGrammarEditor
                 case WorkflowStage.ParserCompilied:
                     var textParser = new TextParser(Text)
                     {
-                        Root = Root,
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         IndentedTree = IndentedTree,
                         RuntimeLibrary = RuntimeLibrary,

@@ -7,7 +7,7 @@ namespace AntlrGrammarEditor
         public TextSpan TextSpan { get; set; }
 
         public string Message { get; set; }
-        
+
         public bool IsWarning { get; set; }
 
         public WorkflowStage WorkflowStage { get; set; } = WorkflowStage.GrammarChecked;
@@ -25,7 +25,7 @@ namespace AntlrGrammarEditor
         }
 
         public ParsingError(int line, int column, string message, CodeSource codeSource, WorkflowStage stage)
-            : this(new TextSpan(codeSource, codeSource.LineColumnToPosition(new LineColumn(line, column)), 1), message, stage)
+            : this(new LineColumnTextSpan(line, column, codeSource).GetTextSpan(), message, stage)
         {
             Message = message;
             WorkflowStage = stage;

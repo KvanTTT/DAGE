@@ -42,7 +42,7 @@ namespace AntlrGrammarEditor
                 runtimeLibrary: "antlr-runtime-4.7.jar",
                 extensions: new[] { "java" },
                 mainFile: "Main.java",
-                antlrInputStream: "ANTLRInputStream",
+                antlrInputStream: "CharStreams.fromFileName",
                 runtimeToolName: "javac",
                 versionArg: "-version",
                 errorVersionStream: true
@@ -161,8 +161,6 @@ namespace AntlrGrammarEditor
 
         public bool Initialized { get; private set; }
 
-        public bool Installed => Version != null;
-
         public string Version { get; private set; }
 
         public static RuntimeInfo InitOrGetRuntimeInfo(Runtime runtime)
@@ -182,7 +180,7 @@ namespace AntlrGrammarEditor
                     
                     void VersionCollectFunc(object sender, DataReceivedEventArgs e)
                     {
-                        if (!e.IsIgnoreError())
+                        if (!(runtime == Runtime.Java && e.IsIgnoreJavaError()))
                             version += e.Data + Environment.NewLine;
                     }
 

@@ -2,7 +2,6 @@
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.List;
 
 public class Main {
@@ -18,7 +17,7 @@ public class Main {
             String stringTree = ast.toStringTree(parser);
             System.out.print("Tree " + stringTree);
         }
-        catch (IOException e) {
+        catch (Exception e) {
         }
     }
 }

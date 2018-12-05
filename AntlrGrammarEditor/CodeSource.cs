@@ -8,7 +8,7 @@ namespace AntlrGrammarEditor
         public static CodeSource Empty = new CodeSource("", "");
 
         private readonly int textLength;
-        private readonly int[] lineIndexes;
+        private int[] lineIndexes;
 
         public string Name { get; }
         public string Text { get; }
@@ -20,60 +20,85 @@ namespace AntlrGrammarEditor
 
             textLength = text.Length;
 
-            var lineIndexesBuffer = new List<int>(textLength / 25) { 0 };
-            var pos = 0;
-            while (pos < textLength)
+            InitLineIndexes();
+        }
+
+        public int LineColumnToPosition(int line, int column)
+        {
+            return lineIndexes[line - LineColumnTextSpan.StartLine] + column - LineColumnTextSpan.StartColumn;
+        }
+
+        public void PositionToLineColumn(int pos, out int line, out int column)
+        {
+            line = Array.BinarySearch(lineIndexes, pos);
+            if (line < 0)
             {
-                switch (text[pos])
+                line = (line == -1) ? 0 : (~line - 1);
+            }
+
+            column = pos - lineIndexes[line] + LineColumnTextSpan.StartColumn;
+            line += LineColumnTextSpan.StartLine;
+        }
+
+        public TextSpan GetTextSpanAtLine(int line)
+        {
+            line = line - LineColumnTextSpan.StartLine;
+
+            if (line < 0 || line >= lineIndexes.Length)
+            {
+                throw new IndexOutOfRangeException(nameof(line));
+            }
+
+            int endInd;
+            if (line + 1 < lineIndexes.Length)
+            {
+                endInd = lineIndexes[line + 1] - 1;
+                if (endInd - 1 > 0 && Text[endInd - 1] == '\r')
                 {
-                    case '\r':
-                        ++pos;
-                        if (pos < textLength && text[pos] == '\n')
-                        {
-                            ++pos;
-                        }
-                        lineIndexesBuffer.Add(pos);
-                        break;
-
-                    case '\n':
-                    case '\u2028': /*  line separator       */
-                    case '\u2029': /*  paragraph separator  */
-                        ++pos;
-                        lineIndexesBuffer.Add(pos);
-                        break;
-
-                    default:
-                        ++pos;
-                        break;
+                    endInd--;
                 }
             }
-            lineIndexes = lineIndexesBuffer.ToArray();
-        }
-
-        public LineColumn PositionToLineColumn(int pos)
-        {
-            var index = Array.BinarySearch(lineIndexes, pos);
-            if (index < 0)
+            else
             {
-                index = ~index;
-
-                return index > 0
-                    ? new LineColumn(index, pos - lineIndexes[index - 1] + 1)
-                    : new LineColumn(1, 1);
+                endInd = Text.Length;
             }
 
-            return new LineColumn(index + 1, pos - lineIndexes[index] + 1);
-        }
-
-        public int LineColumnToPosition(LineColumn lineColumn)
-        {
-            return (lineColumn.Line <= lineIndexes.Length)
-                ? Math.Min(lineIndexes[lineColumn.Line - 1] + lineColumn.Column - 1, textLength)
-                : textLength;
+            return new TextSpan(lineIndexes[line], endInd - lineIndexes[line], this);
         }
 
         public bool Equals(CodeSource other) => Name.Equals(other.Name);
 
         public override string ToString() => Name;
+
+        private void InitLineIndexes()
+        {
+            int currentLine = LineColumnTextSpan.StartLine;
+            int currentColumn = LineColumnTextSpan.StartColumn;
+            string text = Text;
+
+            var lineIndexesBuffer = new List<int>(text.Length / 25) { 0 };
+            int textIndex = 0;
+            while (textIndex < text.Length)
+            {
+                char c = text[textIndex];
+                if (c == '\r' || c == '\n' || c == '\u2028' || c == '\u2029')
+                {
+                    currentLine++;
+                    currentColumn = LineColumnTextSpan.StartColumn;
+                    if (c == '\r' && textIndex + 1 < text.Length && text[textIndex + 1] == '\n')
+                    {
+                        textIndex++;
+                    }
+                    lineIndexesBuffer.Add(textIndex + 1);
+                }
+                else
+                {
+                    currentColumn++;
+                }
+                textIndex++;
+            }
+
+            lineIndexes = lineIndexesBuffer.ToArray();
+        }
     }
 }
