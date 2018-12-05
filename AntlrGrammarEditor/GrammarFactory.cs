@@ -9,7 +9,7 @@ namespace AntlrGrammarEditor
 {
     public class GrammarFactory
     {
-        public const string PreprocessorPostfix = "Preprocessor";
+        public const string DefaultRootName = "rootRule";
 
         public static Grammar Open(string fileOrDirectoryName)
         {
@@ -123,12 +123,7 @@ namespace AntlrGrammarEditor
             var result = new Grammar
             {
                 Name = "NewGrammar",
-                Root = "rootRule",
-                SeparatedLexerAndParser = false,
-                Preprocessor = false,
-                PreprocessorRoot = "preprocessorRootRule",
-                PreprocessorSeparatedLexerAndParser = false,
-                PreprocessorCaseInsensitive = false
+                SeparatedLexerAndParser = false
             };
             return result;
         }
@@ -181,7 +176,7 @@ namespace AntlrGrammarEditor
                 Directory.CreateDirectory(directory);
             }
 
-            foreach (var file in grammar.Files)
+            foreach (string file in grammar.Files)
             {
                 var fullFileName = Path.Combine(directory, file);
                 if (!File.Exists(fullFileName) || overwriteFiles)
@@ -215,9 +210,9 @@ namespace AntlrGrammarEditor
                         text.AppendLine();
                     }
 
-                    if (!fileWithoutExtension.Contains(Grammar.LexerPostfix) && !string.IsNullOrEmpty(grammar.Root))
+                    if (!fileWithoutExtension.Contains(Grammar.LexerPostfix))
                     {
-                        text.AppendLine($"{(fileWithoutExtension.Contains(PreprocessorPostfix) ? grammar.PreprocessorRoot : grammar.Root)}");
+                        text.AppendLine($"{DefaultRootName}");
                         text.AppendLine("    : tokensOrRules* EOF");
                         text.AppendLine("    ;");
                         text.AppendLine();
@@ -251,18 +246,6 @@ namespace AntlrGrammarEditor
         private static void InitFiles(Grammar grammar)
         {
             grammar.Files.Clear();
-            if (grammar.Preprocessor)
-            {
-                if (grammar.PreprocessorSeparatedLexerAndParser)
-                {
-                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + Grammar.LexerPostfix + Grammar.AntlrDotExt);
-                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + Grammar.ParserPostfix + Grammar.AntlrDotExt);
-                }
-                else
-                {
-                    grammar.Files.Add(grammar.Name + PreprocessorPostfix + Grammar.AntlrDotExt);
-                }
-            }
             if (grammar.SeparatedLexerAndParser)
             {
                 grammar.Files.Add(grammar.Name + Grammar.LexerPostfix + Grammar.AntlrDotExt);

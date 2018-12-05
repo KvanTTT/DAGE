@@ -13,8 +13,6 @@ namespace AntlrGrammarEditor
         private TextParsedState _result;
 
         public string Text { get; }
-
-        public string Root { get; set; }
  
         public bool OnlyTokenize { get; set; }
 
@@ -32,10 +30,7 @@ namespace AntlrGrammarEditor
         public TextParsedState Parse(ParserCompiliedState state,
              CancellationToken cancellationToken = default(CancellationToken))
         {
-            _result = new TextParsedState(state, Text)
-            {
-                Root = Root
-            };
+            _result = new TextParsedState(state, Text);
 
             Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
             Runtime runtime = state.ParserGeneratedState.Runtime;
@@ -106,7 +101,7 @@ namespace AntlrGrammarEditor
 
         private string PrepareCSharpToolAndArgs(Grammar grammar, string parseTextFileName, out string args)
         {
-            args = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\" {Root} \"{parseTextFileName}\" {OnlyTokenize} {IndentedTree}";
+            args = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\" {_result.ParserCompiliedState.RootOrDefault} \"{parseTextFileName}\" {OnlyTokenize} {IndentedTree}";
             return "dotnet";
         }
 

@@ -164,16 +164,13 @@ namespace DesktopAntlrGrammarEditor
                         _openedGrammarFile = value;
                         _grammarFileState = FileState.Opened;
 
-                        if (IsParserOpened)
+                        if (_workflow.CurrentState.Stage == WorkflowStage.Input)
                         {
-                            if (_workflow.CurrentState.Stage == WorkflowStage.Input)
-                            {
-                                _workflow.EndStage = WorkflowStage.GrammarChecked;
-                                _workflow.Process();
-                                _workflow.EndStage = EndStage;
-                            }
-                            UpdateRules();
+                            _workflow.EndStage = WorkflowStage.GrammarChecked;
+                            _workflow.Process();
+                            _workflow.EndStage = EndStage;
                         }
+                        UpdateRules();
 
                         _settings.OpenedGrammarFile = value;
                         _settings.Save();
@@ -188,8 +185,6 @@ namespace DesktopAntlrGrammarEditor
                             SetAntlrHighlighting();
                         }
 
-                        this.RaisePropertyChanged(nameof(IsParserOpened));
-                        this.RaisePropertyChanged(nameof(IsPreprocessor));
                         this.RaisePropertyChanged();
                     }
                     catch (Exception ex)
@@ -200,32 +195,23 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public bool IsParserOpened => !OpenedGrammarFile.Contains(Grammar.LexerPostfix);
-
-        public bool IsPreprocessor => OpenedGrammarFile.Contains(GrammarFactory.PreprocessorPostfix);
-
         public ObservableCollection<string> GrammarFiles { get; } = new ObservableCollection<string>();
 
         public string Root
         {
-            get => IsPreprocessor ? Grammar.PreprocessorRoot : Grammar.Root;
+            get => _workflow.Root;
             set
             {
-                var currentRoot = IsPreprocessor ? Grammar.PreprocessorRoot : Grammar.Root;
-                if (value != null && currentRoot != value)
+                var currentRoot = _workflow.Root;
+                if (currentRoot != value)
                 {
-                    if (IsPreprocessor)
-                    {
-                        _workflow.PreprocessorRoot = value;
-                    }
-                    else
-                    {
-                        _workflow.Root = value;
-                    }
+                    _workflow.Root = value;
+
                     if (AutoProcessing)
                     {
                         Process();
                     }
+
                     this.RaisePropertyChanged();
                 }
             }
@@ -759,7 +745,7 @@ namespace DesktopAntlrGrammarEditor
 
         private void OpenGrammar(Grammar grammar)
         {
-            _workflow = new Workflow(grammar);
+            _workflow.Grammar = grammar;
             _settings.GrammarFileOrDirectory = grammar.Directory;
             _settings.Save();
             _openedGrammarFile = "";
@@ -994,8 +980,8 @@ namespace DesktopAntlrGrammarEditor
             {
                 return;
             }
-            
-            var workflowRules = IsPreprocessor ? grammarCheckedState.PreprocessorRules : grammarCheckedState.Rules;
+
+            var workflowRules = grammarCheckedState.Rules;
             if (!Rules.SequenceEqual(workflowRules))
             {
                 Rules.Clear();
@@ -1003,7 +989,15 @@ namespace DesktopAntlrGrammarEditor
                 {
                     Rules.Add(rule);
                 }
-                this.RaisePropertyChanged(nameof(Root));
+
+                if (!Rules.Contains(Root))
+                {
+                    Root = Rules[0];
+                }
+                else
+                {
+                    this.RaisePropertyChanged(nameof(Root));
+                }
             }
         }
 

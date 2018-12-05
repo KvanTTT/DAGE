@@ -22,8 +22,6 @@ namespace AntlrGrammarEditor
 
         public List<string> Rules { get; set; } = new List<string>();
 
-        public List<string> PreprocessorRules { get; set; }
-
         public List<ParsingError> Errors { get; } = new List<ParsingError>();
 
         public GrammarCheckedState(InputState inputState)

@@ -21,21 +21,11 @@ namespace AntlrGrammarEditor
 
         public string ParserSuperClass { get; set; }
 
-        public string Root { get; set; }
-
         public string FileExtension { get; set; } = "txt";
 
         public bool SeparatedLexerAndParser { get; set; }
 
         public CaseInsensitiveType CaseInsensitiveType { get; set; }
-
-        public bool Preprocessor { get; set; }
-
-        public bool PreprocessorCaseInsensitive { get; set; }
-
-        public string PreprocessorRoot { get; set; }
-
-        public bool PreprocessorSeparatedLexerAndParser { get; set; }
 
         public List<string> Files { get; set; } = new List<string>();
 

@@ -1,6 +1,5 @@
 ﻿using Antlr4.Runtime;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 
@@ -72,37 +71,7 @@ namespace AntlrGrammarEditor
 
                     if (!shortFileName.Contains(Grammar.LexerPostfix))
                     {
-                        string root;
-                        bool preprocessor;
-                        List<string> rules;
-                        if (!shortFileName.Contains(GrammarFactory.PreprocessorPostfix))
-                        {
-                            result.Rules = grammarInfoCollectorListener.Rules;
-                            rules = result.Rules;
-                            root = grammar.Root;
-                            preprocessor = false;
-                        }
-                        else
-                        {
-                            result.PreprocessorRules = grammarInfoCollectorListener.Rules;
-                            rules = result.PreprocessorRules;
-                            root = grammar.PreprocessorRoot;
-                            preprocessor = true;
-                        }
-
-                        if (rules.Count > 0 && !rules.Contains(root))
-                        {
-                            root = rules[0];
-                            if (!preprocessor)
-                            {
-                                grammar.Root = root;
-                            }
-                            else
-                            {
-                                grammar.PreprocessorRoot = root;
-                            }
-                        }
-
+                        result.Rules = grammarInfoCollectorListener.Rules;
                         cancellationToken.ThrowIfCancellationRequested();
                     }
                 }

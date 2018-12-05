@@ -25,7 +25,15 @@ namespace AntlrGrammarEditor
         private RuntimeInfo _currentRuntimeInfo;
         private HashSet<string> _processedMessages;
 
+        // Move it to TextParser
+        public string Root { get; }
+
         public string RuntimeLibrary { get; set; }
+
+        public ParserCompiler(string root)
+        {
+            Root = root ?? throw new ArgumentNullException(nameof(root));
+        }
 
         public ParserCompiliedState Compile(ParserGeneratedState state,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -35,8 +43,7 @@ namespace AntlrGrammarEditor
 
             _result = new ParserCompiliedState(state)
             {
-                Root = _grammar.Root,
-                PreprocessorRoot = _grammar.PreprocessorRoot
+                Root = Root
             };
 
             _currentRuntimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
@@ -146,7 +153,8 @@ namespace AntlrGrammarEditor
 
             if (!_grammar.SeparatedLexerAndParser)
             {
-                grammarNameExt = _grammar.Files.FirstOrDefault(file => Path.GetExtension(file).Equals(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase));
+                grammarNameExt = _grammar.Files.FirstOrDefault(file => Path.GetExtension(file)
+                    .Equals(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase));
             }
             else
             {
@@ -343,7 +351,7 @@ namespace AntlrGrammarEditor
 
             string code = File.ReadAllText(Path.Combine(runtimeDir, _currentRuntimeInfo.MainFile));
             code = code.Replace(TemplateGrammarName, _grammar.Name);
-            string root = _grammar.Root;
+            string root = _result.RootOrDefault;
             if (runtime == Runtime.Go)
             {
                 root = char.ToUpperInvariant(root[0]) + root.Substring(1);

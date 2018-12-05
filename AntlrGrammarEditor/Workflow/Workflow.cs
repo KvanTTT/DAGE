@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,8 +6,9 @@ namespace AntlrGrammarEditor
 {
     public class Workflow
     {
-        private Grammar _grammar = new Grammar();
+        private Grammar _grammar;
         private Runtime _runtime = Runtime.Java;
+        private string _root = "";
         private string _text = "";
         private bool _indentedTree;
 
@@ -32,7 +32,16 @@ namespace AntlrGrammarEditor
 
         public IWorkflowState CurrentState => _currentState;
 
-        public Grammar Grammar { get; }
+        public Grammar Grammar
+        {
+            get => _grammar;
+            set
+            {
+                RollbackToStage(WorkflowStage.Input);
+                _grammar = value ?? throw new ArgumentException(nameof(Grammar));
+                _currentState = new InputState(_grammar);
+            }
+        }
 
         public Runtime Runtime
         {
@@ -50,28 +59,14 @@ namespace AntlrGrammarEditor
 
         public string Root
         {
-            get => _grammar.Root;
+            get => _root;
             set
             {
-                if (_grammar.Root != value)
+                if (_root != value)
                 {
                     StopIfRequired();
-                    _grammar.Root = value;
+                    _root = value;
                     RollbackToStage(WorkflowStage.ParserCompilied);
-                }
-            }
-        }
-
-        public string PreprocessorRoot
-        {
-            get => _grammar.PreprocessorRoot;
-            set
-            {
-                if (_grammar.PreprocessorRoot != value)
-                {
-                    StopIfRequired();
-                    _grammar.PreprocessorRoot = value;
-                    RollbackToStage(WorkflowStage.ParserGenerated);
                 }
             }
         }
@@ -122,8 +117,7 @@ namespace AntlrGrammarEditor
 
         public Workflow(Grammar grammar)
         {
-            Grammar = grammar ?? throw new ArgumentException(nameof(grammar));
-            _currentState = new InputState(grammar);
+            Grammar = grammar;
         }
 
         public Task<IWorkflowState> ProcessAsync()
@@ -203,7 +197,7 @@ namespace AntlrGrammarEditor
             }
         }
 
-        private void ProcessOneStep(WorkflowStage endStage = WorkflowStage.TextParsed)
+        private void ProcessOneStep()
         {
             switch (_currentState.Stage)
             {
@@ -224,7 +218,7 @@ namespace AntlrGrammarEditor
                     break;
 
                 case WorkflowStage.ParserGenerated:
-                    var parserCompiler = new ParserCompiler
+                    var parserCompiler = new ParserCompiler(Root)
                     {
                         ErrorEvent = _errorEvent,
                         RuntimeLibrary = RuntimeLibrary,
@@ -235,7 +229,6 @@ namespace AntlrGrammarEditor
                 case WorkflowStage.ParserCompilied:
                     var textParser = new TextParser(Text)
                     {
-                        Root = Root,
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         IndentedTree = IndentedTree,
                         RuntimeLibrary = RuntimeLibrary,
