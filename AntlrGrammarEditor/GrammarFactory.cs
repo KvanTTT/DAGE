@@ -11,7 +11,7 @@ namespace AntlrGrammarEditor
     {
         public const string DefaultRootName = "rootRule";
 
-        public static Grammar Open(string fileOrDirectoryName)
+        public static Grammar Open(string fileOrDirectoryName, out string root)
         {
             List<string> grammarFiles;
             string grammarName = "";
@@ -19,6 +19,7 @@ namespace AntlrGrammarEditor
             bool separatedLexerAndParser = false;
             CaseInsensitiveType caseInsensitiveType = CaseInsensitiveType.None;
             string lexerOrCombinedGrammarFile = null;
+            root = null;
 
             if (File.Exists(fileOrDirectoryName))
             {
@@ -86,6 +87,13 @@ namespace AntlrGrammarEditor
                 if (match.Success)
                 {
                     Enum.TryParse(match.Groups[1].Value, out caseInsensitiveType);
+                }
+                
+                var entryPointRegex = new Regex("<entryPoint>(\\w+)</entryPoint>");
+                match = entryPointRegex.Match(content);
+                if (match.Success)
+                {
+                    root = match.Groups[1].Value;
                 }
             }
             else if (!string.IsNullOrEmpty(lexerOrCombinedGrammarFile))

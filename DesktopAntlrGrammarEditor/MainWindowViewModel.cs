@@ -79,6 +79,7 @@ namespace DesktopAntlrGrammarEditor
             Grammar grammar = null;
 
             bool openDefaultGrammar = false;
+            string root = null;
             if (string.IsNullOrEmpty(_settings.GrammarFileOrDirectory))
             {
                 openDefaultGrammar = true;
@@ -87,7 +88,7 @@ namespace DesktopAntlrGrammarEditor
             {
                 try
                 {
-                    grammar = GrammarFactory.Open(_settings.GrammarFileOrDirectory);
+                    grammar = GrammarFactory.Open(_settings.GrammarFileOrDirectory, out root);
                 }
                 catch (Exception ex)
                 {
@@ -108,6 +109,7 @@ namespace DesktopAntlrGrammarEditor
 
             _workflow = new Workflow(grammar);
             SelectedRuntime = RuntimeInfo.InitOrGetRuntimeInfo(_workflow.Runtime);
+            Root = root;
 
             InitFiles();
             if (string.IsNullOrEmpty(_settings.OpenedGrammarFile) || !Grammar.Files.Contains(_settings.OpenedGrammarFile))
@@ -583,7 +585,7 @@ namespace DesktopAntlrGrammarEditor
                 Grammar grammar = await newGrammarWindow.ShowDialog<Grammar>();
                 if (grammar != null)
                 {
-                    OpenGrammar(grammar);
+                    OpenGrammar(grammar, null);
                 }
                 _window.Activate();
             });
@@ -601,8 +603,8 @@ namespace DesktopAntlrGrammarEditor
                 {
                     try
                     {
-                        var grammar = GrammarFactory.Open(folderName);
-                        OpenGrammar(grammar);
+                        var grammar = GrammarFactory.Open(folderName, out string root);
+                        OpenGrammar(grammar, root);
                     }
                     catch (Exception ex)
                     {
@@ -743,7 +745,7 @@ namespace DesktopAntlrGrammarEditor
             _workflow.RollbackToStage(switchStage);
         }
 
-        private void OpenGrammar(Grammar grammar)
+        private void OpenGrammar(Grammar grammar, string root)
         {
             _workflow.Grammar = grammar;
             _settings.GrammarFileOrDirectory = grammar.Directory;
@@ -752,8 +754,9 @@ namespace DesktopAntlrGrammarEditor
             _openedTextFile = FileName.Empty;
             Rules.Clear();
             InitFiles();
-            OpenedGrammarFile = GrammarFiles.First();
-            OpenedTextFile = TextFiles.Count > 0 ? TextFiles.First() : null;
+            OpenedGrammarFile = GrammarFiles.FirstOrDefault();
+            OpenedTextFile = TextFiles.FirstOrDefault();
+            Root = root;
             this.RaisePropertyChanged(nameof(SelectedRuntime));
         }
 
