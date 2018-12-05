@@ -22,14 +22,6 @@ namespace DesktopAntlrGrammarEditor
 {
     public class MainWindowViewModel : ReactiveObject
     {
-        private readonly static Dictionary<string, string> _highlightings = new Dictionary<string, string>
-        {
-            [".cs"] = "C#",
-            [".java"] = "Java",
-            [".php"] = "PHP",
-            [".js"] = "JavaScript",
-        };
-
         private readonly Window _window;
         private readonly Settings _settings;
         private Workflow _workflow;
@@ -178,13 +170,14 @@ namespace DesktopAntlrGrammarEditor
                         _settings.Save();
 
                         string extension = Path.GetExtension(value).ToLowerInvariant();
-                        if (_highlightings.TryGetValue(extension, out string highlighting))
-                        {
-                            _grammarTextBox.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition(highlighting);
-                        }
-                        else if (extension == ".g4")
+                        if (extension == ".g4")
                         {
                             SetAntlrHighlighting();
+                        }
+                        else
+                        {
+                            _grammarTextBox.SyntaxHighlighting =
+                                HighlightingManager.Instance.GetDefinitionByExtension(extension);
                         }
 
                         this.RaisePropertyChanged();
@@ -272,6 +265,10 @@ namespace DesktopAntlrGrammarEditor
                 {
                     _textTextBox.IsEnabled = true;
                     _openedTextFile = value;
+
+                    string fileExt = Path.GetExtension(value.FullFileName).ToLowerInvariant();
+                    _textTextBox.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(fileExt);
+
                     try
                     {
                         string fileName = value.FullFileName;
