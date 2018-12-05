@@ -48,12 +48,12 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="0.6.2-build6260-beta" />
-    <PackageReference Include="Avalonia.Desktop" Version="0.6.2-build6260-beta" />
-    <PackageReference Include="Avalonia.ReactiveUI" Version="0.6.2-build6260-beta" />
+    <PackageReference Include="Avalonia" Version="0.7.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.7.0" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="0.7.0" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="0.7.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AntlrGrammarEditor\AntlrGrammarEditor.csproj" />
-    <ProjectReference Include="..\AvaloniaEdit\src\AvaloniaEdit\AvaloniaEdit.csproj" />
   </ItemGroup>
 </Project>

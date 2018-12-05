@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AntlrGrammarEditor.Tests", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DesktopAntlrGrammarEditor", "DesktopAntlrGrammarEditor\DesktopAntlrGrammarEditor.csproj", "{2FF55F96-C568-4300-87F1-0FF0396CD6DD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AvaloniaEdit", "AvaloniaEdit\src\AvaloniaEdit\AvaloniaEdit.csproj", "{A88B65C6-FF7A-4AC6-BDAD-1E6BB023EF98}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,10 +27,6 @@ Global
 		{2FF55F96-C568-4300-87F1-0FF0396CD6DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FF55F96-C568-4300-87F1-0FF0396CD6DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2FF55F96-C568-4300-87F1-0FF0396CD6DD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A88B65C6-FF7A-4AC6-BDAD-1E6BB023EF98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A88B65C6-FF7A-4AC6-BDAD-1E6BB023EF98}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A88B65C6-FF7A-4AC6-BDAD-1E6BB023EF98}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A88B65C6-FF7A-4AC6-BDAD-1E6BB023EF98}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
