@@ -50,7 +50,7 @@ namespace DesktopAntlrGrammarEditor
             _parseTreeTextBox = _window.Find<TextEditor>("ParseTreeTextBox");
             _tokensTextBox = _window.Find<TextEditor>("TokensTextBox");
 
-            SetAntlrHighlighting();
+            _grammarTextBox.SetupHightlighting(".g4");
 
             _settings = Settings.Load();
 
@@ -131,18 +131,6 @@ namespace DesktopAntlrGrammarEditor
             IndentedTree = _settings.IndentedTree;
         }
 
-        private void SetAntlrHighlighting()
-        {
-            using (Stream stream = Assembly.GetExecutingAssembly()
-                                           .GetManifestResourceStream("DesktopAntlrGrammarEditor.Antlr4.xshd"))
-            {
-                using (XmlTextReader reader = new XmlTextReader(stream))
-                {
-                    _grammarTextBox.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
-                }
-            }
-        }
-
         public string OpenedGrammarFile
         {
             get => _openedGrammarFile;
@@ -169,16 +157,7 @@ namespace DesktopAntlrGrammarEditor
                         _settings.OpenedGrammarFile = value;
                         _settings.Save();
 
-                        string extension = Path.GetExtension(value).ToLowerInvariant();
-                        if (extension == ".g4")
-                        {
-                            SetAntlrHighlighting();
-                        }
-                        else
-                        {
-                            _grammarTextBox.SyntaxHighlighting =
-                                HighlightingManager.Instance.GetDefinitionByExtension(extension);
-                        }
+                        _grammarTextBox.SetupHightlighting(value);
 
                         this.RaisePropertyChanged();
                     }
@@ -266,8 +245,7 @@ namespace DesktopAntlrGrammarEditor
                     _textTextBox.IsEnabled = true;
                     _openedTextFile = value;
 
-                    string fileExt = Path.GetExtension(value.FullFileName).ToLowerInvariant();
-                    _textTextBox.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(fileExt);
+                    _textTextBox.SetupHightlighting(value.FullFileName);
 
                     try
                     {
