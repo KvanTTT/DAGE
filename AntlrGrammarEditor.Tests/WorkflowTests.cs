@@ -310,6 +310,46 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
+        public void CheckCustomRoot(Runtime runtime)
+        {
+            var grammarText =
+                $"grammar {TestGrammarName};" +
+                $"root1: 'V1';" +
+                $"root2: 'V2';";
+
+            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
+            var workflow = new Workflow(grammar);
+            workflow.Runtime = runtime;
+
+            workflow.Root = null;
+            workflow.Text = "V1";
+            var state = workflow.Process();
+            TextParsedState textParsedState = state as TextParsedState;
+            Assert.IsNotNull(textParsedState);
+            Assert.IsFalse(state.HasErrors);
+
+            workflow.Root = "root1";
+            workflow.Text = "V1";
+            state = workflow.Process();
+            textParsedState = state as TextParsedState;
+            Assert.IsNotNull(textParsedState);
+            Assert.IsFalse(state.HasErrors);
+
+            workflow.Root = "root2";
+            workflow.Text = "V2";
+            state = workflow.Process();
+            textParsedState = state as TextParsedState;
+            Assert.IsNotNull(textParsedState);
+            Assert.IsFalse(state.HasErrors);
+        }
+
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
+        [TestCase(Runtime.Java)]
+        [TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python3)]
+        [TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Go)]
         public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
         {
             Assert.Ignore("Not ready");
