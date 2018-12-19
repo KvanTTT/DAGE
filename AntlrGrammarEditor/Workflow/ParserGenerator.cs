@@ -119,16 +119,20 @@ namespace AntlrGrammarEditor
             {
                 var strs = e.Data.Split(':');
                 int line = 1, column = 1;
-                bool warning = false;
-                if (strs.Length >= 4)
+
+                int locationIndex = strs.Length > 2 && strs[2][0] == '\\' ? 3 : 2;
+                if (strs.Length > locationIndex)
                 {
-                    if (!int.TryParse(strs[2], out line))
+                    if (!int.TryParse(strs[locationIndex], out line))
                     {
                         line = 1;
                     }
-                    if (!int.TryParse(strs[3], out column))
+                    if (strs.Length > locationIndex + 1)
                     {
-                        column = 1;
+                        if (!int.TryParse(strs[locationIndex + 1], out column))
+                        {
+                            column = 1;
+                        }
                     }
                 }
                 ParsingError error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated);

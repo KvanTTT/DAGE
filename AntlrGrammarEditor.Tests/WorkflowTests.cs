@@ -148,10 +148,13 @@ namespace AntlrGrammarEditor.Tests
             Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage, state.Exception?.ToString());
 
             var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
+            char separator = Path.DirectorySeparatorChar;
+            string testGrammarFullName = $"{Environment.CurrentDirectory}{separator}.{separator}{TestGrammarName}.g4";
             ParserGeneratedState parserGeneratedState = state as ParserGeneratedState;
+            string str = new ParsingError(2, 24, $"error(56): {testGrammarFullName}:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated).ToString();
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new ParsingError(2, 24, $"error(56): {TestGrammarName}.g4:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
+                    new ParsingError(2, 24, $"error(56): {testGrammarFullName}:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
                 },
                 parserGeneratedState.Errors);
         }
