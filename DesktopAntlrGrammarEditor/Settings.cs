@@ -39,8 +39,6 @@ namespace DesktopAntlrGrammarEditor
 
         public bool IsParseTreeExpanded { get; set; } = false;
 
-        public bool IndentedTree { get; set; } = false;
-
         static Settings()
         {
             Directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DAGE");

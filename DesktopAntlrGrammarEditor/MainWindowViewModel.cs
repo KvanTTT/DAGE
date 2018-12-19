@@ -35,7 +35,6 @@ namespace DesktopAntlrGrammarEditor
         private readonly ListBox _grammarErrorsListBox;
         private readonly ListBox _textErrorsListBox;
         private bool _autoprocessing;
-        private bool _indentedTree;
         private WorkflowStage _endStage = WorkflowStage.TextParsed;
 
         private Grammar Grammar => _workflow?.Grammar;
@@ -128,7 +127,6 @@ namespace DesktopAntlrGrammarEditor
             SetupCommandSubscriptions();
 
             AutoProcessing = _settings.Autoprocessing;
-            IndentedTree = _settings.IndentedTree;
         }
 
         public string OpenedGrammarFile
@@ -330,22 +328,6 @@ namespace DesktopAntlrGrammarEditor
                 if (_settings.IsParseTreeExpanded != value)
                 {
                     _settings.IsParseTreeExpanded = value;
-                    _settings.Save();
-                    this.RaisePropertyChanged();
-                }
-            }
-        }
-
-        public bool IndentedTree
-        {
-            get => _indentedTree;
-            set
-            {
-                if (_indentedTree != value)
-                {
-                    _indentedTree = value;
-                    _workflow.IndentedTree = value;
-                    _settings.IndentedTree = value;
                     _settings.Save();
                     this.RaisePropertyChanged();
                 }

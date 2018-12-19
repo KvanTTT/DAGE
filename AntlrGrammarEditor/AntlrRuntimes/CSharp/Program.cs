@@ -59,7 +59,7 @@ class Program
                 stopwatch.Stop();
 
                 Console.WriteLine("ParserTime {0}", stopwatch.Elapsed);
-                Console.WriteLine("Tree {0}", ast.ToStringTreeIndented(parser));
+                Console.WriteLine("Tree {0}", ast.ToStringTree(parser));
             }
         }
         catch (Exception ex)
@@ -95,8 +95,6 @@ class Program
 
 public static class ParseTreeFormatter
 {
-    public const int IndentSize = 2;
-
     public static string TokensToString(this IList<IToken> tokens)
     {
         var resultString = new StringBuilder();
@@ -123,37 +121,5 @@ public static class ParseTreeFormatter
         }
         resultString.Append("EOF");
         return resultString.ToString();
-    }
-
-    public static string ToStringTreeIndented(this IParseTree parseTree, Parser parser)
-    {
-        var result = new StringBuilder();
-        parseTree.ToStringTreeIndented(parser, result, 0);
-        return result.ToString();
-    }
-
-    private static void ToStringTreeIndented(this IParseTree parseTree, Parser parser, StringBuilder builder, int level)
-    {
-        string currentLevelIndentString = string.Empty.PadLeft(level * IndentSize);
-        builder.Append(currentLevelIndentString);
-        var ruleContext = parseTree as RuleContext;
-        if (ruleContext != null)
-        {
-            builder.Append("(" + parser.RuleNames[ruleContext.RuleIndex] + "\\n");
-
-            for (int i = 0; i < ruleContext.ChildCount; i++)
-            {
-                ruleContext.GetChild(i).ToStringTreeIndented(parser, builder, level + 1);
-                builder.Append("\\n");
-            }
-
-            builder.Append(currentLevelIndentString);
-            builder.Append(")");
-        }
-        else
-        {
-            builder.Append('\'' + parseTree.GetText()
-                .Replace("'", "\\'").Replace("\r", "").Replace("\n", "") + '\'');
-        }
     }
 }

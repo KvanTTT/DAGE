@@ -17,11 +17,10 @@
         <TextBlock Grid.Column="3" Margin="5,0,10,0" HorizontalAlignment="Right" Text="File" />
         <DropDown Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" ></DropDown>
         <StackPanel Grid.Column="5" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal">
-          <TextBlock HorizontalAlignment="Right" Text="Root" IsVisible="{Binding IsParserOpened}" />
-          <DropDown Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" ></DropDown>
           <TextBlock HorizontalAlignment="Right" Text="Runtime" />
           <DropDown Width="90" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></DropDown>
         </StackPanel>
+        
       </Grid>
       
       <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790">
@@ -31,6 +30,7 @@
       <Expander Grid.Row="2" Header="{Binding GrammarErrorsText}" IsExpanded="{Binding GrammarErrorsExpanded}">
         <ListBox Name="GrammarErrorsListBox" MinHeight="120" Items="{Binding GrammarErrors}" />
       </Expander>
+
       <Grid Grid.Row="3" ColumnDefinitions="100,100,150,*">
         <Button Grid.Column="0" Margin="5" Command="{Binding ProcessCommand}">Process</Button>
         <CheckBox Grid.Column="1" IsChecked="{Binding AutoProcessing}" >Auto</CheckBox>
@@ -42,13 +42,15 @@
     <GridSplitter Grid.Column="1" />
 
     <Grid Grid.Column="2" RowDefinitions="35,*,Auto,Auto,Auto,35" >
-      <Grid ColumnDefinitions="50,60,60,60,100,150" Margin="3">
+      <Grid ColumnDefinitions="50,60,60,60,100,150,60,150" Margin="3">
         <TextBlock Grid.Row="0" Text="TEXT" />
         <Button Grid.Column="1" Height="30" Content="New" Command="{Binding NewTextFile}" Margin="5,0,0,0"/>
         <Button Grid.Column="2" Height="30" Content="Open" Command="{Binding OpenTextFile}" Margin="5,0,0,0"/>
         <Button Grid.Column="3" Height="30" Content="Remove" Command="{Binding RemoveTextFile}" Margin="5,0,0,0"/>
         <TextBlock Grid.Column="4" Text="File" HorizontalAlignment="Right" Margin="0,0,5,0"/>
-        <DropDown Grid.Column="5" SelectedItem="{Binding OpenedTextFile}" Items="{Binding TextFiles}" ></DropDown>
+        <DropDown Grid.Column="5" SelectedItem="{Binding OpenedTextFile}" Items="{Binding TextFiles}" />
+        <TextBlock Grid.Column="6" HorizontalAlignment="Right" Text="Root" IsVisible="{Binding IsParserOpened}" />
+        <DropDown Grid.Column="7" Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" ></DropDown>
       </Grid>
 
       <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790">
@@ -71,15 +73,11 @@
         </Grid>
       </Expander>
 
-      <Expander Grid.Row="4" Header="{Binding TextErrorsText}" IsExpanded="{Binding TextErrorsExpanded}">
-        <Grid RowDefinitions="170" >
-          <ListBox Name="TextErrorsListBox" MinHeight="170" Items="{Binding TextErrors}" />
+            <Expander Grid.Row="4" Header="{Binding TextErrorsText}" IsExpanded="{Binding TextErrorsExpanded}">
+                <Grid RowDefinitions="170" >
+                    <ListBox Name="TextErrorsListBox" MinHeight="170" Items="{Binding TextErrors}" />
+                </Grid>
+            </Expander>
         </Grid>
-      </Expander>
-
-      <Grid Grid.Row="5">
-        <CheckBox IsChecked="{Binding IndentedTree}" >Indented Tree</CheckBox>
-      </Grid>
-    </Grid>
   </Grid>
 </Window>

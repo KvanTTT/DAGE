@@ -10,7 +10,6 @@ namespace AntlrGrammarEditor
         private Runtime _runtime = Runtime.Java;
         private string _root = "";
         private string _text = "";
-        private bool _indentedTree;
 
         private IWorkflowState _currentState;
 
@@ -88,20 +87,6 @@ namespace AntlrGrammarEditor
         public string GeneratorTool { get; set; }
 
         public string RuntimeLibrary { get; set; }
-
-        public bool IndentedTree
-        {
-            get => _indentedTree;
-            set
-            {
-                if (_indentedTree != value)
-                {
-                    StopIfRequired();
-                    _indentedTree = value;
-                    RollbackToStage(WorkflowStage.ParserCompilied);
-                }
-            }
-        }
 
         public event EventHandler<ParsingError> ErrorEvent
         {
