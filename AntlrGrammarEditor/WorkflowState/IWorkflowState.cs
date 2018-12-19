@@ -11,5 +11,7 @@ namespace AntlrGrammarEditor
         IWorkflowState PreviousState { get; }
 
         Exception Exception { get; set; }
+
+        string Command { get; set; }
     }
 }

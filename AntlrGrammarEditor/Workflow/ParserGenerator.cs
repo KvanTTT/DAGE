@@ -88,6 +88,7 @@ namespace AntlrGrammarEditor
                         arguments += " -DsuperClass=" + grammar.ParserSuperClass;
                     }
 
+                    _result.Command = "java " + arguments;
                     processor = new Processor("java", arguments, ".");
                     processor.CancellationToken = cancellationToken;
                     processor.ErrorDataReceived += ParserGeneration_ErrorDataReceived;

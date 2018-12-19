@@ -15,20 +15,23 @@ class Program
     {
         try
         {
-            string rootRule = "";
             string fileName = "../../../../Text";
+            string rootRule = null;
             bool notParse = false;
-            bool indented = false;
+
             if (args.Length > 0)
             {
-                rootRule = args[0];
-                if (!string.IsNullOrEmpty(args[1]))
+                fileName = args[0];
+                if (args.Length > 1)
                 {
-                    fileName = args[1];
+                    rootRule = args[1];
+                    if (args.Length > 2)
+                    {
+                        bool.TryParse(args[2], out notParse);
+                    }
                 }
-                notParse = bool.Parse(args[2]);
-                indented = bool.Parse(args[3]);
             }
+
             var code = File.ReadAllText(fileName);
             var codeStream = new AntlrInputStream(code);
             var lexer = new __TemplateGrammarName__Lexer(codeStream);
@@ -50,23 +53,13 @@ class Program
                 parser.AddErrorListener(new ParserErrorListener());
 
                 stopwatch.Restart();
-                ParserRuleContext ast;
-                if (string.IsNullOrEmpty(rootRule))
-                {
-                    ast = parser.__TemplateGrammarRoot__();
-                }
-                else
-                {
-                    var rootMethod = parser.GetType().GetMethod(rootRule);
-                    ast = (ParserRuleContext)rootMethod.Invoke(parser, new object[0]);
-                }
+                string ruleName = rootRule == null ? __TemplateGrammarName__Parser.ruleNames[0] : rootRule;
+                var rootMethod = typeof(__TemplateGrammarName__Parser).GetMethod(ruleName);
+                var ast = (ParserRuleContext)rootMethod.Invoke(parser, new object[0]);
                 stopwatch.Stop();
-                Console.WriteLine("ParserTime {0}", stopwatch.Elapsed);
 
-                var stringTree = indented
-                    ? ast.ToStringTreeIndented(parser)
-                    : ast.ToStringTree(parser);
-                Console.WriteLine("Tree {0}", stringTree);
+                Console.WriteLine("ParserTime {0}", stopwatch.Elapsed);
+                Console.WriteLine("Tree {0}", ast.ToStringTreeIndented(parser));
             }
         }
         catch (Exception ex)

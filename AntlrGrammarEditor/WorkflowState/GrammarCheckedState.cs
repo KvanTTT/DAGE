@@ -24,6 +24,8 @@ namespace AntlrGrammarEditor
 
         public List<ParsingError> Errors { get; } = new List<ParsingError>();
 
+        public string Command { get; set; }
+
         public GrammarCheckedState(InputState inputState)
         {
             InputState = inputState ?? throw new ArgumentNullException(nameof(inputState));

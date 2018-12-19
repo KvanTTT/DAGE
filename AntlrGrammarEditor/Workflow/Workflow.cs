@@ -218,10 +218,10 @@ namespace AntlrGrammarEditor
                     break;
 
                 case WorkflowStage.ParserGenerated:
-                    var parserCompiler = new ParserCompiler(Root)
+                    var parserCompiler = new ParserCompiler
                     {
                         ErrorEvent = _errorEvent,
-                        RuntimeLibrary = RuntimeLibrary,
+                        RuntimeLibrary = RuntimeLibrary
                     };
                     _currentState = parserCompiler.Compile((ParserGeneratedState)_currentState, _cancellationTokenSource.Token);
                     break;
@@ -230,9 +230,9 @@ namespace AntlrGrammarEditor
                     var textParser = new TextParser(Text)
                     {
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
-                        IndentedTree = IndentedTree,
                         RuntimeLibrary = RuntimeLibrary,
-                        ErrorEvent = _errorEvent
+                        ErrorEvent = _errorEvent,
+                        Root = Root
                     };
                     textParser.TextParsedOutputEvent += _textParsedOutputEvent;
                     var textParsedState = textParser.Parse((ParserCompiliedState)_currentState, _cancellationTokenSource.Token);

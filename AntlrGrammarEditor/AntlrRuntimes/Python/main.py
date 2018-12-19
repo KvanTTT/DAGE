@@ -7,14 +7,22 @@ from __TemplateGrammarName__Parser import __TemplateGrammarName__Parser
 '''AntlrCaseInsensitive'''
 
 def main(argv):
-    code = open('../../Text', 'r').read()
+    fileName = '../../Text'
+
+    if len(argv) > 0:
+        fileName = argv[1]
+        if len(argv) > 1:
+            rootRule = argv[2]
+
+    code = open(fileName, 'r').read()
     codeStream = InputStream(code)
     lexer = __TemplateGrammarName__Lexer(codeStream)
     tokens = lexer.getAllTokens()
     tokensSource = ListTokenSource(tokens)
     tokensStream = CommonTokenStream(tokensSource)
     parser = __TemplateGrammarName__Parser(tokensStream)
-    tree = parser.__TemplateGrammarRoot__()
+    ruleName = __TemplateGrammarName__Parser.ruleNames[0] if rootRule is None else rootRule
+    tree = getattr(parser, ruleName)()
     '''PrintTree'''
 
 if __name__ == '__main__':

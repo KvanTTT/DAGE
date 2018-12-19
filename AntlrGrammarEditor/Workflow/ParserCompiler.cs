@@ -15,7 +15,6 @@ namespace AntlrGrammarEditor
         public const string PythonHelperFileName = "AntlrPythonCompileTest.py";
         public const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
         public const string TemplateGrammarName = "__TemplateGrammarName__";
-        public const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
         public const string RuntimesDirName = "AntlrRuntimes";
 
         private Grammar _grammar;
@@ -25,14 +24,10 @@ namespace AntlrGrammarEditor
         private RuntimeInfo _currentRuntimeInfo;
         private HashSet<string> _processedMessages;
 
-        // Move it to TextParser
-        public string Root { get; }
-
         public string RuntimeLibrary { get; set; }
 
-        public ParserCompiler(string root)
+        public ParserCompiler()
         {
-            Root = root ?? throw new ArgumentNullException(nameof(root));
         }
 
         public ParserCompiliedState Compile(ParserGeneratedState state,
@@ -41,10 +36,7 @@ namespace AntlrGrammarEditor
             _grammar = state.GrammarCheckedState.InputState.Grammar;
             Runtime runtime = state.Runtime;
 
-            _result = new ParserCompiliedState(state)
-            {
-                Root = Root
-            };
+            _result = new ParserCompiliedState(state);
 
             _currentRuntimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
 
@@ -109,6 +101,7 @@ namespace AntlrGrammarEditor
                 _buffer = new List<string>();
                 _processedMessages = new HashSet<string>();
 
+                _result.Command = _currentRuntimeInfo.RuntimeToolName + " " + arguments;
                 processor = new Processor(_currentRuntimeInfo.RuntimeToolName, arguments, workingDirectory);
                 processor.CancellationToken = cancellationToken;
                 processor.ErrorDataReceived += ParserCompilation_ErrorDataReceived;
@@ -351,13 +344,6 @@ namespace AntlrGrammarEditor
 
             string code = File.ReadAllText(Path.Combine(runtimeDir, _currentRuntimeInfo.MainFile));
             code = code.Replace(TemplateGrammarName, _grammar.Name);
-            string root = _result.RootOrDefault;
-            if (runtime == Runtime.Go)
-            {
-                root = char.ToUpperInvariant(root[0]) + root.Substring(1);
-            }
-
-            code = code.Replace(TemplateGrammarRoot, root);
 
             if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {

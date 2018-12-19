@@ -13,10 +13,10 @@ namespace AntlrGrammarEditor
         private TextParsedState _result;
 
         public string Text { get; }
- 
-        public bool OnlyTokenize { get; set; }
 
-        public bool IndentedTree { get; set; }
+        public string Root { get; set; }
+
+        public bool OnlyTokenize { get; set; }
 
         public EventHandler<(TextParsedOutput, object)> TextParsedOutputEvent { get; set; }
 
@@ -30,7 +30,10 @@ namespace AntlrGrammarEditor
         public TextParsedState Parse(ParserCompiliedState state,
              CancellationToken cancellationToken = default(CancellationToken))
         {
-            _result = new TextParsedState(state, Text);
+            _result = new TextParsedState(state, Text)
+            {
+                Root = Root
+            };
 
             Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
             Runtime runtime = state.ParserGeneratedState.Runtime;
@@ -53,11 +56,11 @@ namespace AntlrGrammarEditor
                 {
                     case Runtime.CSharpOptimized:
                     case Runtime.CSharpStandard:
-                        toolName = PrepareCSharpToolAndArgs(grammar, parseTextFileName, out args);
+                        toolName = PrepareCSharpToolAndArgs(grammar, out args);
                         break;
 
                     case Runtime.Java:
-                        toolName = PrepareJavaToolAndArgs(runtimeLibraryPath, parseTextFileName, out args);
+                        toolName = PrepareJavaToolAndArgs(runtimeLibraryPath, out args);
                         break;
 
                     case Runtime.Python2:
@@ -74,6 +77,9 @@ namespace AntlrGrammarEditor
                         break;
                 }
 
+                args += $" \"{parseTextFileName}\" {_result.RootOrDefault} {OnlyTokenize.ToString().ToLowerInvariant()}";
+
+                _result.Command = toolName + " " + args;
                 processor = new Processor(toolName, args, workingDirectory);
                 processor.CancellationToken = cancellationToken;
                 processor.ErrorDataReceived += TextParsing_ErrorDataReceived;
@@ -99,14 +105,13 @@ namespace AntlrGrammarEditor
             return _result;
         }
 
-        private string PrepareCSharpToolAndArgs(Grammar grammar, string parseTextFileName, out string args)
+        private string PrepareCSharpToolAndArgs(Grammar grammar, out string args)
         {
-            args = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\" {_result.ParserCompiliedState.RootOrDefault} \"{parseTextFileName}\" {OnlyTokenize} {IndentedTree}";
+            args = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\"";
             return "dotnet";
         }
 
-        private static string PrepareJavaToolAndArgs(string runtimeLibraryPath, string parseTextFileName,
-            out string args)
+        private static string PrepareJavaToolAndArgs(string runtimeLibraryPath, out string args)
         {
             string relativeRuntimeLibraryPath = "\"" + Path.Combine("..", "..", "..", runtimeLibraryPath) + "\"";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -118,7 +123,7 @@ namespace AntlrGrammarEditor
                 relativeRuntimeLibraryPath = ".:" + relativeRuntimeLibraryPath;
             }
 
-            args = $@"-cp {relativeRuntimeLibraryPath} Main ""{parseTextFileName}""";
+            args = $@"-cp {relativeRuntimeLibraryPath} Main";
             return "java";
         }
 

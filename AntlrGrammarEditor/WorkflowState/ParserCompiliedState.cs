@@ -16,13 +16,9 @@ namespace AntlrGrammarEditor
 
         public Exception Exception { get; set; }
 
-        public string Root { get; set; }
-
-        public string RootOrDefault => string.IsNullOrEmpty(Root)
-            ? ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault()
-            : Root;
-
         public List<ParsingError> Errors { get; } = new List<ParsingError>();
+
+        public string Command { get; set; }
 
         public ParserCompiliedState(ParserGeneratedState parserGeneratedState)
         {

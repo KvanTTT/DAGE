@@ -24,6 +24,8 @@ namespace AntlrGrammarEditor
 
         public List<ParsingError> Errors { get; } = new List<ParsingError>();
 
+        public string Command { get; set; }
+
         public ParserGeneratedState(GrammarCheckedState grammarCheckedState, Runtime runtime, bool includeListener, bool includeVisitor)
         {
             GrammarCheckedState = grammarCheckedState ?? throw new ArgumentNullException(nameof(grammarCheckedState));

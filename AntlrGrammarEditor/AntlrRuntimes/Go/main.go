@@ -1,21 +1,50 @@
 package main
 
 import (
-    "io/ioutil"
-    "github.com/antlr/antlr4/runtime/Go/antlr"
-    "fmt"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"reflect"
+	"strings"
+
+	"github.com/antlr/antlr4/runtime/Go/antlr"
 )
 
+
 func main() {
-    bytes, err := ioutil.ReadFile("../../Text")
-    if err != nil {
-        fmt.Print(err)
-    }
-    code := string(bytes)
-    codeStream := antlr.NewInputStream(code)
-    lexer := New__TemplateGrammarName__Lexer(codeStream)
-    tokensStream := antlr.NewCommonTokenStream(lexer, 0)
-    parser := New__TemplateGrammarName__Parser(tokensStream)
-    tree := parser.__TemplateGrammarRoot__()
-    fmt.Print("Tree " + tree.ToStringTree(nil, parser))
+	fileName := "../../Text"
+	rootRule := ""
+
+	if len(os.Args) > 1 {
+		fileName = os.Args[1]
+		if len(os.Args) > 2 {
+			rootRule = os.Args[2]
+		}
+	}
+
+	bytes, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	code := string(bytes)
+	codeStream := antlr.NewInputStream(code)
+	lexer := New__TemplateGrammarName__Lexer(codeStream)
+	tokensStream := antlr.NewCommonTokenStream(lexer, 0)
+	parser := New__TemplateGrammarName__Parser(tokensStream)
+
+	var ruleName string
+	if rootRule == "" {
+		ruleName = parser.RuleNames[0]
+	} else {
+		ruleName = rootRule
+	}
+	ruleName = strings.ToUpper(ruleName[0:1]) + ruleName[1:len(ruleName)]
+
+	method := reflect.ValueOf(parser).MethodByName(ruleName)
+	tree := method.Call([]reflect.Value{})[0].Interface()
+	treeElem := reflect.ValueOf(tree).Elem()
+	treeContext := treeElem.FieldByName("BaseParserRuleContext").Interface().(*antlr.BaseParserRuleContext)
+
+	fmt.Println("Tree " + treeContext.ToStringTree(nil, parser))
 }

@@ -14,6 +14,8 @@ namespace AntlrGrammarEditor
 
         public Grammar Grammar { get; }
 
+        public string Command { get; set; }
+
         public InputState(Grammar grammar)
         {
             Grammar = grammar ?? throw new ArgumentNullException(nameof(grammar));

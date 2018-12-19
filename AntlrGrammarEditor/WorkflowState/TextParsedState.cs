@@ -15,7 +15,7 @@ namespace AntlrGrammarEditor
         public Exception Exception { get; set; }
 
         public string Text { get; }
-        
+
         public string Root { get; set; }
 
         public ParserCompiliedState ParserCompiliedState { get; }
@@ -29,6 +29,12 @@ namespace AntlrGrammarEditor
         public string Tokens { get; set; }
 
         public string Tree { get; set; }
+
+        public string Command { get; set; }
+
+        public string RootOrDefault => string.IsNullOrEmpty(Root)
+            ? ParserCompiliedState.ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault()
+            : Root;
 
         public TextParsedState(ParserCompiliedState parserCompiliedState, string text)
         {
