@@ -59,16 +59,7 @@ build_script:
 
     dotnet publish DesktopAntlrGrammarEditor/DesktopAntlrGrammarEditor.csproj -c Release -o bin/Gui
 test_script:
-- ps: |
-    cd AntlrGrammarEditor.Tests/bin/Release/netcoreapp2.1
-
-    dotnet vstest AntlrGrammarEditor.Tests.dll --logger:nunit
-
-    $wc = New-Object 'System.Net.WebClient'
-
-    $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$env:APPVEYOR_JOB_ID", (Resolve-Path ./TestResults/TestResults.xml))
-
-    cd ../../../..
+  - dotnet test "AntlrGrammarEditor.Tests/AntlrGrammarEditor.Tests.csproj" -c Release
 after_test:
 - ps: |
     cd DesktopAntlrGrammarEditor/bin/Gui
