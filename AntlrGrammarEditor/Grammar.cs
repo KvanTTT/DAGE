@@ -9,6 +9,13 @@ namespace AntlrGrammarEditor
         UPPER
     }
 
+    public enum GrammarType
+    {
+        Combined,
+        Separated,
+        Lexer
+    }
+
     public class Grammar
     {
         public const string AntlrDotExt = ".g4";
@@ -23,7 +30,7 @@ namespace AntlrGrammarEditor
 
         public string FileExtension { get; set; } = "txt";
 
-        public bool SeparatedLexerAndParser { get; set; }
+        public GrammarType Type { get; set; }
 
         public CaseInsensitiveType CaseInsensitiveType { get; set; }
 
