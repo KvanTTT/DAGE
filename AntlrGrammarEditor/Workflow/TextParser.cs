@@ -224,7 +224,7 @@ namespace AntlrGrammarEditor
                 }
                 else
                 {
-                    AddError(new ParsingError(e.Data, null, WorkflowStage.TextParsed));
+                    AddError(new ParsingError(e.Data, CodeSource.Empty, WorkflowStage.TextParsed));
                 }
             }
         }

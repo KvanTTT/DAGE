@@ -17,6 +17,15 @@ namespace AntlrGrammarEditor
         public const string TemplateGrammarName = "__TemplateGrammarName__";
         public const string RuntimesDirName = "AntlrRuntimes";
 
+        private readonly static Regex ParserPartStart = new Regex(@"/\*\$ParserPart\*/", RegexOptions.Compiled);
+        private readonly static Regex ParserPartEnd = new Regex(@"/\*ParserPart\$\*/", RegexOptions.Compiled);
+        private readonly static Regex ParserPartStartPython = new Regex(@"'''\$ParserPart'''", RegexOptions.Compiled);
+        private readonly static Regex ParserPartEndPython = new Regex(@"'''ParserPart\$'''", RegexOptions.Compiled);
+        private readonly static Regex ParserIncludeStartPython = new Regex(@"'''\$ParserInclude'''", RegexOptions.Compiled);
+        private readonly static Regex ParserIncludeEndPython = new Regex(@"'''ParserInclude\$'''", RegexOptions.Compiled);
+        private readonly static Regex ParserIncludeStartJavaScript = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
+        private readonly static Regex ParserIncludeEndJavaScript = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
+
         private Grammar _grammar;
         private ParserCompiliedState _result;
         private List<string> _buffer;
@@ -54,19 +63,25 @@ namespace AntlrGrammarEditor
                 string generatedGrammarName =
                     runtime != Runtime.Go ? _grammar.Name : _grammar.Name.ToLowerInvariant();
 
-                GetGeneratedFileNames(state.GrammarCheckedState, generatedGrammarName, workingDirectory, generatedFiles, false);
+                if (_grammar.Type != GrammarType.Lexer)
+                {
+                    GetGeneratedFileNames(state.GrammarCheckedState, generatedGrammarName, workingDirectory, generatedFiles, false);
+                }
+
                 GetGeneratedFileNames(state.GrammarCheckedState, generatedGrammarName, workingDirectory, generatedFiles, true);
 
                 CopyCompiliedSources(runtime, workingDirectory);
 
-                if (state.IncludeListener)
+                if (_grammar.Type != GrammarType.Lexer)
                 {
-                    GetGeneratedListenerOrVisitorFiles(generatedGrammarName, workingDirectory, generatedFiles, false);
-                }
-
-                if (state.IncludeVisitor)
-                {
-                    GetGeneratedListenerOrVisitorFiles(generatedGrammarName, workingDirectory, generatedFiles, true);
+                    if (state.IncludeListener)
+                    {
+                        GetGeneratedListenerOrVisitorFiles(generatedGrammarName, workingDirectory, generatedFiles, false);
+                    }
+                    if (state.IncludeVisitor)
+                    {
+                        GetGeneratedListenerOrVisitorFiles(generatedGrammarName, workingDirectory, generatedFiles, true);
+                    }
                 }
 
                 string arguments = "";
@@ -144,7 +159,7 @@ namespace AntlrGrammarEditor
         {
             string grammarNameExt;
 
-            if (!_grammar.SeparatedLexerAndParser)
+            if (_grammar.Type == GrammarType.Combined)
             {
                 grammarNameExt = _grammar.Files.FirstOrDefault(file => Path.GetExtension(file)
                     .Equals(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase));
@@ -349,6 +364,7 @@ namespace AntlrGrammarEditor
             {
                 string antlrInputStream = RuntimeInfo.InitOrGetRuntimeInfo(runtime).AntlrInputStream;
                 string caseInsensitiveStream = "AntlrCaseInsensitiveInputStream";
+
                 if (runtime == Runtime.Java)
                 {
                     caseInsensitiveStream = "new " + caseInsensitiveStream;
@@ -357,6 +373,7 @@ namespace AntlrGrammarEditor
                 {
                     caseInsensitiveStream = "New" + caseInsensitiveStream;
                 }
+
                 var antlrInputStreamRegex = new Regex($@"{antlrInputStream}\(([^\)]+)\)");
                 string isLowerBool = (_grammar.CaseInsensitiveType == CaseInsensitiveType.lower).ToString();
                 if (!runtime.IsPythonRuntime())
@@ -392,16 +409,58 @@ namespace AntlrGrammarEditor
                 }
             }
 
-            if (runtime == Runtime.Python2)
+            Regex parserPartStart, parserPartEnd;
+
+            if (runtime.IsPythonRuntime())
             {
-                code = code.Replace("'''PrintTree'''", "print \"Tree \" + tree.toStringTree(recog=parser);");
+                string newValue = runtime == Runtime.Python2
+                    ? "print \"Tree \" + tree.toStringTree(recog=parser);"
+                    : "print(\"Tree \", tree.toStringTree(recog=parser));";
+                code = code.Replace("'''PrintTree'''", newValue);
+
+                parserPartStart = ParserPartStartPython;
+                parserPartEnd = ParserPartEndPython;
+
+                code = RemoveCodeOrClearMarkers(code, ParserIncludeStartPython, ParserIncludeEndPython);
             }
-            else if (runtime == Runtime.Python3)
+            else
             {
-                code = code.Replace("'''PrintTree'''", "print(\"Tree \", tree.toStringTree(recog = parser));");
+                parserPartStart = ParserPartStart;
+                parserPartEnd = ParserPartEnd;
+
+                if (runtime == Runtime.JavaScript || runtime == Runtime.Go)
+                {
+                    code = RemoveCodeOrClearMarkers(code, ParserIncludeStartJavaScript, ParserIncludeEndJavaScript);
+                }
             }
 
+            code = RemoveCodeOrClearMarkers(code, parserPartStart, parserPartEnd);
+
             File.WriteAllText(templateFile, code);
+        }
+
+        private string RemoveCodeOrClearMarkers(string code, Regex parserPartStart, Regex parserPartEnd)
+        {
+            if (_grammar.Type == GrammarType.Lexer)
+            {
+                int parserStartIndex = parserPartStart.Match(code).Index;
+                Match parserEndMatch = parserPartEnd.Match(code);
+                int parserEndIndex = parserEndMatch.Index + parserEndMatch.Length;
+
+                /*while (parserEndIndex < code.Length && (code[parserEndIndex] == '\r' || code[parserEndIndex] == '\n'))
+                {
+                    parserEndIndex++;
+                }*/
+
+                code = code.Remove(parserStartIndex) + code.Substring(parserEndIndex);
+            }
+            else
+            {
+                code = parserPartStart.Replace(code, m => "");
+                code = parserPartEnd.Replace(code, m => "");
+            }
+
+            return code;
         }
 
         private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
@@ -712,7 +771,7 @@ namespace AntlrGrammarEditor
 
             result = Path.GetFileNameWithoutExtension(codeFileName);
 
-            if (!_grammar.SeparatedLexerAndParser)
+            if (_grammar.Type == GrammarType.Combined)
             {
                 if (result.EndsWith(runtimeInfo.LexerPostfix))
                 {
