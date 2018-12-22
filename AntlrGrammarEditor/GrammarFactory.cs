@@ -9,16 +9,19 @@ namespace AntlrGrammarEditor
 {
     public class GrammarFactory
     {
-        public const string DefaultRootName = "rootRule";
+        private static readonly Regex LexerGrammarRegex = new Regex(@"lexer\s+grammar");
+
+        private static readonly Regex CaseInsensitiveTypeRegex = new Regex(@"/\*\s*CaseInsensitiveType:\s*(\w+)\s*\*/");
 
         public static Grammar Open(string fileOrDirectoryName, out string root)
         {
             List<string> grammarFiles;
             string grammarName = "";
             string directoryName;
-            bool separatedLexerAndParser = false;
+            GrammarType grammarType = GrammarType.Combined;
             CaseInsensitiveType caseInsensitiveType = CaseInsensitiveType.None;
             string lexerOrCombinedGrammarFile = null;
+            string parserGrammarFile = null;
             root = null;
 
             if (File.Exists(fileOrDirectoryName))
@@ -66,9 +69,10 @@ namespace AntlrGrammarEditor
                         grammarFiles.Add(Path.GetFileName(parserFileName));
                         grammarName = Path.GetFileNameWithoutExtension(parserFileName)
                             .Replace(Grammar.ParserPostfix, "");
+                        parserGrammarFile = parserFileName;
                     }
 
-                    separatedLexerAndParser = true;
+                    grammarType = GrammarType.Separated;
                 }
             }
             else
@@ -99,8 +103,13 @@ namespace AntlrGrammarEditor
             else if (!string.IsNullOrEmpty(lexerOrCombinedGrammarFile))
             {
                 string lexerOrCombinedGrammar = File.ReadAllText(lexerOrCombinedGrammarFile);
-                var caseInsensitiveTypeRegex = new Regex(@"/\*\s*CaseInsensitiveType:\s*(\w+)\s*\*/");
-                var match = caseInsensitiveTypeRegex.Match(lexerOrCombinedGrammar);
+
+                if (LexerGrammarRegex.IsMatch(lexerOrCombinedGrammar) && parserGrammarFile == null)
+                {
+                    grammarType = GrammarType.Lexer;
+                }
+
+                var match = CaseInsensitiveTypeRegex.Match(lexerOrCombinedGrammar);
                 if (match.Success)
                 {
                     Enum.TryParse(match.Groups[1].Value, out caseInsensitiveType);
@@ -119,7 +128,7 @@ namespace AntlrGrammarEditor
                 Directory = fileOrDirectoryName,
                 CaseInsensitiveType = caseInsensitiveType,
                 Files = grammarFiles,
-                SeparatedLexerAndParser = separatedLexerAndParser,
+                Type = grammarType,
                 TextFiles = textFiles.ToList()
             };
 
@@ -130,42 +139,38 @@ namespace AntlrGrammarEditor
         {
             var result = new Grammar
             {
-                Name = "NewGrammar",
-                SeparatedLexerAndParser = false
+                Name = "NewGrammar"
             };
             return result;
         }
 
-        public static Grammar CreateDefaultAndFill(string grammarText, string grammarName, string directory)
+        public static Grammar CreateDefaultCombinedAndFill(string grammarText, string grammarName, string directory)
         {
-            var result = new Grammar
-            {
-                Name = grammarName
-            };
-
-            result.Directory = directory;
-            InitFiles(result);
-
-            foreach (var file in result.Files)
-            {
-                File.WriteAllText(Path.Combine(directory, file), grammarText);
-            }
-
-            return result;
+            return CreateDefaultAndFill(GrammarType.Combined, "", grammarText, grammarName, directory);
         }
 
         public static Grammar CreateDefaultSeparatedAndFill(string lexerText, string parserText, string grammarName, string directory)
         {
+            return CreateDefaultAndFill(GrammarType.Separated, lexerText, parserText, grammarName, directory);
+        }
+
+        public static Grammar CreateDefaultLexerAndFill(string grammarText, string grammarName, string directory)
+        {
+            return CreateDefaultAndFill(GrammarType.Lexer, grammarText, "", grammarName, directory);
+        }
+
+        private static Grammar CreateDefaultAndFill(GrammarType type, string lexerText, string parserText, string grammarName, string directory)
+        {
             var result = new Grammar
             {
                 Name = grammarName,
-                SeparatedLexerAndParser = true,
+                Type = type,
             };
 
             result.Directory = directory;
             InitFiles(result);
 
-            foreach (var file in result.Files)
+            foreach (string file in result.Files)
             {
                 string text = file.Contains(Grammar.LexerPostfix) ? lexerText : parserText;
                 File.WriteAllText(Path.Combine(directory, file), text);
@@ -192,9 +197,7 @@ namespace AntlrGrammarEditor
                     var fileWithoutExtension = Path.GetFileNameWithoutExtension(file);
                     var text = new StringBuilder();
 
-                    bool lexerOrCombinedGrammar = !fileWithoutExtension.Contains(Grammar.ParserPostfix);
-
-                    if (lexerOrCombinedGrammar)
+                    if (fileWithoutExtension.Contains(Grammar.LexerPostfix))
                     {
                         text.Append("lexer ");
                     }
@@ -204,7 +207,8 @@ namespace AntlrGrammarEditor
                     }
                     text.Append($"grammar {fileWithoutExtension};");
 
-                    if (lexerOrCombinedGrammar && grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+                    if (!fileWithoutExtension.Contains(Grammar.ParserPostfix) &&
+                        grammar.CaseInsensitiveType != CaseInsensitiveType.None)
                     {
                         text.Append($" /* CaseInsensitiveType: {grammar.CaseInsensitiveType} */");
                     }
@@ -220,19 +224,17 @@ namespace AntlrGrammarEditor
 
                     if (!fileWithoutExtension.Contains(Grammar.LexerPostfix))
                     {
-                        text.AppendLine($"{DefaultRootName}");
-                        text.AppendLine("    : tokensOrRules* EOF");
-                        text.AppendLine("    ;");
-                        text.AppendLine();
-                        text.AppendLine("tokensOrRules");
-                        text.AppendLine("    : TOKEN+");
+                        text.AppendLine($"root");
+                        text.AppendLine("    : .*? EOF");
                         text.AppendLine("    ;");
                         text.AppendLine();
                     }
 
                     if (!fileWithoutExtension.Contains(Grammar.ParserPostfix))
                     {
-                        text.AppendLine("TOKEN: [a-z]+;");
+                        text.AppendLine("Id         : [A-Za-z]+;");
+                        text.AppendLine("Whitespace : [ \\t\\r\\n]+ -> channel(HIDDEN);");
+                        text.AppendLine("Number     : [0-9]+;");
                         text.AppendLine();
                     }
 
@@ -240,7 +242,7 @@ namespace AntlrGrammarEditor
                 }
             }
 
-            foreach (var file in grammar.TextFiles)
+            foreach (string file in grammar.TextFiles)
             {
                 File.WriteAllText(file, "test");
             }
@@ -253,15 +255,21 @@ namespace AntlrGrammarEditor
 
         private static void InitFiles(Grammar grammar)
         {
-            grammar.Files.Clear();
-            if (grammar.SeparatedLexerAndParser)
+            var grammarFiles = grammar.Files;
+            grammarFiles.Clear();
+
+            if (grammar.Type == GrammarType.Lexer)
             {
-                grammar.Files.Add(grammar.Name + Grammar.LexerPostfix + Grammar.AntlrDotExt);
-                grammar.Files.Add(grammar.Name + Grammar.ParserPostfix + Grammar.AntlrDotExt);
+                grammarFiles.Add(grammar.Name + Grammar.LexerPostfix + Grammar.AntlrDotExt);
+            }
+            else if (grammar.Type == GrammarType.Separated)
+            {
+                grammarFiles.Add(grammar.Name + Grammar.LexerPostfix + Grammar.AntlrDotExt);
+                grammarFiles.Add(grammar.Name + Grammar.ParserPostfix + Grammar.AntlrDotExt);
             }
             else
             {
-                grammar.Files.Add(grammar.Name + Grammar.AntlrDotExt);
+                grammarFiles.Add(grammar.Name + Grammar.AntlrDotExt);
             }
 
             grammar.TextFiles.Add(GenerateTextFileName(grammar));
