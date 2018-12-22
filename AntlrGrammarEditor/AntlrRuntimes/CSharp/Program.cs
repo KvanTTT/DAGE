@@ -43,7 +43,7 @@ class Program
             stopwatch.Stop();
             Console.WriteLine("LexerTime {0}", stopwatch.Elapsed);
             Console.WriteLine("Tokens {0}", tokens.TokensToString());
-
+/*$ParserPart*/
             if (!notParse)
             {
                 var tokensSource = new ListTokenSource(tokens);
@@ -61,6 +61,7 @@ class Program
                 Console.WriteLine("ParserTime {0}", stopwatch.Elapsed);
                 Console.WriteLine("Tree {0}", ast.ToStringTree(parser));
             }
+/*ParserPart$*/
         }
         catch (Exception ex)
         {

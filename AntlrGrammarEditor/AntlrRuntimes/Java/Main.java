@@ -20,12 +20,14 @@ public class Main {
             List<? extends Token> tokens = lexer.getAllTokens();
             ListTokenSource tokensSource = new ListTokenSource(tokens);
             CommonTokenStream tokensStream = new CommonTokenStream(tokensSource);
+/*$ParserPart*/
             __TemplateGrammarName__Parser parser = new __TemplateGrammarName__Parser(tokensStream);
             String ruleName = rootRule == null ? __TemplateGrammarName__Parser.ruleNames[0] : rootRule;
             Method parseMethod = __TemplateGrammarName__Parser.class.getDeclaredMethod(ruleName);
             ParserRuleContext ast = (ParserRuleContext)parseMethod.invoke(parser);
             String stringTree = ast.toStringTree(parser);
             System.out.print("Tree " + stringTree);
+/*ParserPart$*/
         }
         catch (Exception e) {
         }

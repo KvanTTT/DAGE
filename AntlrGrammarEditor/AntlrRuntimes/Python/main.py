@@ -3,7 +3,7 @@ from antlr4.InputStream import InputStream
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.ListTokenSource import ListTokenSource
 from __TemplateGrammarName__Lexer import __TemplateGrammarName__Lexer
-from __TemplateGrammarName__Parser import __TemplateGrammarName__Parser
+'''$ParserInclude'''from __TemplateGrammarName__Parser import __TemplateGrammarName__Parser'''ParserInclude$'''
 '''AntlrCaseInsensitive'''
 
 def main(argv):
@@ -20,10 +20,12 @@ def main(argv):
     tokens = lexer.getAllTokens()
     tokensSource = ListTokenSource(tokens)
     tokensStream = CommonTokenStream(tokensSource)
+'''$ParserPart'''
     parser = __TemplateGrammarName__Parser(tokensStream)
     ruleName = __TemplateGrammarName__Parser.ruleNames[0] if rootRule is None else rootRule
     tree = getattr(parser, ruleName)()
     '''PrintTree'''
+'''ParserPart$'''
 
 if __name__ == '__main__':
     main(sys.argv)

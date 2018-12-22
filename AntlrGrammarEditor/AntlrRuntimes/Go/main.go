@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+
+/*$ParserInclude*/
 	"reflect"
 	"strings"
+/*ParserInclude$*/
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 )
@@ -22,6 +25,8 @@ func main() {
 		}
 	}
 
+	_ = rootRule
+
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		fmt.Print(err)
@@ -31,6 +36,10 @@ func main() {
 	codeStream := antlr.NewInputStream(code)
 	lexer := New__TemplateGrammarName__Lexer(codeStream)
 	tokensStream := antlr.NewCommonTokenStream(lexer, 0)
+
+	_ = tokensStream
+
+/*$ParserPart*/
 	parser := New__TemplateGrammarName__Parser(tokensStream)
 
 	var ruleName string
@@ -47,4 +56,5 @@ func main() {
 	treeContext := treeElem.FieldByName("BaseParserRuleContext").Interface().(*antlr.BaseParserRuleContext)
 
 	fmt.Println("Tree " + treeContext.ToStringTree(nil, parser))
+/*ParserPart$*/
 }
