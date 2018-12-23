@@ -216,7 +216,17 @@ namespace DesktopAntlrGrammarEditor
 
         public string CurrentState => _workflow.CurrentState.Stage.ToString();
 
-        public ObservableCollection<RuntimeInfo> Runtimes { get; } = new ObservableCollection<RuntimeInfo>(RuntimeInfo.Runtimes.Select(r => r.Value).ToList());
+        public ObservableCollection<RuntimeInfo> Runtimes { get; } =
+            new ObservableCollection<RuntimeInfo>(new List<RuntimeInfo>
+            {
+                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.CSharpOptimized),
+                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.CSharpStandard),
+                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Java),
+                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Python2),
+                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Python3),
+                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.JavaScript),
+                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Go),
+            });
 
         public string GrammarErrorsText => $"Grammar Errors ({GrammarErrors.Count})";
 
