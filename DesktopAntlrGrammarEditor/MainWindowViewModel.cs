@@ -164,7 +164,7 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public ObservableCollection<string> GrammarFiles { get; } = new ObservableCollection<string>();
+        public ObservableCollection<string> GrammarFiles => new ObservableCollection<string>(_workflow.Grammar.Files);
 
         public string Root
         {
@@ -722,6 +722,7 @@ namespace DesktopAntlrGrammarEditor
         {
             ObservableCollection<object> errorsList = GrammarErrors;
             bool grammarErrors = false;
+
             switch (e)
             {
                 case WorkflowStage.Input:
@@ -736,6 +737,7 @@ namespace DesktopAntlrGrammarEditor
                     errorsList = TextErrors;
                     break;
             }
+
             if (errorsList.Count > 0)
             {
                 Dispatcher.UIThread.InvokeAsync(() =>
@@ -837,7 +839,6 @@ namespace DesktopAntlrGrammarEditor
             List<string> grammarAndCompiliedFiles = GetGrammarAndCompiliedFiles(Grammar.Directory, "", value.Extensions[0]);
 
             Grammar.Files.Clear();
-            GrammarFiles.Clear();
 
             foreach (string fileName in grammarAndCompiliedFiles)
             {
@@ -856,14 +857,14 @@ namespace DesktopAntlrGrammarEditor
                 }
 
                 Grammar.Files.Add(addedFile);
-                GrammarFiles.Add(addedFile);
             }
 
             foreach (string fileName in runtimeGrammarAndCompiliedFiles)
             {
                 Grammar.Files.Add(fileName);
-                GrammarFiles.Add(fileName);
             }
+
+            this.RaisePropertyChanged(nameof(GrammarFiles));
         }
 
         private List<string> GetGrammarAndCompiliedFiles(string path, string runtimeName, string extension)
