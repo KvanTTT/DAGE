@@ -9,7 +9,8 @@ namespace AntlrGrammarEditor.Tests
     public class WorkflowTests
     {
         private const string TestGrammarName = "test";
-        
+        private static readonly string TestTextName = Path.Combine(Environment.CurrentDirectory, "Text");
+
         [SetUp]
         public void Init()
         {
@@ -201,16 +202,17 @@ namespace AntlrGrammarEditor.Tests
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            File.WriteAllText(TestTextName, @"!  asdf  1234");
+
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
-            workflow.Text =
-                @"!  asdf  1234";
+            workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.Exception?.ToString());
 
-            var textSource = new CodeSource("", workflow.Text);
             TextParsedState textParsedState = state as TextParsedState;
+            var textSource = textParsedState.Text;
             CollectionAssert.AreEquivalent(
                 new [] {
                     new ParsingError(1, 1, "line 1:0 token recognition error at: '!'", textSource, WorkflowStage.TextParsed),
@@ -244,9 +246,11 @@ namespace AntlrGrammarEditor.Tests
                 WS:     [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
             grammar.CaseInsensitiveType = lowerCase ? CaseInsensitiveType.lower : CaseInsensitiveType.UPPER;
+            File.WriteAllText(TestTextName, @"A a 1234");
+
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
-            workflow.Text = @"A a 1234";
+            workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.Exception?.ToString());
@@ -263,10 +267,12 @@ namespace AntlrGrammarEditor.Tests
                 t: T;
                 T:  ['' ]+;";
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            File.WriteAllText(TestTextName, " ");
+
             var workflow = new Workflow(grammar);
             workflow.Runtime = Runtime.Java;
-            workflow.Text = @" ";
-            
+            workflow.TextFileName = TestTextName;
+
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
             Assert.IsTrue(((TextParsedState)state).ParserCompiliedState.ParserGeneratedState.Errors[0].IsWarning);
@@ -286,13 +292,15 @@ namespace AntlrGrammarEditor.Tests
                 t: T;
                 T: [a-z]+;";
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            File.WriteAllText(TestTextName, @"asdf");
+
             var workflow = new Workflow(grammar)
             {
                 GenerateListener = true,
                 GenerateVisitor = true
             };
             workflow.Runtime = runtime;
-            workflow.Text = @"asdf";
+            workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
             TextParsedState textParsedState = state as TextParsedState;
@@ -322,23 +330,23 @@ namespace AntlrGrammarEditor.Tests
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
+            workflow.TextFileName = TestTextName;
 
             workflow.Root = null;
-            workflow.Text = "V1";
+            File.WriteAllText(TestTextName, "V1");
             var state = workflow.Process();
             TextParsedState textParsedState = state as TextParsedState;
             Assert.IsNotNull(textParsedState);
             Assert.IsFalse(state.HasErrors);
 
             workflow.Root = "root1";
-            workflow.Text = "V1";
             state = workflow.Process();
             textParsedState = state as TextParsedState;
             Assert.IsNotNull(textParsedState);
             Assert.IsFalse(state.HasErrors);
 
             workflow.Root = "root2";
-            workflow.Text = "V2";
+            File.WriteAllText(TestTextName, "V2");
             state = workflow.Process();
             textParsedState = state as TextParsedState;
             Assert.IsNotNull(textParsedState);
@@ -361,10 +369,11 @@ namespace AntlrGrammarEditor.Tests
                 $"Space: ' '+ -> channel(HIDDEN);";
 
             var grammar = GrammarFactory.CreateDefaultLexerAndFill(grammarText, TestGrammarName, ".");
+            File.WriteAllText(TestTextName, "T1 1234");
 
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
-            workflow.Text = "T1 1234";
+            workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
             TextParsedState textParsedState = state as TextParsedState;

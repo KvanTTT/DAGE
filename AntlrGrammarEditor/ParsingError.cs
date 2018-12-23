@@ -41,6 +41,7 @@ namespace AntlrGrammarEditor
         public override bool Equals(object obj)
         {
             var parsingError = obj as ParsingError;
+
             if (parsingError != null)
             {
                 return TextSpan.Equals(parsingError.TextSpan) &&

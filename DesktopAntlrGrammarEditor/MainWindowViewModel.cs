@@ -238,6 +238,8 @@ namespace DesktopAntlrGrammarEditor
                 if (!string.IsNullOrEmpty(value?.FullFileName) && !value.Equals(_openedTextFile))
                 {
                     _textTextBox.IsEnabled = true;
+                    _tokensTextBox.IsEnabled = true;
+                    _parseTreeTextBox.IsEnabled = true;
                     _openedTextFile = value;
 
                     _textTextBox.SetupHightlighting(value.FullFileName);
@@ -256,7 +258,7 @@ namespace DesktopAntlrGrammarEditor
                         _textTextBox.Text = "";
                         ShowOpenFileErrorMessage(_openedTextFile.FullFileName, ex.Message);
                     }
-                    _workflow.Text = _textTextBox.Text;
+                    _workflow.TextFileName = value.FullFileName;
                     _textFileState = FileState.Opened;
 
                     _settings.OpenedTextFile = value.FullFileName;
@@ -270,9 +272,11 @@ namespace DesktopAntlrGrammarEditor
                 if (string.IsNullOrEmpty(value?.FullFileName))
                 {
                     _textTextBox.IsEnabled = false;
+                    _tokensTextBox.IsEnabled = false;
+                    _parseTreeTextBox.IsEnabled = false;
                     _openedTextFile = FileName.Empty;
                     _textTextBox.Text = "";
-                    _workflow.Text = _textTextBox.Text;
+                    _workflow.TextFileName = null;
                     _textFileState = FileState.Opened;
 
                     _settings.OpenedTextFile = _openedTextFile.FullFileName;
@@ -523,7 +527,9 @@ namespace DesktopAntlrGrammarEditor
                 {
                     if (_textFileState == FileState.Changed)
                     {
-                        _workflow.Text = _textTextBox.Text;
+                        _workflow.TextFileName = OpenedTextFile.FullFileName;
+                        _workflow.RollbackToStage(WorkflowStage.ParserCompilied);
+
                         if (AutoProcessing)
                         {
                             SaveTextFileIfRequired();
@@ -586,7 +592,7 @@ namespace DesktopAntlrGrammarEditor
                 if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile?.FullFileName))
                 {
                     File.WriteAllText(_openedTextFile.FullFileName, _textTextBox.Text);
-                    _workflow.Text = _textTextBox.Text;
+                    _workflow.TextFileName = _openedTextFile.FullFileName;
                     _textFileState = FileState.Saved;
                     changed = true;
                 }
@@ -796,8 +802,10 @@ namespace DesktopAntlrGrammarEditor
                 }
                 else
                 {
-                    TextSpan lineTextSpan = parsingError.TextSpan.Source.GetTextSpanAtLine(parsingError.TextSpan.GetLineColumn().BeginLine);
-                    selectTextSpan = lineTextSpan;
+                    LineColumnTextSpan lcTextSpan = parsingError.TextSpan.GetLineColumn();
+                    selectTextSpan =
+                        new LineColumnTextSpan(lcTextSpan.BeginLine, lcTextSpan.BeginColumn,
+                                               lcTextSpan.BeginLine, lcTextSpan.BeginColumn + 1, lcTextSpan.Source).GetTextSpan();
                 }
 
                 textBox.Select(selectTextSpan.Start, selectTextSpan.Length);

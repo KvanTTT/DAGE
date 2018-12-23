@@ -14,7 +14,7 @@ namespace AntlrGrammarEditor
 
         public Exception Exception { get; set; }
 
-        public string Text { get; }
+        public CodeSource Text { get; }
 
         public string Root { get; set; }
 
@@ -36,7 +36,7 @@ namespace AntlrGrammarEditor
             ? ParserCompiliedState.ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault()
             : Root;
 
-        public TextParsedState(ParserCompiliedState parserCompiliedState, string text)
+        public TextParsedState(ParserCompiliedState parserCompiliedState, CodeSource text)
         {
             ParserCompiliedState =
                 parserCompiliedState ?? throw new ArgumentNullException(nameof(parserCompiliedState));

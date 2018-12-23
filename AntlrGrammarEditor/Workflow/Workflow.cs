@@ -9,7 +9,7 @@ namespace AntlrGrammarEditor
         private Grammar _grammar;
         private Runtime _runtime = Runtime.Java;
         private string _root = "";
-        private string _text = "";
+        private string _textFileName = "";
 
         private IWorkflowState _currentState;
 
@@ -70,15 +70,15 @@ namespace AntlrGrammarEditor
             }
         }
 
-        public string Text
+        public string TextFileName
         {
-            get => _text;
+            get => _textFileName;
             set
             {
-                if (_text != value)
+                if (_textFileName != value)
                 {
                     StopIfRequired();
-                    _text = value;
+                    _textFileName = value;
                     RollbackToStage(WorkflowStage.ParserCompilied);
                 }
             }
@@ -212,7 +212,7 @@ namespace AntlrGrammarEditor
                     break;
 
                 case WorkflowStage.ParserCompilied:
-                    var textParser = new TextParser(Text)
+                    var textParser = new TextParser(TextFileName)
                     {
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         RuntimeLibrary = RuntimeLibrary,
