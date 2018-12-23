@@ -1,6 +1,5 @@
 ﻿using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -59,7 +58,7 @@ namespace AntlrGrammarEditor.Tests
                 CHAR:  [a-z]+;
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
-            var workflow = new Workflow(GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, "."));
+            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
             workflow.EndStage = WorkflowStage.ParserGenerated;
             foreach (Runtime runtime in runtimes)
             {
@@ -88,7 +87,7 @@ namespace AntlrGrammarEditor.Tests
                 CHAR:   a-z]+;
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
-            var workflow = new Workflow(GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, "."));
+            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.Exception?.ToString());
@@ -142,7 +141,7 @@ namespace AntlrGrammarEditor.Tests
                 CHAR:   [a-z]+;
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
-            var workflow = new Workflow(GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, "."));
+            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage, state.Exception?.ToString());
@@ -174,7 +173,7 @@ namespace AntlrGrammarEditor.Tests
                 CHAR:   [a-z]+;
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "Test", ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "Test", ".");
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
 
@@ -201,7 +200,7 @@ namespace AntlrGrammarEditor.Tests
                 CHAR:  [a-z]+;
                 DIGIT: [0-9]+;
                 WS:    [ \r\n\t]+ -> skip;";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
             workflow.Text =
@@ -243,7 +242,7 @@ namespace AntlrGrammarEditor.Tests
                 A:      '{c}';
                 DIGIT:  [0-9]+;
                 WS:     [ \r\n\t]+ -> skip;";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
             grammar.CaseInsensitiveType = lowerCase ? CaseInsensitiveType.lower : CaseInsensitiveType.UPPER;
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
@@ -263,7 +262,7 @@ namespace AntlrGrammarEditor.Tests
                 $@"grammar {TestGrammarName};
                 t: T;
                 T:  ['' ]+;";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
             var workflow = new Workflow(grammar);
             workflow.Runtime = Runtime.Java;
             workflow.Text = @" ";
@@ -286,7 +285,7 @@ namespace AntlrGrammarEditor.Tests
                 $@"grammar {TestGrammarName};
                 t: T;
                 T: [a-z]+;";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
             var workflow = new Workflow(grammar)
             {
                 GenerateListener = true,
@@ -320,7 +319,7 @@ namespace AntlrGrammarEditor.Tests
                 $"root1: 'V1';" +
                 $"root2: 'V2';";
 
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, TestGrammarName, ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
 
@@ -353,6 +352,33 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
+        public void CheckLexerOnlyGrammar(Runtime runtime)
+        {
+            var grammarText =
+                $"lexer grammar {TestGrammarName}Lexer;" +
+                $"T1: 'T1';" +
+                $"Digit: [0-9]+;" +
+                $"Space: ' '+ -> channel(HIDDEN);";
+
+            var grammar = GrammarFactory.CreateDefaultLexerAndFill(grammarText, TestGrammarName, ".");
+
+            var workflow = new Workflow(grammar);
+            workflow.Runtime = runtime;
+            workflow.Text = "T1 1234";
+
+            var state = workflow.Process();
+            TextParsedState textParsedState = state as TextParsedState;
+            Assert.IsNotNull(textParsedState);
+            Assert.IsFalse(state.HasErrors);
+        }
+
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
+        [TestCase(Runtime.Java)]
+        [TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python3)]
+        [TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Go)]
         public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
         {
             Assert.Ignore("Not ready");
@@ -367,7 +393,7 @@ namespace AntlrGrammarEditor.Tests
                       ;
                   TOKEN: {b==0}? [a-z]+ {b++;};
                   DIGIT: {b==0}? [0-9]+ {b++;};";
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarText, "test", ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "test", ".");
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
 
