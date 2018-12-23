@@ -3,8 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using AvaloniaEdit;
-using AvaloniaEdit.Highlighting;
-using AvaloniaEdit.Highlighting.Xshd;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
@@ -16,7 +14,6 @@ using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using System.Xml;
 
 namespace DesktopAntlrGrammarEditor
 {
@@ -334,6 +331,8 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
+        public bool IsParserExists => _workflow.Grammar.Type != GrammarType.Lexer;
+
         public ReactiveCommand NewGrammarCommand { get; private set; }
 
         public ReactiveCommand OpenGrammarCommand { get; private set; }
@@ -554,19 +553,20 @@ namespace DesktopAntlrGrammarEditor
                     Title = "Enter grammar directory name"
                 };
 
-                string folderName = await openGrammarDialog.ShowAsync(_window);
-
-                if (!string.IsNullOrEmpty(folderName))
+                string folderName = null;
+                try
                 {
-                    try
+                    folderName = await openGrammarDialog.ShowAsync(_window);
+
+                    if (!string.IsNullOrEmpty(folderName))
                     {
                         var grammar = GrammarFactory.Open(folderName, out string root);
                         OpenGrammar(grammar, root);
                     }
-                    catch (Exception ex)
-                    {
-                        await ShowOpenFileErrorMessage(folderName, ex.Message);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    await ShowOpenFileErrorMessage(folderName, ex.Message);
                 }
             });
 
@@ -715,6 +715,7 @@ namespace DesktopAntlrGrammarEditor
             OpenedTextFile = TextFiles.FirstOrDefault();
             Root = root;
             this.RaisePropertyChanged(nameof(SelectedRuntime));
+            this.RaisePropertyChanged(nameof(IsParserExists));
         }
 
         private void Workflow_ClearErrorsEvent(object sender, WorkflowStage e)

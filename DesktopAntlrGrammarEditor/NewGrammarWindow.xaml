@@ -11,16 +11,12 @@
       <TextBlock>Grammar Name</TextBlock>
       <TextBox Grid.Column="1" Text="{Binding GrammarName}" />
     </Grid>
-    <Grid ColumnDefinitions="250,215,35" >
-      <TextBlock>Grammar Directory</TextBlock>
-      <TextBox Grid.Column="1" Text="{Binding GrammarDirectory}" />
-      <Button Grid.Column="2" Margin="3,0,3,0" Content="..." Command="{Binding SelectGrammarDirectory}"></Button>
-    </Grid>
-    <Grid ColumnDefinitions="250,250" >
-      <TextBlock>Grammar Root</TextBlock>
-      <TextBox Grid.Column="1" Text="{Binding GrammarRoot}" />
-    </Grid>
-    <Grid ColumnDefinitions="250,250" >
+        <Grid ColumnDefinitions="250,215,35" >
+            <TextBlock>Grammar Directory</TextBlock>
+            <TextBox Grid.Column="1" Text="{Binding GrammarDirectory}" />
+            <Button Grid.Column="2" Margin="3,0,3,0" Content="..." Command="{Binding SelectGrammarDirectory}"></Button>
+        </Grid>
+        <Grid ColumnDefinitions="250,250" >
       <TextBlock>File Extension</TextBlock>
       <TextBox Grid.Column="1" Text="{Binding FileExtension}" />
     </Grid>
@@ -29,8 +25,8 @@
       <DropDown Grid.Column="1" SelectedItem="{Binding Runtime}" Items ="{Binding Runtimes}" ></DropDown>
     </Grid>
     <Grid ColumnDefinitions="250,250" >
-      <TextBlock >Separated Lexer and Parser</TextBlock>
-      <CheckBox Grid.Column="1" IsChecked="{Binding SeparatedLexerAndParser}" />
+      <TextBlock >Grammar Type</TextBlock>
+            <DropDown Grid.Column="1" SelectedItem="{Binding GrammarType, Mode=TwoWay}" Items="{Binding GrammarTypes}"/>
     </Grid>
     <Grid ColumnDefinitions="250,250" >
       <TextBlock >Case Insensitive Type</TextBlock>

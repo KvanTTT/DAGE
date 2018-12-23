@@ -12,7 +12,6 @@ namespace DesktopAntlrGrammarEditor
     public class NewGrammarWindowViewModel : ReactiveObject
     {
         private Window _window;
-        private string _grammarRoot;
         private Grammar _grammar = GrammarFactory.CreateDefault();
         private Runtime _runtime;
         private string _grammarDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DAGE Grammars");
@@ -92,19 +91,6 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public string GrammarRoot
-        {
-            get => _grammarRoot;
-            set
-            {
-                if (_grammarRoot != value)
-                {
-                    _grammarRoot = value;
-                    this.RaisePropertyChanged();
-                }
-            }
-        }
-
         public string FileExtension
         {
             get => _grammar.FileExtension;
@@ -133,14 +119,14 @@ namespace DesktopAntlrGrammarEditor
 
         public ObservableCollection<RuntimeInfo> Runtimes { get; } = new ObservableCollection<RuntimeInfo>(RuntimeInfo.Runtimes.Select(r => r.Value).ToList());
 
-        public bool SeparatedLexerAndParser
+        public GrammarType GrammarType
         {
-            get => _grammar.SeparatedLexerAndParser;
+            get => _grammar.Type;
             set
             {
-                if (_grammar.SeparatedLexerAndParser != value)
+                if (_grammar.Type != value)
                 {
-                    _grammar.SeparatedLexerAndParser = value;
+                    _grammar.Type = value;
                     this.RaisePropertyChanged();
                 }
             }
@@ -164,7 +150,15 @@ namespace DesktopAntlrGrammarEditor
         {
             CaseInsensitiveType.None,
             CaseInsensitiveType.lower,
-            CaseInsensitiveType.UPPER,
+            CaseInsensitiveType.UPPER
+        });
+
+        public ObservableCollection<GrammarType> GrammarTypes { get; } =
+            new ObservableCollection<GrammarType>(new List<GrammarType>
+        {
+            GrammarType.Combined,
+            GrammarType.Separated,
+            GrammarType.Lexer
         });
     }
 }

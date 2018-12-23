@@ -8,25 +8,24 @@
     </Style>
   </Window.Styles>
 
-  <Grid ColumnDefinitions="*,Auto,*" Margin="10">
-    <Grid Grid.Column="0" RowDefinitions="35,*,Auto,40" >
+  <Grid ColumnDefinitions="*,Auto,*" Margin="8">
+    <Grid Grid.Column="0" RowDefinitions="35,*,Auto,40" Margin="0,0,2,0">
       <Grid Grid.Row="0"  ColumnDefinitions="70,60,60,Auto,Auto,*" Margin="0,3,0,3" >
         <TextBlock Grid.Column="0" Text="GRAMMAR" />
         <Button Grid.Column="1" Margin="0,0,5,0" Command="{Binding NewGrammarCommand}" >New</Button>
         <Button Grid.Column="2" Margin="0,0,5,0" Command="{Binding OpenGrammarCommand}" >Open</Button>
         <TextBlock Grid.Column="3" Margin="5,0,10,0" HorizontalAlignment="Right" Text="File" />
         <DropDown Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" ></DropDown>
-        <StackPanel Grid.Column="5" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal">
+        <StackPanel Grid.Column="5" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal" >
           <TextBlock HorizontalAlignment="Right" Text="Runtime" />
           <DropDown Width="90" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></DropDown>
         </StackPanel>
-        
       </Grid>
-      
-      <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790">
+
+     <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790" >
         <ae:TextEditor Name="GrammarTextBox" FontFamily="Consolas" FontSize="12" />
       </Border>
-      
+
       <Expander Grid.Row="2" Header="{Binding GrammarErrorsText}" IsExpanded="{Binding GrammarErrorsExpanded}">
         <ListBox Name="GrammarErrorsListBox" MinHeight="120" Items="{Binding GrammarErrors}" />
       </Expander>
@@ -41,19 +40,21 @@
 
     <GridSplitter Grid.Column="1" />
 
-    <Grid Grid.Column="2" RowDefinitions="35,*,Auto,Auto,Auto,35" >
-      <Grid ColumnDefinitions="50,60,60,60,100,150,60,150" Margin="3">
+    <Grid Grid.Column="2" RowDefinitions="35,*,Auto,Auto,Auto,35" Margin="2,0,0,0">
+      <Grid ColumnDefinitions="50,60,60,60,100,150,*" Margin="0,3,0,3">
         <TextBlock Grid.Row="0" Text="TEXT" />
         <Button Grid.Column="1" Height="30" Content="New" Command="{Binding NewTextFile}" Margin="5,0,0,0"/>
         <Button Grid.Column="2" Height="30" Content="Open" Command="{Binding OpenTextFile}" Margin="5,0,0,0"/>
         <Button Grid.Column="3" Height="30" Content="Remove" Command="{Binding RemoveTextFile}" Margin="5,0,0,0"/>
         <TextBlock Grid.Column="4" Text="File" HorizontalAlignment="Right" Margin="0,0,5,0"/>
         <DropDown Grid.Column="5" SelectedItem="{Binding OpenedTextFile}" Items="{Binding TextFiles}" />
-        <TextBlock Grid.Column="6" HorizontalAlignment="Right" Text="Root" IsVisible="{Binding IsParserOpened}" />
-        <DropDown Grid.Column="7" Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" ></DropDown>
+        <StackPanel Grid.Column="6" HorizontalAlignment="Right" IsVisible="{Binding IsParserExists}" Spacing="4" Orientation="Horizontal" >
+            <TextBlock HorizontalAlignment="Right" Text="Root" />
+            <DropDown Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" ></DropDown>
+        </StackPanel>
       </Grid>
 
-      <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790">
+      <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790" >
         <ae:TextEditor IsEnabled="{Binding TextBoxEnabled}" Name="TextTextBox" />
       </Border>
       
@@ -65,7 +66,7 @@
         </Grid>
       </Expander>
 
-      <Expander Grid.Row="3" Header="Tree" IsExpanded="{Binding IsParseTreeExpanded, Mode=TwoWay}">
+      <Expander Grid.Row="3" Header="Tree" IsVisible="{Binding IsParserExists}" IsExpanded="{Binding IsParseTreeExpanded, Mode=TwoWay}">
         <Grid RowDefinitions="170">
           <Border BorderThickness="1" BorderBrush="#FF828790">
             <ae:TextEditor Name="ParseTreeTextBox" MinHeight="170" IsReadOnly="true" />
@@ -73,11 +74,11 @@
         </Grid>
       </Expander>
 
-            <Expander Grid.Row="4" Header="{Binding TextErrorsText}" IsExpanded="{Binding TextErrorsExpanded}">
-                <Grid RowDefinitions="170" >
-                    <ListBox Name="TextErrorsListBox" MinHeight="170" Items="{Binding TextErrors}" />
-                </Grid>
-            </Expander>
-        </Grid>
+      <Expander Grid.Row="4" Header="{Binding TextErrorsText}" IsExpanded="{Binding TextErrorsExpanded}">
+          <Grid RowDefinitions="170" >
+              <ListBox Name="TextErrorsListBox" MinHeight="170" Items="{Binding TextErrors}" />
+          </Grid>
+      </Expander>
+      </Grid>
   </Grid>
 </Window>
