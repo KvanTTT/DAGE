@@ -271,7 +271,10 @@ namespace AntlrGrammarEditor.Processors
                             TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.ParserTime, _result.ParserTime));
                             break;
                         case TextParsedOutput.Tokens:
-                            _result.Tokens = data;
+                            string tokens = _result.ParserCompiliedState.ParserGeneratedState.Runtime.IsCSharpRuntime()
+                                ? File.ReadAllText(data)
+                                : data;
+                            _result.Tokens = tokens;
                             TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tokens, _result.Tokens));
                             break;
                         case TextParsedOutput.Tree:

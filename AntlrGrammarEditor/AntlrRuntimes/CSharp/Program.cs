@@ -2,9 +2,7 @@
 using Antlr4.Runtime.Atn;
 using Antlr4.Runtime.Tree;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.IO;
 /*$PackageName$*/
 #if CSharpOptimized
@@ -33,8 +31,15 @@ class Program
             var stopwatch = Stopwatch.StartNew();
             var tokens = lexer.GetAllTokens();
             stopwatch.Stop();
-            Console.WriteLine("LexerTime {0}", stopwatch.Elapsed);
-            Console.WriteLine("Tokens {0}", tokens.TokensToString());
+
+            var tokensJsonSerializer = new TokensJsonSerializer(lexer)
+            {
+                Format = true,
+                SymbolicNames = true,
+                LineColumn = true
+            };
+            File.WriteAllText("Tokens.json", tokensJsonSerializer.ToJson(tokens));
+            Console.WriteLine("Tokens {0}", Path.GetFullPath("Tokens.json"));
 
 /*$ParserPart*/
             string rootRule = null;
@@ -82,8 +87,8 @@ class Program
                     ;
 
                 stopwatch.Restart();
-                string ruleName = rootRule == null ? __TemplateGrammarName__Parser.ruleNames[0] : rootRule;
-                var rootMethod = typeof(__TemplateGrammarName__Parser).GetMethod(ruleName);
+                string ruleName = rootRule == null ? parser.RuleNames[0] : rootRule;
+                var rootMethod = parser.GetType().GetMethod(ruleName);
                 var ast = (ParserRuleContext)rootMethod.Invoke(parser, new object[0]);
                 stopwatch.Stop();
 
@@ -120,36 +125,5 @@ class Program
         {
             Console.Error.WriteLine($"line {line}:{charPositionInLine} {msg}");
         }
-    }
-}
-
-public static class ParseTreeFormatter
-{
-    public static string TokensToString(this IList<IToken> tokens)
-    {
-        var resultString = new StringBuilder();
-        foreach (var token in tokens)
-        {
-            string symbolicName = __TemplateGrammarName__Lexer.DefaultVocabulary.GetSymbolicName(token.Type);
-            string value = token.Text ?? "";
-            value = value.Replace("\r", "").Replace("\n", "");
-            if (string.Compare(symbolicName, value, StringComparison.OrdinalIgnoreCase) != 0)
-            {
-                symbolicName += "(";
-                if (value.Length <= 8)
-                {
-                    symbolicName += value;
-                }
-                else
-                {
-                    symbolicName += value.Substring(0, 8) + "...";
-                }
-                symbolicName += ")";
-            }
-            symbolicName += " ";
-            resultString.Append(symbolicName);
-        }
-        resultString.Append("EOF");
-        return resultString.ToString();
     }
 }

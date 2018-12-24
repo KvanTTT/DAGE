@@ -246,6 +246,7 @@ namespace AntlrGrammarEditor.Processors
 
             File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"), true);
             File.Copy(Path.Combine(runtimeDir, "AssemblyInfo.cs"), Path.Combine(workingDirectory, "AssemblyInfo.cs"), true);
+            File.Copy(Path.Combine(runtimeDir, "TokensJsonSerializer.cs"), Path.Combine(workingDirectory, "TokensJsonSerializer.cs"), true);
 
             var projectContent = File.ReadAllText(Path.Combine(runtimeDir, "Project.csproj"));
             projectContent = projectContent.Replace("<DefineConstants></DefineConstants>",
