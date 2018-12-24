@@ -12,6 +12,8 @@
   <ItemGroup>
     <Compile Remove="AntlrRuntimes\CSharp\AntlrCaseInsensitiveInputStream.cs" />
     <Compile Remove="AntlrRuntimes\CSharp\AssemblyInfo.cs" />
+    <Compile Remove="AntlrRuntimes\CSharp\JsonSerializerBase.cs" />
+    <Compile Remove="AntlrRuntimes\CSharp\ParseTreeJsonSerializer.cs" />
     <Compile Remove="AntlrRuntimes\CSharp\Program.cs" />
     <Compile Remove="AntlrRuntimes\CSharp\TokensJsonSerializer.cs" />
   </ItemGroup>
@@ -67,6 +69,12 @@
 
   <ItemGroup>
     <Content Include="AntlrRuntimes\CSharp\AssemblyInfo.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\CSharp\JsonSerializerBase.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\CSharp\ParseTreeJsonSerializer.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="AntlrRuntimes\CSharp\Program.cs">

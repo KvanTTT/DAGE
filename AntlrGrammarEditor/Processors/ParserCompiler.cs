@@ -247,6 +247,12 @@ namespace AntlrGrammarEditor.Processors
             File.Copy(Path.Combine(runtimeDir, "Program.cs"), Path.Combine(workingDirectory, "Program.cs"), true);
             File.Copy(Path.Combine(runtimeDir, "AssemblyInfo.cs"), Path.Combine(workingDirectory, "AssemblyInfo.cs"), true);
             File.Copy(Path.Combine(runtimeDir, "TokensJsonSerializer.cs"), Path.Combine(workingDirectory, "TokensJsonSerializer.cs"), true);
+            File.Copy(Path.Combine(runtimeDir, "JsonSerializerBase.cs"), Path.Combine(workingDirectory, "JsonSerializerBase.cs"), true);
+
+            if (_grammar.Type != GrammarType.Lexer)
+            {
+                File.Copy(Path.Combine(runtimeDir, "ParseTreeJsonSerializer.cs"), Path.Combine(workingDirectory, "ParseTreeJsonSerializer.cs"), true);
+            }
 
             var projectContent = File.ReadAllText(Path.Combine(runtimeDir, "Project.csproj"));
             projectContent = projectContent.Replace("<DefineConstants></DefineConstants>",

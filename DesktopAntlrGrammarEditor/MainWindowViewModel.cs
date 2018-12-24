@@ -53,8 +53,8 @@ namespace DesktopAntlrGrammarEditor
             _textTextBox = _window.Find<TextEditor>("TextTextBox");
             _grammarErrorsListBox = _window.Find<ListBox>("GrammarErrorsListBox");
             _textErrorsListBox = _window.Find<ListBox>("TextErrorsListBox");
-            _parseTreeTextBox = _window.Find<TextEditor>("ParseTreeTextBox");
             _tokensTextBox = _window.Find<TextEditor>("TokensTextBox");
+            _parseTreeTextBox = _window.Find<TextEditor>("ParseTreeTextBox");
 
             _grammarTextBox.SetupHightlighting(".g4");
 

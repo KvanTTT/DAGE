@@ -1,4 +1,4 @@
-﻿<Window
+<Window
     xmlns="https://github.com/avaloniaui"
     xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -71,7 +71,7 @@
       <Expander Grid.Row="2" Header="Tokens" IsExpanded="{Binding IsTokensExpanded, Mode=TwoWay}">
         <Grid RowDefinitions="170">
           <Border BorderThickness="1" BorderBrush="#FF828790">
-            <ae:TextEditor Name="TokensTextBox" MinHeight="170" IsReadOnly="true" />
+              <ae:TextEditor Name="TokensTextBox" MinHeight="170" IsReadOnly="true" SyntaxHighlighting="Json" />
           </Border>
         </Grid>
       </Expander>
@@ -79,7 +79,7 @@
       <Expander Grid.Row="3" Header="Tree" IsVisible="{Binding IsParserExists}" IsExpanded="{Binding IsParseTreeExpanded, Mode=TwoWay}">
         <Grid RowDefinitions="170">
           <Border BorderThickness="1" BorderBrush="#FF828790">
-            <ae:TextEditor Name="ParseTreeTextBox" MinHeight="170" IsReadOnly="true" />
+              <ae:TextEditor Name="ParseTreeTextBox" MinHeight="170" IsReadOnly="true" SyntaxHighlighting="Json" />
           </Border>
         </Grid>
       </Expander>

@@ -278,7 +278,10 @@ namespace AntlrGrammarEditor.Processors
                             TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tokens, _result.Tokens));
                             break;
                         case TextParsedOutput.Tree:
-                            _result.Tree = data.Replace("\\n", "\n");
+                            string parseTree = _result.ParserCompiliedState.ParserGeneratedState.Runtime.IsCSharpRuntime()
+                               ? File.ReadAllText(data)
+                               : data;
+                            _result.Tree = parseTree;
                             TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tree, _result.Tree));
                             break;
                     }

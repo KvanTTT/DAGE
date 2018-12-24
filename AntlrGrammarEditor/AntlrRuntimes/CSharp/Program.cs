@@ -16,6 +16,8 @@ class Program
         try
         {
             string fileName = "../../../../Text";
+            bool formatOutput = true;
+            bool symbolicNames = true;
 
             if (args.Length > 0)
             {
@@ -34,9 +36,9 @@ class Program
 
             var tokensJsonSerializer = new TokensJsonSerializer(lexer)
             {
-                Format = true,
-                SymbolicNames = true,
-                LineColumn = true
+                Format = formatOutput,
+                SymbolicNames = symbolicNames,
+                LineColumn = false
             };
             File.WriteAllText("Tokens.json", tokensJsonSerializer.ToJson(tokens));
             Console.WriteLine("Tokens {0}", Path.GetFullPath("Tokens.json"));
@@ -89,11 +91,17 @@ class Program
                 stopwatch.Restart();
                 string ruleName = rootRule == null ? parser.RuleNames[0] : rootRule;
                 var rootMethod = parser.GetType().GetMethod(ruleName);
-                var ast = (ParserRuleContext)rootMethod.Invoke(parser, new object[0]);
+                var parseTree = (ParserRuleContext)rootMethod.Invoke(parser, new object[0]);
                 stopwatch.Stop();
 
+                var parseTreeJsonSerializer = new ParseTreeJsonSerializer(lexer, parser)
+                {
+                    Format = formatOutput,
+                    SymbolicNames = symbolicNames
+                };
+                File.WriteAllText("ParseTree.json", parseTreeJsonSerializer.ToJson(parseTree));
                 Console.WriteLine("ParserTime {0}", stopwatch.Elapsed);
-                Console.WriteLine("Tree {0}", ast.ToStringTree(parser));
+                Console.WriteLine("Tree {0}", Path.GetFullPath("ParseTree.json"));
             }
 /*ParserPart$*/
         }
