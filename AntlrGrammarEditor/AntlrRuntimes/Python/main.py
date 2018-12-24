@@ -11,16 +11,18 @@ def main(argv):
 
     if len(argv) > 0:
         fileName = argv[1]
-        if len(argv) > 1:
-            rootRule = argv[2]
 
     code = open(fileName, 'r').read()
     codeStream = InputStream(code)
     lexer = __TemplateGrammarName__Lexer(codeStream)
     tokens = lexer.getAllTokens()
+
+'''$ParserPart'''
+    if len(argv) > 1:
+        rootRule = argv[2]
+
     tokensSource = ListTokenSource(tokens)
     tokensStream = CommonTokenStream(tokensSource)
-'''$ParserPart'''
     parser = __TemplateGrammarName__Parser(tokensStream)
     ruleName = __TemplateGrammarName__Parser.ruleNames[0] if rootRule is None else rootRule
     tree = getattr(parser, ruleName)()

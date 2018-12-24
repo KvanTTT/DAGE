@@ -16,20 +16,10 @@ class Program
         try
         {
             string fileName = "../../../../Text";
-            string rootRule = null;
-            bool notParse = false;
 
             if (args.Length > 0)
             {
                 fileName = args[0];
-                if (args.Length > 1)
-                {
-                    rootRule = args[1];
-                    if (args.Length > 2)
-                    {
-                        bool.TryParse(args[2], out notParse);
-                    }
-                }
             }
 
             var code = File.ReadAllText(fileName);
@@ -43,7 +33,20 @@ class Program
             stopwatch.Stop();
             Console.WriteLine("LexerTime {0}", stopwatch.Elapsed);
             Console.WriteLine("Tokens {0}", tokens.TokensToString());
+
 /*$ParserPart*/
+            string rootRule = null;
+            bool notParse = false;
+
+            if (args.Length > 1)
+            {
+                rootRule = args[1];
+                if (args.Length > 2)
+                {
+                    bool.TryParse(args[2], out notParse);
+                }
+            }
+
             if (!notParse)
             {
                 var tokensSource = new ListTokenSource(tokens);

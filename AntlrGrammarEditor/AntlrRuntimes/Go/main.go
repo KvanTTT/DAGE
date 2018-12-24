@@ -16,16 +16,10 @@ import (
 
 func main() {
 	fileName := "../../Text"
-	rootRule := ""
 
 	if len(os.Args) > 1 {
 		fileName = os.Args[1]
-		if len(os.Args) > 2 {
-			rootRule = os.Args[2]
-		}
 	}
-
-	_ = rootRule
 
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -36,10 +30,18 @@ func main() {
 	codeStream := antlr.NewInputStream(code)
 	lexer := New__TemplateGrammarName__Lexer(codeStream)
 	tokensStream := antlr.NewCommonTokenStream(lexer, 0)
+	tokensStream.Fill()
+	allTokens := tokensStream.GetAllTokens()
 
 	_ = tokensStream
-
+	_ = allTokens
 /*$ParserPart*/
+	rootRule := ""
+
+	if len(os.Args) > 2 {
+		rootRule = os.Args[2]
+	}
+
 	parser := New__TemplateGrammarName__Parser(tokensStream)
 
 	var ruleName string
