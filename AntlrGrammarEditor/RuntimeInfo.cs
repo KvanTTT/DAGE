@@ -13,7 +13,7 @@ namespace AntlrGrammarEditor
             (
                 runtime: Runtime.CSharpOptimized,
                 name: "C# Optimized",
-                jarGenerator: "antlr-4.6.5-csharp-optimized.jar",
+                jarGenerator: "antlr-4.6.6-csharp-optimized.jar",
                 dLanguage: "CSharp_v4_5",
                 runtimeLibrary: "Antlr4.Runtime.dll",
                 extensions: new[] { "cs" },
