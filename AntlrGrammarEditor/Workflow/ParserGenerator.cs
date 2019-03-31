@@ -120,7 +120,7 @@ namespace AntlrGrammarEditor
                 var strs = e.Data.Split(':');
                 int line = 1, column = 1;
 
-                int locationIndex = strs.Length > 2 && strs[2][0] == '\\' ? 3 : 2;
+                int locationIndex = strs.Length > 2 && strs[2].Length > 0 && strs[2][0] == '\\' ? 3 : 2;
                 if (strs.Length > locationIndex)
                 {
                     if (!int.TryParse(strs[locationIndex], out line))

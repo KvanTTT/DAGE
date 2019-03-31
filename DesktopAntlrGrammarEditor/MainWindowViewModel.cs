@@ -812,13 +812,22 @@ namespace DesktopAntlrGrammarEditor
                 }
                 else
                 {
-                    LineColumnTextSpan lcTextSpan = parsingError.TextSpan.GetLineColumn();
-                    selectTextSpan =
-                        new LineColumnTextSpan(lcTextSpan.BeginLine, lcTextSpan.BeginColumn,
-                                               lcTextSpan.BeginLine, lcTextSpan.BeginColumn + 1, lcTextSpan.Source).GetTextSpan();
+                    int beginIndex = parsingError.TextSpan.Start;
+                    if (parsingError.TextSpan.End >= textBox.Text.Length)
+                    {
+                        beginIndex = textBox.Text.Length - 1;
+                    }
+
+                    selectTextSpan = new TextSpan(beginIndex, 1, parsingError.TextSpan.Source);
                 }
 
-                textBox.Select(selectTextSpan.Start, selectTextSpan.Length);
+                int length = textBox.Text.Length;
+                if (selectTextSpan.Start >= 0 && selectTextSpan.Start <= length &&
+                    selectTextSpan.Length >= 0 && selectTextSpan.End <= length)
+                {
+                    textBox.Focus();
+                    textBox.Select(selectTextSpan.Start, selectTextSpan.Length);
+                }
             }
         }
 
