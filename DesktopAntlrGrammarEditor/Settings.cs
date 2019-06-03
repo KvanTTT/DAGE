@@ -1,17 +1,15 @@
-﻿using AntlrGrammarEditor;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace DesktopAntlrGrammarEditor
 {
     public class Settings
     {
-        private static JsonConverter[] _converters = new JsonConverter[] { new StringEnumConverter() };
-        private static string _settingsFileName;
+        private static readonly JsonConverter[] _converters = { new StringEnumConverter() };
+        private static readonly string _settingsFileName;
         private static readonly object _saveLock = new object();
 
         public static string Directory { get; }
@@ -33,11 +31,11 @@ namespace DesktopAntlrGrammarEditor
 
         public string OpenedTextFile { get; set; }
 
-        public bool Autoprocessing { get; set; } = false;
+        public bool Autoprocessing { get; set; }
 
-        public bool IsTokensExpanded { get; set; } = false;
+        public bool IsTokensExpanded { get; set; }
 
-        public bool IsParseTreeExpanded { get; set; } = false;
+        public bool IsParseTreeExpanded { get; set; }
 
         static Settings()
         {

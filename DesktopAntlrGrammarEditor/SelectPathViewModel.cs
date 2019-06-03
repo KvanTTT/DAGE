@@ -5,25 +5,15 @@ namespace DesktopAntlrGrammarEditor
 {
     public class SelectPathViewModel : ReactiveObject
     {
-        private Window _window;
         private string _message;
         private string _path;
 
         public SelectPathViewModel(Window window, string message, string path = "")
         {
-            _window = window;
             Message = message;
             Path = path;
-
-            OkCommand = ReactiveCommand.Create(() =>
-            {
-                _window.Close(Path);
-            });
-
-            CancelCommand = ReactiveCommand.Create(() =>
-            {
-                _window.Close(null);
-            });
+            OkCommand = ReactiveCommand.Create(() => window.Close(Path));
+            CancelCommand = ReactiveCommand.Create(() => window.Close(null));
         }
 
         public string Message

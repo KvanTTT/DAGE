@@ -202,7 +202,7 @@ namespace AntlrGrammarEditor
         {
             string postfix = visitor ? _currentRuntimeInfo.VisitorPostfix : _currentRuntimeInfo.ListenerPostfix;
             string basePostfix = visitor ? _currentRuntimeInfo.BaseVisitorPostfix : _currentRuntimeInfo.BaseListenerPostfix;
-            
+
             generatedFiles.Add(Path.Combine(workingDirectory,
                 generatedGrammarName + postfix + "." + _currentRuntimeInfo.Extensions[0]));
             if (basePostfix != null)
@@ -546,29 +546,41 @@ namespace AntlrGrammarEditor
         {
             if (data.Count(c => c == ':') >= 2)
             {
-                ParsingError error = null;
+                ParsingError error;
                 try
                 {
                     // Format:
                     // Lexer.java:98: error: cannot find symbol
                     string[] strs = data.Split(':');
-                    string codeFileName = strs[0];
-                    int codeLine = int.Parse(strs[1]);
-                    bool isWarning = strs[2].Trim() == "warning";
-                    string rest = string.Join(":", strs.Skip(2));
 
+                    string rest = string.Join(":", strs.Skip(2));
                     if (rest.Contains("warning: [deprecation] ANTLRInputStream"))
                     {
                         return;
                     }
 
-                    error = GenerateError(data, codeFileName, codeLine, 1, rest);
-                    error.IsWarning = isWarning;
+                    string codeFileName = strs[0];
+                    if (int.TryParse(strs[1], out int codeLine))
+                    {
+                        bool isWarning = strs[2].Trim() == "warning";
+                        error = GenerateError(data, codeFileName, codeLine, 1, rest);
+                        error.IsWarning = isWarning;
+                    }
+                    else
+                    {
+                        error = null;
+                    }
                 }
                 catch
                 {
+                    error = null;
+                }
+
+                if (error == null)
+                {
                     error = new ParsingError(data, CodeSource.Empty, WorkflowStage.ParserCompilied);
                 }
+
                 AddError(error);
             }
         }
@@ -667,7 +679,7 @@ namespace AntlrGrammarEditor
             }
             finalMessage += message == "" ? "Unknown Error" : message;
             AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));
-           
+
         }
 
         private void AddJavaScriptError()
@@ -735,8 +747,7 @@ namespace AntlrGrammarEditor
                 try
                 {
                     string codeFileName = strs[0].Substring(2);
-                    List<TextSpanMapping> mapping;
-                    if (_grammarCodeMapping.TryGetValue(codeFileName, out mapping))
+                    if (_grammarCodeMapping.TryGetValue(codeFileName, out var mapping))
                     {
                         int codeLine = int.Parse(strs[1]);
                         grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Go], codeFileName);

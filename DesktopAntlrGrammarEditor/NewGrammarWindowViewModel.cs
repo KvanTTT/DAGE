@@ -11,15 +11,12 @@ namespace DesktopAntlrGrammarEditor
 {
     public class NewGrammarWindowViewModel : ReactiveObject
     {
-        private Window _window;
-        private Grammar _grammar = GrammarFactory.CreateDefault();
+        private readonly Grammar _grammar = GrammarFactory.CreateDefault();
         private Runtime _runtime;
         private string _grammarDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DAGE Grammars");
 
         public NewGrammarWindowViewModel(Window window)
         {
-            _window = window;
-
             OkCommand = ReactiveCommand.Create(async () =>
             {
                 string grammarFileName = Path.Combine(GrammarDirectory, _grammar.Name);
@@ -27,7 +24,7 @@ namespace DesktopAntlrGrammarEditor
 
                 if (Directory.Exists(grammarFileName))
                 {
-                    if (await MessageBox.ShowDialog(_window, $"Do you want to replace existed grammar {_grammar.Name}?", "", MessageBoxType.YesNo))
+                    if (await MessageBox.ShowDialog(window, $"Do you want to replace existed grammar {_grammar.Name}?", "", MessageBoxType.YesNo))
                     {
                         success = true;
                     }
@@ -40,14 +37,11 @@ namespace DesktopAntlrGrammarEditor
                 if (success)
                 {
                     GrammarFactory.FillGrammarFiles(_grammar, grammarFileName, true);
-                    _window.Close(_grammar);
+                    window.Close(_grammar);
                 }
             });
 
-            CancelCommand = ReactiveCommand.Create(() =>
-            {
-                _window.Close(null);
-            });
+            CancelCommand = ReactiveCommand.Create(() => window.Close(null));
 
             SelectGrammarDirectory = ReactiveCommand.Create(async () =>
             {
@@ -55,7 +49,7 @@ namespace DesktopAntlrGrammarEditor
                 {
                     InitialDirectory = GrammarDirectory
                 };
-                var folderName = await openFolderDialog.ShowAsync(_window);
+                var folderName = await openFolderDialog.ShowAsync(window);
                 if (!string.IsNullOrEmpty(folderName))
                 {
                     GrammarDirectory = folderName;
