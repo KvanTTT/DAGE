@@ -15,10 +15,10 @@
         <Button Grid.Column="1" Margin="0,0,5,0" Command="{Binding NewGrammarCommand}" >New</Button>
         <Button Grid.Column="2" Margin="0,0,5,0" Command="{Binding OpenGrammarCommand}" >Open</Button>
         <TextBlock Grid.Column="3" Margin="5,0,10,0" HorizontalAlignment="Right" Text="File" />
-        <DropDown Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" ></DropDown>
+        <ComboBox Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" ></ComboBox>
         <StackPanel Grid.Column="5" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal" >
           <TextBlock HorizontalAlignment="Right" Text="Runtime" />
-          <DropDown Width="90" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></DropDown>
+          <ComboBox Width="90" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></ComboBox>
         </StackPanel>
       </Grid>
 
@@ -47,17 +47,17 @@
         <Button Grid.Column="2" Height="30" Content="Open" Command="{Binding OpenTextFile}" Margin="5,0,0,0"/>
         <Button Grid.Column="3" Height="30" Content="Remove" Command="{Binding RemoveTextFile}" Margin="5,0,0,0"/>
         <TextBlock Grid.Column="4" Text="File" HorizontalAlignment="Right" Margin="0,0,5,0"/>
-        <DropDown Grid.Column="5" SelectedItem="{Binding OpenedTextFile}" Items="{Binding TextFiles}" />
+        <ComboBox Grid.Column="5" SelectedItem="{Binding OpenedTextFile}" Items="{Binding TextFiles}" />
         <StackPanel Grid.Column="6" HorizontalAlignment="Right" IsVisible="{Binding IsParserExists}" Spacing="4" Orientation="Horizontal" >
             <TextBlock HorizontalAlignment="Right" Text="Root" />
-            <DropDown Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" ></DropDown>
+            <ComboBox Width="90" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" ></ComboBox>
         </StackPanel>
       </Grid>
 
       <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790" >
         <ae:TextEditor IsEnabled="{Binding TextBoxEnabled}" Name="TextTextBox" />
       </Border>
-      
+
       <Expander Grid.Row="2" Header="Tokens" IsExpanded="{Binding IsTokensExpanded, Mode=TwoWay}">
         <Grid RowDefinitions="170">
           <Border BorderThickness="1" BorderBrush="#FF828790">

@@ -61,7 +61,7 @@ namespace DesktopAntlrGrammarEditor
             }
             if (_settings.Left != -1 && _settings.Top != -1)
             {
-                _window.Position = new Point(_settings.Left, _settings.Top);
+                _window.Position = new PixelPoint(_settings.Left, _settings.Top);
             }
 
             Grammar grammar = null;
@@ -90,8 +90,8 @@ namespace DesktopAntlrGrammarEditor
             if (openDefaultGrammar)
             {
                 grammar = GrammarFactory.CreateDefault();
-                GrammarFactory.FillGrammarFiles(Grammar, Settings.Directory, false);
-                _settings.GrammarFileOrDirectory = Grammar.Directory;
+                GrammarFactory.FillGrammarFiles(grammar, Settings.Directory, false);
+                _settings.GrammarFileOrDirectory = grammar.Directory;
                 _settings.Save();
             }
 
@@ -100,7 +100,7 @@ namespace DesktopAntlrGrammarEditor
             Root = root;
 
             InitFiles();
-            if (string.IsNullOrEmpty(_settings.OpenedGrammarFile) || !Grammar.Files.Contains(_settings.OpenedGrammarFile))
+            if (string.IsNullOrEmpty(_settings.OpenedGrammarFile) || !grammar.Files.Contains(_settings.OpenedGrammarFile))
             {
                 OpenedGrammarFile = GrammarFiles.FirstOrDefault();
             }
@@ -421,7 +421,7 @@ namespace DesktopAntlrGrammarEditor
                     SaveTextFileIfRequired();
                 });
 
-            Observable.FromEventPattern<PointEventArgs>(
+            Observable.FromEventPattern<PixelPointEventArgs>(
                 ev => _window.PositionChanged += ev, ev => _window.PositionChanged -= ev)
                 .Throttle(TimeSpan.FromMilliseconds(250))
                 .ObserveOn(RxApp.MainThreadScheduler)
@@ -554,7 +554,7 @@ namespace DesktopAntlrGrammarEditor
             NewGrammarCommand = ReactiveCommand.Create(async () =>
             {
                 var newGrammarWindow = new NewGrammarWindow();
-                Grammar grammar = await newGrammarWindow.ShowDialog<Grammar>();
+                Grammar grammar = await newGrammarWindow.ShowDialog<Grammar>(_window);
                 if (grammar != null)
                 {
                     OpenGrammar(grammar, null);
@@ -691,7 +691,7 @@ namespace DesktopAntlrGrammarEditor
                 var index = TextFiles.IndexOf(OpenedTextFile);
                 TextFiles.Remove(OpenedTextFile);
                 index = Math.Min(index, TextFiles.Count - 1);
-                if (await MessageBox.ShowDialog($"Do you want to delete file {shortFileName}?", "", MessageBoxType.YesNo))
+                if (await MessageBox.ShowDialog(_window, $"Do you want to delete file {shortFileName}?", "", MessageBoxType.YesNo))
                 {
                     try
                     {
@@ -936,7 +936,7 @@ namespace DesktopAntlrGrammarEditor
                     message += " and make sure path to Java added to the PATH environment variable";
                 }
 
-                await MessageBox.ShowDialog(message);
+                await MessageBox.ShowDialog(_window, message);
 
                 return;
             }
@@ -952,7 +952,7 @@ namespace DesktopAntlrGrammarEditor
                         $" and make sure path to {runtimeInfo.RuntimeToolName} added to the PATH environment variable";
                 }
 
-                await MessageBox.ShowDialog(message);
+                await MessageBox.ShowDialog(_window, message);
 
                 return;
             }
@@ -995,7 +995,7 @@ namespace DesktopAntlrGrammarEditor
         private async Task ShowOpenFileErrorMessage(string fileName, string exceptionMessage)
         {
             var messageBox = new MessageBox($"Error while opening {fileName} file: {exceptionMessage}", "Error");
-            await messageBox.ShowDialog();
+            await messageBox.ShowDialog(_window);
             _window.Activate();
         }
 

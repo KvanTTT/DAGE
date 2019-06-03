@@ -27,7 +27,7 @@ namespace DesktopAntlrGrammarEditor
 
                 if (Directory.Exists(grammarFileName))
                 {
-                    if (await MessageBox.ShowDialog($"Do you want to replace existed grammar {_grammar.Name}?", "", MessageBoxType.YesNo))
+                    if (await MessageBox.ShowDialog(_window, $"Do you want to replace existed grammar {_grammar.Name}?", "", MessageBoxType.YesNo))
                     {
                         success = true;
                     }

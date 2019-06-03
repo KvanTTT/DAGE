@@ -16,9 +16,9 @@ namespace DesktopAntlrGrammarEditor
 
         public static string Directory { get; }
 
-        public double Left { get; set; } = -1;
+        public int Left { get; set; } = -1;
 
-        public double Top { get; set; } = -1;
+        public int Top { get; set; } = -1;
 
         public double Width { get; set; } = -1;
 
