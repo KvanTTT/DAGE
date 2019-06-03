@@ -17,14 +17,14 @@ namespace AntlrGrammarEditor
         public const string TemplateGrammarName = "__TemplateGrammarName__";
         public const string RuntimesDirName = "AntlrRuntimes";
 
-        private readonly static Regex ParserPartStart = new Regex(@"/\*\$ParserPart\*/", RegexOptions.Compiled);
-        private readonly static Regex ParserPartEnd = new Regex(@"/\*ParserPart\$\*/", RegexOptions.Compiled);
-        private readonly static Regex ParserPartStartPython = new Regex(@"'''\$ParserPart'''", RegexOptions.Compiled);
-        private readonly static Regex ParserPartEndPython = new Regex(@"'''ParserPart\$'''", RegexOptions.Compiled);
-        private readonly static Regex ParserIncludeStartPython = new Regex(@"'''\$ParserInclude'''", RegexOptions.Compiled);
-        private readonly static Regex ParserIncludeEndPython = new Regex(@"'''ParserInclude\$'''", RegexOptions.Compiled);
-        private readonly static Regex ParserIncludeStartJavaScript = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
-        private readonly static Regex ParserIncludeEndJavaScript = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
+        private static readonly Regex ParserPartStart = new Regex(@"/\*\$ParserPart\*/", RegexOptions.Compiled);
+        private static readonly Regex ParserPartEnd = new Regex(@"/\*ParserPart\$\*/", RegexOptions.Compiled);
+        private static readonly Regex ParserPartStartPython = new Regex(@"'''\$ParserPart'''", RegexOptions.Compiled);
+        private static readonly Regex ParserPartEndPython = new Regex(@"'''ParserPart\$'''", RegexOptions.Compiled);
+        private static readonly Regex ParserIncludeStartPython = new Regex(@"'''\$ParserInclude'''", RegexOptions.Compiled);
+        private static readonly Regex ParserIncludeEndPython = new Regex(@"'''ParserInclude\$'''", RegexOptions.Compiled);
+        private static readonly Regex ParserIncludeStartJavaScript = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
+        private static readonly Regex ParserIncludeEndJavaScript = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
 
         private Grammar _grammar;
         private ParserCompiliedState _result;
