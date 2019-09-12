@@ -37,6 +37,12 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public PredictionMode? PredictionMode { get; set; }
 
+        public List<string> TokenNames { get; set; } = new List<string>();
+
+        public List<string> ChannelNames { get; set; } = new List<string>();
+
+        public List<string> ModeNames { get; set; } = new List<string>();
+
         public List<string> Rules { get; set; } = new List<string>();
 
         public List<ParsingError> Errors { get; } = new List<ParsingError>();

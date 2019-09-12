@@ -34,6 +34,8 @@ namespace AntlrGrammarEditor
 
         public bool IsEmpty => Start == 0 && Length == 0;
 
+        public string Text => Source.Text.Substring(Start, Length);
+
         public LineColumnTextSpan GetLineColumn()
         {
             Source.PositionToLineColumn(Start, out int startLine, out int startColumn);
