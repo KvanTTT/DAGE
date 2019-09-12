@@ -49,7 +49,7 @@ namespace AntlrGrammarEditor.Tests
                 Console.WriteLine(message);
             }
         }
-        
+
         [Test]
         public void AllGeneratorsExists()
         {
@@ -79,7 +79,7 @@ namespace AntlrGrammarEditor.Tests
                 }
             }
         }
-        
+
         [Test]
         public void GrammarCheckedStageErrors()
         {
@@ -96,7 +96,7 @@ namespace AntlrGrammarEditor.Tests
             var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
-                new ParsingError[] {
+                new [] {
                     new ParsingError(3, 25, "error: test.g4:3:25: token recognition error at: '-z'", grammarSource, WorkflowStage.GrammarChecked),
                     new ParsingError(3, 27, "error: test.g4:3:27: token recognition error at: ']'", grammarSource, WorkflowStage.GrammarChecked),
                     new ParsingError(3, 28, "error: test.g4:3:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", grammarSource, WorkflowStage.GrammarChecked)
@@ -166,7 +166,7 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
-        public void ParserCompiliedStageErrors(Runtime runtime)
+        public void ParserCompiledStageErrors(Runtime runtime)
         {
             var grammarText =
                 @"grammar Test;
@@ -183,7 +183,7 @@ namespace AntlrGrammarEditor.Tests
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
-            Assert.AreEqual(2, parserGeneratedState.Errors[0].TextSpan.GetLineColumn().BeginLine);
+            Assert.AreEqual(2, parserGeneratedState.Errors[1].TextSpan.GetLineColumn().BeginLine);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -324,8 +324,8 @@ namespace AntlrGrammarEditor.Tests
         {
             var grammarText =
                 $"grammar {TestGrammarName};" +
-                $"root1: 'V1';" +
-                $"root2: 'V2';";
+                "root1: 'V1';" +
+                "root2: 'V2';";
 
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
             var workflow = new Workflow(grammar);
@@ -360,13 +360,45 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.Python3)]
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
+        public void CheckPackageName(Runtime runtime)
+        {
+            const string packageName = "TestLanguage";
+
+            var grammarText =
+                $@"grammar {TestGrammarName};
+                root:  TOKEN;
+                TOKEN:  'a';";
+
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            grammar.CaseInsensitiveType = CaseInsensitiveType.lower;
+            var workflow = new Workflow(grammar)
+            {
+                Runtime = runtime,
+                PackageName = packageName,
+                TextFileName = TestTextName
+            };
+
+            File.WriteAllText(TestTextName, "A");
+            var state = workflow.Process();
+            var textParsedState = state as TextParsedState;
+            Assert.IsNotNull(textParsedState);
+            Assert.IsFalse(textParsedState.HasErrors);
+        }
+
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
+        [TestCase(Runtime.Java)]
+        [TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python3)]
+        [TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Go)]
         public void CheckLexerOnlyGrammar(Runtime runtime)
         {
             var grammarText =
                 $"lexer grammar {TestGrammarName}Lexer;" +
-                $"T1: 'T1';" +
-                $"Digit: [0-9]+;" +
-                $"Space: ' '+ -> channel(HIDDEN);";
+                "T1: 'T1';" +
+                "Digit: [0-9]+;" +
+                "Space: ' '+ -> channel(HIDDEN);";
 
             var grammar = GrammarFactory.CreateDefaultLexerAndFill(grammarText, TestGrammarName, ".");
             File.WriteAllText(TestTextName, "T1 1234");
