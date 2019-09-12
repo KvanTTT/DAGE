@@ -67,6 +67,7 @@ namespace DesktopAntlrGrammarEditor
             Grammar grammar = null;
 
             bool openDefaultGrammar = false;
+            string packageName = null;
             string root = null;
             if (string.IsNullOrEmpty(_settings.GrammarFileOrDirectory))
             {
@@ -76,7 +77,7 @@ namespace DesktopAntlrGrammarEditor
             {
                 try
                 {
-                    grammar = GrammarFactory.Open(_settings.GrammarFileOrDirectory, out root);
+                    grammar = GrammarFactory.Open(_settings.GrammarFileOrDirectory, out packageName, out root);
                 }
                 catch (Exception ex)
                 {
@@ -97,6 +98,7 @@ namespace DesktopAntlrGrammarEditor
 
             _workflow = new Workflow(grammar);
             SelectedRuntime = RuntimeInfo.InitOrGetRuntimeInfo(_workflow.Runtime);
+            PackageName = packageName;
             Root = root;
 
             InitFiles();
@@ -175,6 +177,26 @@ namespace DesktopAntlrGrammarEditor
                 if (currentRoot != value)
                 {
                     _workflow.Root = value;
+
+                    if (AutoProcessing)
+                    {
+                        Process();
+                    }
+
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
+
+        public string PackageName
+        {
+            get => _workflow.PackageName;
+            set
+            {
+                var currentPackageName = _workflow.PackageName;
+                if (currentPackageName != value)
+                {
+                    _workflow.PackageName = value;
 
                     if (AutoProcessing)
                     {
@@ -557,7 +579,7 @@ namespace DesktopAntlrGrammarEditor
                 Grammar grammar = await newGrammarWindow.ShowDialog<Grammar>(_window);
                 if (grammar != null)
                 {
-                    OpenGrammar(grammar, null);
+                    OpenGrammar(grammar, null, null);
                 }
                 _window.Activate();
             });
@@ -576,8 +598,8 @@ namespace DesktopAntlrGrammarEditor
 
                     if (!string.IsNullOrEmpty(folderName))
                     {
-                        var grammar = GrammarFactory.Open(folderName, out string root);
-                        OpenGrammar(grammar, root);
+                        var grammar = GrammarFactory.Open(folderName, out string packageName, out string root);
+                        OpenGrammar(grammar, packageName, root);
                     }
                 }
                 catch (Exception ex)
@@ -718,7 +740,7 @@ namespace DesktopAntlrGrammarEditor
             _workflow.RollbackToStage(switchStage);
         }
 
-        private void OpenGrammar(Grammar grammar, string root)
+        private void OpenGrammar(Grammar grammar, string packageName, string root)
         {
             _workflow.Grammar = grammar;
             _settings.GrammarFileOrDirectory = grammar.Directory;
@@ -729,6 +751,7 @@ namespace DesktopAntlrGrammarEditor
             InitFiles();
             OpenedGrammarFile = GrammarFiles.FirstOrDefault();
             OpenedTextFile = TextFiles.FirstOrDefault();
+            PackageName = packageName;
             Root = root;
             this.RaisePropertyChanged(nameof(SelectedRuntime));
             this.RaisePropertyChanged(nameof(IsParserExists));

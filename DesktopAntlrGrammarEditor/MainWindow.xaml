@@ -10,13 +10,17 @@
 
   <Grid ColumnDefinitions="*,Auto,*" Margin="8">
     <Grid Grid.Column="0" RowDefinitions="35,*,Auto,40" Margin="0,0,2,0">
-      <Grid Grid.Row="0"  ColumnDefinitions="70,60,60,Auto,Auto,*" Margin="0,3,0,3" >
+      <Grid Grid.Row="0"  ColumnDefinitions="70,60,60,Auto,Auto,*,*" Margin="0,3,0,3" >
         <TextBlock Grid.Column="0" Text="GRAMMAR" />
         <Button Grid.Column="1" Margin="0,0,5,0" Command="{Binding NewGrammarCommand}" >New</Button>
         <Button Grid.Column="2" Margin="0,0,5,0" Command="{Binding OpenGrammarCommand}" >Open</Button>
         <TextBlock Grid.Column="3" Margin="5,0,10,0" HorizontalAlignment="Right" Text="File" />
-        <ComboBox Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" ></ComboBox>
-        <StackPanel Grid.Column="5" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal" >
+        <ComboBox Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" />
+        <StackPanel Grid.Column="5" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal">
+          <TextBlock Text="Package" />
+          <TextBox Width="90" Text="{Binding PackageName}"/>
+        </StackPanel>
+        <StackPanel Grid.Column="6" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal" >
           <TextBlock HorizontalAlignment="Right" Text="Runtime" />
           <ComboBox Width="90" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></ComboBox>
         </StackPanel>
