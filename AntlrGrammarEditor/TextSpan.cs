@@ -2,7 +2,7 @@
 
 namespace AntlrGrammarEditor
 {
-    public struct TextSpan : IEquatable<TextSpan>, IComparable<TextSpan>
+    public readonly struct TextSpan : IEquatable<TextSpan>, IComparable<TextSpan>
     {
         public static TextSpan Empty => new TextSpan(0, 0, CodeSource.Empty);
 
@@ -28,13 +28,6 @@ namespace AntlrGrammarEditor
 
             Start = start;
             Length = length;
-        }
-
-        public TextSpan(TextSpan textSpan)
-        {
-            Source = textSpan.Source;
-            Start = textSpan.Start;
-            Length = textSpan.Length;
         }
 
         public int End => Start + Length;
@@ -65,7 +58,7 @@ namespace AntlrGrammarEditor
 
         public override int GetHashCode()
         {
-            return unchecked((Start * (int)0xA5555529) + Length) ^ Source.GetHashCode();
+            return unchecked(Start * (int)0xA5555529 + Length) ^ Source.GetHashCode();
         }
 
         public int CompareTo(TextSpan other)

@@ -2,7 +2,7 @@
 
 namespace AntlrGrammarEditor
 {
-    public struct LineColumnTextSpan : IEquatable<LineColumnTextSpan>, IComparable<LineColumnTextSpan>
+    public readonly struct LineColumnTextSpan : IEquatable<LineColumnTextSpan>, IComparable<LineColumnTextSpan>
     {
         public const int StartLine = 1;
 
@@ -122,7 +122,7 @@ namespace AntlrGrammarEditor
 
         private int GetHash(int x, int y)
         {
-            return unchecked((x * (int)0xA5555529) + y);
+            return unchecked(x * (int)0xA5555529 + y);
         }
     }
 }
