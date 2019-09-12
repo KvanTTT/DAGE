@@ -88,6 +88,8 @@ namespace AntlrGrammarEditor
 
         public string RuntimeLibrary { get; set; }
 
+        public string PackageName { get; set; }
+
         public event EventHandler<ParsingError> ErrorEvent
         {
             add => _errorEvent += value;
@@ -165,7 +167,7 @@ namespace AntlrGrammarEditor
                         ClearErrorsEvent?.Invoke(this, WorkflowStage.TextTokenized);
                         ClearErrorsEvent?.Invoke(this, WorkflowStage.TextParsed);
                         break;
-                    
+
                     case WorkflowStage.ParserCompilied:
                     case WorkflowStage.ParserGenerated:
                     case WorkflowStage.GrammarChecked:
@@ -196,8 +198,9 @@ namespace AntlrGrammarEditor
                     {
                         ErrorEvent = _errorEvent,
                         GeneratorTool = GeneratorTool,
+                        PackageName = PackageName,
                         GenerateListener = GenerateListener,
-                        GenerateVisitor = GenerateVisitor
+                        GenerateVisitor = GenerateVisitor,
                     };
                     _currentState = parserGenerator.Generate((GrammarCheckedState)_currentState, _cancellationTokenSource.Token);
                     break;

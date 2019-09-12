@@ -13,7 +13,7 @@ namespace AntlrGrammarEditor
 
         private static readonly Regex CaseInsensitiveTypeRegex = new Regex(@"/\*\s*CaseInsensitiveType:\s*(\w+)\s*\*/");
 
-        public static Grammar Open(string fileOrDirectoryName, out string root)
+        public static Grammar Open(string fileOrDirectoryName, out string packageName, out string root)
         {
             List<string> grammarFiles;
             string grammarName = "";
@@ -22,6 +22,7 @@ namespace AntlrGrammarEditor
             CaseInsensitiveType caseInsensitiveType = CaseInsensitiveType.None;
             string lexerOrCombinedGrammarFile = null;
             string parserGrammarFile = null;
+            packageName = null;
             root = null;
 
             if (File.Exists(fileOrDirectoryName))
@@ -50,7 +51,7 @@ namespace AntlrGrammarEditor
                 {
                     /*grammarName = Path.GetFileNameWithoutExtension(g4Files[0]).Replace(LexerPostfix, "")
                         .Replace(ParserPostfix, "");
-    
+
                     grammarFiles = g4Files.Select(file => Path.GetFileName(file)).ToList();*/
 
                     string lexerFileName =
@@ -84,7 +85,7 @@ namespace AntlrGrammarEditor
             if (File.Exists(pomFile))
             {
                 string content = File.ReadAllText(pomFile);
-                // TODO: fix with XPath
+                // TODO: fix with XMLParser and XPath
                 var caseInsensitiveRegex = new Regex("<caseInsensitiveType>(\\w+)</caseInsensitiveType>");
 
                 var match = caseInsensitiveRegex.Match(content);
@@ -92,12 +93,19 @@ namespace AntlrGrammarEditor
                 {
                     Enum.TryParse(match.Groups[1].Value, out caseInsensitiveType);
                 }
-                
+
                 var entryPointRegex = new Regex("<entryPoint>(\\w+)</entryPoint>");
                 match = entryPointRegex.Match(content);
                 if (match.Success)
                 {
                     root = match.Groups[1].Value;
+                }
+
+                var packageRegex = new Regex("<packageName>(\\w+)</packageName>");
+                match = packageRegex.Match(content);
+                if (match.Success)
+                {
+                    packageName = match.Groups[1].Value;
                 }
             }
             else if (!string.IsNullOrEmpty(lexerOrCombinedGrammarFile))

@@ -11,6 +11,8 @@ import (
 /*ParserInclude$*/
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
+
+	/*$PackageName$*/
 )
 
 
@@ -28,7 +30,7 @@ func main() {
 
 	code := string(bytes)
 	codeStream := antlr.NewInputStream(code)
-	lexer := New__TemplateGrammarName__Lexer(codeStream)
+	lexer := /*$PackageName2$*/New__TemplateGrammarName__Lexer(codeStream)
 	tokensStream := antlr.NewCommonTokenStream(lexer, 0)
 	tokensStream.Fill()
 	allTokens := tokensStream.GetAllTokens()
@@ -42,7 +44,7 @@ func main() {
 		rootRule = os.Args[2]
 	}
 
-	parser := New__TemplateGrammarName__Parser(tokensStream)
+	parser := /*$PackageName2$*/New__TemplateGrammarName__Parser(tokensStream)
 
 	var ruleName string
 	if rootRule == "" {

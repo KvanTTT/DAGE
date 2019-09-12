@@ -14,6 +14,8 @@ namespace AntlrGrammarEditor
 
         public Runtime Runtime { get; }
 
+        public string PackageName { get; set; }
+
         public bool GenerateListener { get; set; } = true;
 
         public bool GenerateVisitor { get; set; } = true;
@@ -25,12 +27,11 @@ namespace AntlrGrammarEditor
             Runtime = runtime;
         }
 
-        public ParserGeneratedState Generate(GrammarCheckedState state,
-            CancellationToken cancellationToken = default(CancellationToken))
+        public ParserGeneratedState Generate(GrammarCheckedState state, CancellationToken cancellationToken = default)
         {
             Grammar grammar = state.InputState.Grammar;
 
-            _result = new ParserGeneratedState(state, Runtime, GenerateListener, GenerateVisitor);
+            _result = new ParserGeneratedState(state, PackageName, Runtime, GenerateListener, GenerateVisitor);
 
             Generate(grammar, state, cancellationToken);
 
@@ -44,6 +45,12 @@ namespace AntlrGrammarEditor
             try
             {
                 string runtimeDirectoryName = Path.Combine(HelperDirectoryName, grammar.Name, Runtime.ToString());
+
+                if ((Runtime == Runtime.Java || Runtime == Runtime.Go) && !string.IsNullOrWhiteSpace(PackageName))
+                {
+                    runtimeDirectoryName = Path.Combine(runtimeDirectoryName, PackageName);
+                }
+
                 if (Directory.Exists(runtimeDirectoryName))
                 {
                     Directory.Delete(runtimeDirectoryName, true);
@@ -73,7 +80,11 @@ namespace AntlrGrammarEditor
                         $"{(GenerateVisitor ? "-visitor" : "-no-visitor")} " +
                         $"{(GenerateListener ? "-listener" : "-no-listener")}";
 
-                    if (Runtime == Runtime.Go)
+                    if (!string.IsNullOrWhiteSpace(PackageName))
+                    {
+                        arguments += " -package " + PackageName;
+                    }
+                    else if (Runtime == Runtime.Go)
                     {
                         arguments += " -package main";
                     }

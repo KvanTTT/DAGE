@@ -25,8 +25,7 @@ namespace AntlrGrammarEditor
             TextFileName = textFileName;
         }
 
-        public TextParsedState Parse(ParserCompiliedState state,
-             CancellationToken cancellationToken = default(CancellationToken))
+        public TextParsedState Parse(ParserCompiliedState state, CancellationToken cancellationToken = default)
         {
             Processor processor = null;
             try
@@ -156,7 +155,7 @@ namespace AntlrGrammarEditor
         {
             if (!string.IsNullOrEmpty(e.Data) &&
                 !(_result.ParserCompiliedState.ParserGeneratedState.Runtime == Runtime.Java && e.IsIgnoreJavaError()))
-            { 
+            {
                 var errorString = Helpers.FixEncoding(e.Data);
                 ParsingError error;
                 try
@@ -188,7 +187,7 @@ namespace AntlrGrammarEditor
                     switch (outputState)
                     {
                         case TextParsedOutput.LexerTime:
-                            _result.LexerTime = TimeSpan.Parse(data); 
+                            _result.LexerTime = TimeSpan.Parse(data);
                             TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.LexerTime, _result.LexerTime));
                             break;
                         case TextParsedOutput.ParserTime:

@@ -1,6 +1,7 @@
 ﻿import org.antlr.v4.runtime.*;
 import java.lang.reflect.Method;
 import java.util.List;
+/*$PackageName$*/
 
 public class Main {
     public static void main(String[] args) {

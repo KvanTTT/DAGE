@@ -7,7 +7,6 @@ namespace AntlrGrammarEditor
     {
         public static CodeSource Empty = new CodeSource("", "");
 
-        private readonly int textLength;
         private int[] lineIndexes;
 
         public string Name { get; }
@@ -17,8 +16,6 @@ namespace AntlrGrammarEditor
         {
             Name = name;
             Text = text;
-
-            textLength = text.Length;
 
             InitLineIndexes();
         }

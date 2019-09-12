@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.IO;
+/*$PackageName$*/
 #if CSharpOptimized
 using Antlr4.Runtime.Misc;
 #endif

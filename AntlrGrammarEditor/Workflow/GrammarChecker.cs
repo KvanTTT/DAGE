@@ -7,8 +7,7 @@ namespace AntlrGrammarEditor
 {
     public class GrammarChecker : StageProcessor
     {
-        public GrammarCheckedState Check(InputState inputState,
-            CancellationToken cancellationToken = default(CancellationToken)) 
+        public GrammarCheckedState Check(InputState inputState, CancellationToken cancellationToken = default)
         {
             var grammar = inputState.Grammar;
             var result = new GrammarCheckedState(inputState);
@@ -23,7 +22,7 @@ namespace AntlrGrammarEditor
                         result.Errors.Add(error);
                     }
                 };
-                
+
                 foreach (string grammarFileName in grammar.Files)
                 {
                     string code = File.ReadAllText(Path.Combine(grammar.Directory, grammarFileName));

@@ -16,6 +16,8 @@ namespace AntlrGrammarEditor
 
         public Runtime Runtime { get; }
 
+        public string PackageName { get; }
+
         public bool IncludeListener { get; }
 
         public bool IncludeVisitor { get; }
@@ -26,9 +28,10 @@ namespace AntlrGrammarEditor
 
         public string Command { get; set; }
 
-        public ParserGeneratedState(GrammarCheckedState grammarCheckedState, Runtime runtime, bool includeListener, bool includeVisitor)
+        public ParserGeneratedState(GrammarCheckedState grammarCheckedState, string packageName, Runtime runtime, bool includeListener, bool includeVisitor)
         {
             GrammarCheckedState = grammarCheckedState ?? throw new ArgumentNullException(nameof(grammarCheckedState));
+            PackageName = packageName;
             Runtime = runtime;
             IncludeListener = includeListener;
             IncludeVisitor = includeVisitor;

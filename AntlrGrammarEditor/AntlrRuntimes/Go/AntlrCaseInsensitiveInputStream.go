@@ -11,14 +11,14 @@ type AntlrCaseInsensitiveInputStream struct {
 }
 
 func NewAntlrCaseInsensitiveInputStream(input string, lowerCase bool) *AntlrCaseInsensitiveInputStream {
-    caseInsenstiveStream := new(AntlrCaseInsensitiveInputStream)
-    caseInsenstiveStream.InputStream = antlr.NewInputStream(input)
+    caseInsensitiveStream := new(AntlrCaseInsensitiveInputStream)
+    caseInsensitiveStream.InputStream = antlr.NewInputStream(input)
     if (lowerCase) {
-        caseInsenstiveStream.lookaheadData = []rune(strings.ToLower(input))
+        caseInsensitiveStream.lookaheadData = []rune(strings.ToLower(input))
     } else {
-        caseInsenstiveStream.lookaheadData = []rune(strings.ToUpper(input))
+        caseInsensitiveStream.lookaheadData = []rune(strings.ToUpper(input))
     }
-    return caseInsenstiveStream
+    return caseInsensitiveStream
 }
 
 func (is *AntlrCaseInsensitiveInputStream) LA(offset int) int {
