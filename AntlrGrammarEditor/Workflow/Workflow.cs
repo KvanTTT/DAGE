@@ -10,6 +10,8 @@ namespace AntlrGrammarEditor
         private Runtime _runtime = Runtime.Java;
         private string _root = "";
         private string _textFileName = "";
+        private string _packageName;
+        private string _generatorTool;
 
         private IWorkflowState _currentState;
 
@@ -84,11 +86,35 @@ namespace AntlrGrammarEditor
             }
         }
 
-        public string GeneratorTool { get; set; }
+        public string GeneratorTool
+        {
+            get => _generatorTool;
+            set
+            {
+                if (_generatorTool != value)
+                {
+                    StopIfRequired();
+                    _generatorTool = value;
+                    RollbackToStage(WorkflowStage.Input);
+                }
+            }
+        }
 
         public string RuntimeLibrary { get; set; }
 
-        public string PackageName { get; set; }
+        public string PackageName
+        {
+            get => _packageName;
+            set
+            {
+                if (_packageName != value)
+                {
+                    StopIfRequired();
+                    _packageName = value;
+                    RollbackToStage(WorkflowStage.Input);
+                }
+            }
+        }
 
         public event EventHandler<ParsingError> ErrorEvent
         {
@@ -200,7 +226,7 @@ namespace AntlrGrammarEditor
                         GeneratorTool = GeneratorTool,
                         PackageName = PackageName,
                         GenerateListener = GenerateListener,
-                        GenerateVisitor = GenerateVisitor,
+                        GenerateVisitor = GenerateVisitor
                     };
                     _currentState = parserGenerator.Generate((GrammarCheckedState)_currentState, _cancellationTokenSource.Token);
                     break;
