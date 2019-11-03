@@ -60,12 +60,12 @@ namespace AntlrGrammarEditor
 
                     if (grammarFileName.Contains(Grammar.LexerPostfix))
                     {
-                        grammar.LexerSuperClass = grammarInfoCollectorListener.SuperClass;
+                        result.LexerSuperClass = grammarInfoCollectorListener.SuperClass;
                     }
 
                     if (grammarFileName.Contains(Grammar.ParserPostfix))
                     {
-                        grammar.ParserSuperClass = grammarInfoCollectorListener.SuperClass;
+                        result.ParserSuperClass = grammarInfoCollectorListener.SuperClass;
                     }
 
                     if (!shortFileName.Contains(Grammar.LexerPostfix))

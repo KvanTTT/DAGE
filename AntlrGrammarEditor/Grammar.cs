@@ -24,10 +24,6 @@ namespace AntlrGrammarEditor
 
         public string Name { get; set; }
 
-        public string LexerSuperClass { get; set; }
-
-        public string ParserSuperClass { get; set; }
-
         public string FileExtension { get; set; } = "txt";
 
         public GrammarType Type { get; set; }

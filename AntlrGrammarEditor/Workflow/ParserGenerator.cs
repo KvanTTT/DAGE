@@ -89,14 +89,14 @@ namespace AntlrGrammarEditor
                         arguments += " -package main";
                     }
 
-                    if (grammarFileName.Contains(Grammar.LexerPostfix) && grammar.LexerSuperClass != null)
+                    if (grammarFileName.Contains(Grammar.LexerPostfix) && state.LexerSuperClass != null)
                     {
-                        arguments += " -DsuperClass=" + grammar.LexerSuperClass;
+                        arguments += " -DsuperClass=" + state.LexerSuperClass;
                     }
 
-                    if (grammarFileName.Contains(Grammar.ParserPostfix) && grammar.ParserSuperClass != null)
+                    if (grammarFileName.Contains(Grammar.ParserPostfix) && state.ParserSuperClass != null)
                     {
-                        arguments += " -DsuperClass=" + grammar.ParserSuperClass;
+                        arguments += " -DsuperClass=" + state.ParserSuperClass;
                     }
 
                     _result.Command = "java " + arguments;
