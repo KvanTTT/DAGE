@@ -127,6 +127,19 @@ namespace AntlrGrammarEditor
                 antlrInputStream: "",
                 runtimeToolName: "swift",
                 versionArg: "--version"
+            ),
+            [Runtime.TypeScript] = new RuntimeInfo
+            (
+                runtime: Runtime.TypeScript,
+                name: "TypeScript",
+                jarGenerator: "antlr-4.6-typescript.jar",
+                dLanguage: "TypeScript",
+                runtimeLibrary: "",
+                extensions: new[] { "ts" },
+                mainFile: "main.ts",
+                antlrInputStream: "",
+                runtimeToolName: "tsc",
+                versionArg: "--version"
             )
         };
 

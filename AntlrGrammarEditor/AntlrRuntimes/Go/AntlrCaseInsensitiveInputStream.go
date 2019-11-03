@@ -6,8 +6,8 @@ import (
 )
 
 type AntlrCaseInsensitiveInputStream struct {
-	*antlr.InputStream
-	lookaheadData []rune
+    *antlr.InputStream
+    lookaheadData []rune
 }
 
 func NewAntlrCaseInsensitiveInputStream(input string) *AntlrCaseInsensitiveInputStream {

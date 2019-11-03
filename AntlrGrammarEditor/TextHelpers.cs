@@ -24,42 +24,6 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        private static int SelectIndexWithBoundaryNewlines(string destination, int destInd, string source)
-        {
-            do
-            {
-                int ind = FirstNotWhitespaceCharIndexLeft(destination, destInd - 1);
-                if (ind <= 0)
-                {
-                    ind = 0;
-                }
-                if (ind == 0 || destination[ind] == '\r' || destination[ind] == '\n')
-                {
-                    break;
-                }
-                else
-                {
-                    destInd = destination.IgnoreWhitespaceIndexOf(source, destInd + source.Length);
-                }
-            }
-            while (true);
-
-            do
-            {
-                int ind = FirstNotWhitespaceCharIndexRight(destination, destInd + source.Length);
-                if (ind == destination.Length - 1 || destination[ind] == '\r' || destination[ind] == '\n')
-                {
-                    break;
-                }
-                else
-                {
-                    destInd = destination.IgnoreWhitespaceIndexOf(source, destInd + source.Length);
-                }
-            }
-            while (true);
-            return destInd;
-        }
-
         public static TextSpan GetSourceTextSpanForLine(List<TextSpanMapping> mapping, int destinationLine)
         {
             foreach (var m in mapping)
@@ -72,7 +36,7 @@ namespace AntlrGrammarEditor
             return TextSpan.Empty;
         }
 
-        public static TextSpan GetSourceTextSpanForLineColumn(List<TextSpanMapping> mapping, int destLine, int destColumn)
+        public static TextSpan GetSourceTextSpanForLineColumn(List<TextSpanMapping> mapping, int destLine)
         {
             foreach (var m in mapping)
             {
@@ -106,6 +70,7 @@ namespace AntlrGrammarEditor
                     {
                         sourceIndex2++;
                     }
+
                     while (char.IsWhiteSpace(trimmedValue[valueInd]))
                     {
                         valueInd++;

@@ -22,10 +22,6 @@ namespace AntlrGrammarEditor
         private const string TemplateGrammarName = "__TemplateGrammarName__";
         private const string TemplateGrammarRoot = "__TemplateGrammarRoot__";
 
-        private const int GenerateParserProcessTimeout = 200;
-        private const int CompileParserProcessTimeout = 200;
-        private const int ParseTextTimeout = 200;
-
         private Grammar _grammar = new Grammar();
         private string _text = "";
         private WorkflowState _currentState;
@@ -1034,7 +1030,7 @@ namespace AntlrGrammarEditor
                     int line = int.Parse(strs2[0]);
                     int column = int.Parse(strs2[1]);
                     string rest = string.Join(":", strs.Skip(1));
-                    var grammarTextSpan = TextHelpers.GetSourceTextSpanForLineColumn(_grammarCodeMapping[codeFileName], line, column);
+                    var grammarTextSpan = TextHelpers.GetSourceTextSpanForLineColumn(_grammarCodeMapping[codeFileName], line);
 
                     grammarSource = _grammarFilesData[grammarFileName];
                     if (grammarTextSpan != null)

@@ -16,12 +16,29 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="AntlrRuntimes\Go\AntlrCaseInsensitiveInputStream.go" />
+    <None Remove="AntlrRuntimes\Go\main.go" />
+    <None Remove="AntlrRuntimes\JavaScript\AntlrCaseInsensitiveInputStream.js" />
+    <None Remove="AntlrRuntimes\JavaScript\main.js" />
+    <None Remove="AntlrRuntimes\Java\antlr-runtime-4.7.jar" />
+    <None Remove="AntlrRuntimes\Java\AntlrCaseInsensitiveInputStream.java" />
+    <None Remove="AntlrRuntimes\Java\Main.java" />
+    <None Remove="AntlrRuntimes\Python\AntlrCaseInsensitiveInputStream.py" />
+    <None Remove="AntlrRuntimes\Python\main.py" />
+    <None Remove="AntlrRuntimes\TypeScript\AntlrCaseInsensitiveInputStream.ts" />
+    <None Remove="AntlrRuntimes\TypeScript\main.ts" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Antlr4" Version="4.6.5" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="Ude.NetStandard" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Generators\antlr-4.6-typescript.jar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Generators\antlr-4.6.4-csharpsharwell.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -29,33 +46,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Generators\antlr-4.7-complete.jar">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Go\AntlrCaseInsensitiveInputStream.go">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Go\main.go">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\JavaScript\AntlrCaseInsensitiveInputStream.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\JavaScript\main.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Java\antlr-runtime-4.7.jar">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Java\AntlrCaseInsensitiveInputStream.java">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Java\Main.java">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Python\AntlrCaseInsensitiveInputStream.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Python\main.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -74,6 +64,39 @@
 
   <ItemGroup>
     <Content Include="AntlrRuntimes\CSharp\Project.csproj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\Go\AntlrCaseInsensitiveInputStream.go">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\Go\main.go">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\JavaScript\AntlrCaseInsensitiveInputStream.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\JavaScript\main.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\Java\antlr-runtime-4.7.jar">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\Java\AntlrCaseInsensitiveInputStream.java">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\Java\Main.java">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\Python\AntlrCaseInsensitiveInputStream.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\Python\main.py">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\TypeScript\AntlrCaseInsensitiveInputStream.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AntlrRuntimes\TypeScript\main.ts">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

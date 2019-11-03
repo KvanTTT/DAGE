@@ -53,6 +53,8 @@ build_script:
 
     npm install antlr4
 
+    npm install antlr4ts
+
     go get github.com/antlr/antlr4/runtime/Go/antlr
 
     dotnet build AntlrGrammarEditor.sln -c Release
