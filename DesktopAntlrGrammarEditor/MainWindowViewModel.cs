@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -369,17 +370,17 @@ namespace DesktopAntlrGrammarEditor
 
         public bool IsParserExists => _workflow.Grammar.Type != GrammarType.Lexer;
 
-        public ReactiveCommand NewGrammarCommand { get; private set; }
+        public ReactiveCommand<Unit, Unit> NewGrammarCommand { get; private set; }
 
-        public ReactiveCommand OpenGrammarCommand { get; private set; }
+        public ReactiveCommand<Unit, Unit> OpenGrammarCommand { get; private set; }
 
-        public ReactiveCommand ProcessCommand { get; private set; }
+        public ReactiveCommand<Unit, Unit> ProcessCommand { get; private set; }
 
-        public ReactiveCommand NewTextFile { get; private set; }
+        public ReactiveCommand<Unit, Unit> NewTextFile { get; private set; }
 
-        public ReactiveCommand OpenTextFile { get; private set; }
+        public ReactiveCommand<Unit, Unit> OpenTextFile { get; private set; }
 
-        public ReactiveCommand RemoveTextFile { get; private set; }
+        public ReactiveCommand<Unit, Unit> RemoveTextFile { get; private set; }
 
         public bool AutoProcessing
         {
@@ -573,7 +574,7 @@ namespace DesktopAntlrGrammarEditor
 
         private void SetupCommandSubscriptions()
         {
-            NewGrammarCommand = ReactiveCommand.Create(async () =>
+            NewGrammarCommand = ReactiveCommand.CreateFromTask(async () =>
             {
                 var newGrammarWindow = new NewGrammarWindow();
                 Grammar grammar = await newGrammarWindow.ShowDialog<Grammar>(_window);
@@ -584,7 +585,7 @@ namespace DesktopAntlrGrammarEditor
                 _window.Activate();
             });
 
-            OpenGrammarCommand = ReactiveCommand.Create(async () =>
+            OpenGrammarCommand = ReactiveCommand.CreateFromTask(async () =>
             {
                 var openGrammarDialog = new OpenFolderDialog
                 {
@@ -637,7 +638,7 @@ namespace DesktopAntlrGrammarEditor
                 Process();
             });
 
-            NewTextFile = ReactiveCommand.Create(async () =>
+            NewTextFile = ReactiveCommand.CreateFromTask(async () =>
             {
                 var filters = new List<FileDialogFilter>();
                 if (!string.IsNullOrEmpty(Grammar.FileExtension))
@@ -660,7 +661,7 @@ namespace DesktopAntlrGrammarEditor
                     Title = "Enter file name",
                     DefaultExtension = Grammar.FileExtension,
                     Filters = filters,
-                    InitialDirectory = Grammar.Directory,
+                    Directory = Grammar.Directory,
                     InitialFileName = Path.GetFileName(GrammarFactory.GenerateTextFileName(Grammar))
                 };
 
@@ -678,7 +679,7 @@ namespace DesktopAntlrGrammarEditor
                 }
             });
 
-            OpenTextFile = ReactiveCommand.Create(async () =>
+            OpenTextFile = ReactiveCommand.CreateFromTask(async () =>
             {
                 var openFileDialog = new OpenFileDialog
                 {
@@ -705,7 +706,7 @@ namespace DesktopAntlrGrammarEditor
                 }
             });
 
-            RemoveTextFile = ReactiveCommand.Create(async () =>
+            RemoveTextFile = ReactiveCommand.CreateFromTask(async () =>
             {
                 string shortFileName = OpenedTextFile.ShortFileName;
                 string fullFileName = OpenedTextFile.FullFileName;

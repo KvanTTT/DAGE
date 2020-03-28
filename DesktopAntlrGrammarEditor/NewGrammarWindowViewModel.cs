@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Reactive;
 
 namespace DesktopAntlrGrammarEditor
 {
@@ -17,7 +18,7 @@ namespace DesktopAntlrGrammarEditor
 
         public NewGrammarWindowViewModel(Window window)
         {
-            OkCommand = ReactiveCommand.Create(async () =>
+            OkCommand = ReactiveCommand.CreateFromTask(async () =>
             {
                 string grammarFileName = Path.Combine(GrammarDirectory, _grammar.Name);
                 bool success = false;
@@ -43,11 +44,11 @@ namespace DesktopAntlrGrammarEditor
 
             CancelCommand = ReactiveCommand.Create(() => window.Close(null));
 
-            SelectGrammarDirectory = ReactiveCommand.Create(async () =>
+            SelectGrammarDirectory = ReactiveCommand.CreateFromTask(async () =>
             {
                 var openFolderDialog = new OpenFolderDialog
                 {
-                    InitialDirectory = GrammarDirectory
+                    Directory = GrammarDirectory
                 };
                 var folderName = await openFolderDialog.ShowAsync(window);
                 if (!string.IsNullOrEmpty(folderName))
@@ -57,11 +58,11 @@ namespace DesktopAntlrGrammarEditor
             });
         }
 
-        public ReactiveCommand OkCommand { get; }
+        public ReactiveCommand<Unit, Unit> OkCommand { get; }
 
-        public ReactiveCommand CancelCommand { get; }
+        public ReactiveCommand<Unit, Unit> CancelCommand { get; }
 
-        public ReactiveCommand SelectGrammarDirectory { get; }
+        public ReactiveCommand<Unit, Unit> SelectGrammarDirectory { get; }
 
         public string GrammarName
         {
