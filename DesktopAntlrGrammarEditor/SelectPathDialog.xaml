@@ -1,4 +1,5 @@
-﻿<Window xmlns="https://github.com/avaloniaui" Width="400" Height="120"  SizeToContent="WidthAndHeight" >
+﻿<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="DesktopAntlrGrammarEditor.SelectPathDialog" Width="400" Height="120"  SizeToContent="WidthAndHeight" >
   <StackPanel Spacing="10" Margin="10">
     <TextBlock Text="{Binding Message}" />
     <TextBox Text="{Binding Path}" />

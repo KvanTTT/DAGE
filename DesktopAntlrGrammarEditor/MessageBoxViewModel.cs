@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+﻿using System.Reactive;
+using Avalonia.Controls;
 using ReactiveUI;
 
 namespace DesktopAntlrGrammarEditor
@@ -32,10 +33,10 @@ namespace DesktopAntlrGrammarEditor
 
         public bool YesNoButtonVisible => MessageBoxType == MessageBoxType.YesNo;
 
-        public ReactiveCommand OkCommand { get; }
+        public ReactiveCommand<Unit, Unit> OkCommand { get; }
 
-        public ReactiveCommand YesCommand { get; }
+        public ReactiveCommand<Unit, Unit> YesCommand { get; }
 
-        public ReactiveCommand NoCommand { get; }
+        public ReactiveCommand<Unit, Unit> NoCommand { get; }
     }
 }

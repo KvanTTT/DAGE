@@ -183,7 +183,7 @@ namespace AntlrGrammarEditor.Tests
 
             ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
-            Assert.AreEqual(2, parserGeneratedState.Errors[1].TextSpan.GetLineColumn().BeginLine);
+            Assert.AreEqual(runtime == Runtime.Go ? 1 : 2, parserGeneratedState.Errors[0].TextSpan.GetLineColumn().BeginLine);
         }
 
         [TestCase(Runtime.CSharpOptimized)]

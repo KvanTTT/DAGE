@@ -1,18 +1,17 @@
 ﻿using Avalonia;
 using Avalonia.Logging.Serilog;
+using Avalonia.ReactiveUI;
 
 namespace DesktopAntlrGrammarEditor
 {
     class Program
     {
-        static void Main(string[] args)
-        {
-            BuildAvaloniaApp().Start<MainWindow>();
-        }
+        public static void Main(string[] args) => BuildAvaloniaApp().Start<MainWindow>();
 
         public static AppBuilder BuildAvaloniaApp()
-        {
-            return AppBuilder.Configure<App>().UsePlatformDetect().UseReactiveUI().LogToDebug();
-        }
+            => AppBuilder.Configure<App>()
+                .UsePlatformDetect()
+                .UseReactiveUI()
+                .LogToDebug();
     }
 }
