@@ -6,6 +6,10 @@ namespace DesktopAntlrGrammarEditor
 {
     public class SelectPathDialog : Window
     {
+        public SelectPathDialog()
+        {
+        }
+
         public SelectPathDialog(string message, string path)
         {
             InitializeComponent();
