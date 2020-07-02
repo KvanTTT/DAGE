@@ -25,10 +25,10 @@
     <None Update="Generators\antlr-4.6.6-csharp-optimized.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Generators\antlr-4.7.2-complete.jar">
+    <None Update="Generators\antlr-4.8-complete.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="AntlrRuntimes\Java\antlr-runtime-4.7.2.jar">
+    <None Update="AntlrRuntimes\Java\antlr-runtime-4.8.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="AntlrRuntimes\Go\AntlrCaseInsensitiveInputStream.go">
