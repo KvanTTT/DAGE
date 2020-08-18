@@ -69,6 +69,10 @@ namespace AntlrGrammarEditor
                     case Runtime.Go:
                         toolName = PrepareGoToolAndArgs(workingDirectory, runtimeInfo);
                         break;
+
+                    case Runtime.Php:
+                        toolName = PreparePhpToolAndArgs(runtimeInfo, out args);
+                        break;
                 }
 
                 args += $" \"{TextFileName}\" {_result.RootOrDefault} {OnlyTokenize.ToString().ToLowerInvariant()}";
@@ -149,6 +153,12 @@ namespace AntlrGrammarEditor
                 : Path.GetFileNameWithoutExtension(runtimeInfo.MainFile);
 
             return Path.Combine(workingDirectory, fileName);
+        }
+
+        private static string PreparePhpToolAndArgs(RuntimeInfo runtimeInfo, out string args)
+        {
+            args = runtimeInfo.MainFile;
+            return runtimeInfo.RuntimeToolName;
         }
 
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)

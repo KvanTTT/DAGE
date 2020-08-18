@@ -249,6 +249,7 @@ namespace DesktopAntlrGrammarEditor
                 RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Python3),
                 RuntimeInfo.InitOrGetRuntimeInfo(Runtime.JavaScript),
                 RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Go),
+                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Php),
             });
 
         public string GrammarErrorsText => $"Grammar Errors ({GrammarErrors.Count})";
