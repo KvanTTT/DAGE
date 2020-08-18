@@ -1,0 +1,51 @@
+[
+    {
+        "name": "antlr/antlr4-php-runtime",
+        "version": "dev-master",
+        "version_normalized": "9999999-dev",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/antlr/antlr-php-runtime.git",
+            "reference": "62779f9c3457c57b3328c4b9608dfdd9968b5e61"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/antlr/antlr-php-runtime/zipball/62779f9c3457c57b3328c4b9608dfdd9968b5e61",
+            "reference": "62779f9c3457c57b3328c4b9608dfdd9968b5e61",
+            "shasum": ""
+        },
+        "require": {
+            "ext-mbstring": "*",
+            "php": "^7.2"
+        },
+        "require-dev": {
+            "phpstan/extension-installer": "^1.0",
+            "phpstan/phpstan": "^0.11.4",
+            "slevomat/coding-standard": "^5.0.4",
+            "squizlabs/php_codesniffer": "^3.4.1"
+        },
+        "time": "2020-01-16T23:49:47+00:00",
+        "type": "library",
+        "extra": {
+            "branch-alias": {
+                "dev-master": "0.2-dev"
+            }
+        },
+        "installation-source": "source",
+        "autoload": {
+            "psr-4": {
+                "Antlr\\Antlr4\\Runtime\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "BSD-3-Clause"
+        ],
+        "description": "PHP 7 runtime for ANTLR 4",
+        "keywords": [
+            "antlr4",
+            "php",
+            "runtime"
+        ]
+    }
+]

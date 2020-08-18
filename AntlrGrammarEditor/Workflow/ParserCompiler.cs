@@ -12,9 +12,11 @@ namespace AntlrGrammarEditor
 {
     public class ParserCompiler : StageProcessor
     {
-        public const string PythonHelperFileName = "AntlrPythonCompileTest.py";
-        public const string JavaScriptHelperFileName = "AntlrJavaScriptTest.js";
-        public const string TemplateGrammarName = "__TemplateGrammarName__";
+        private const string CompilerHelperFileName = "AntlrCompileTest";
+        private const string TemplateGrammarName = "__TemplateGrammarName__";
+        private const string CaseInsensitiveBlock = "AntlrCaseInsensitive";
+        private const string RuntimesPath = "__RuntimesPath__";
+
         public const string RuntimesDirName = "AntlrRuntimes";
 
         private static readonly string PackageNamePart = "/*$PackageName$*/";
@@ -24,8 +26,8 @@ namespace AntlrGrammarEditor
         private static readonly Regex ParserPartEndPython = new Regex(@"'''ParserPart\$'''", RegexOptions.Compiled);
         private static readonly Regex ParserIncludeStartPython = new Regex(@"'''\$ParserInclude'''", RegexOptions.Compiled);
         private static readonly Regex ParserIncludeEndPython = new Regex(@"'''ParserInclude\$'''", RegexOptions.Compiled);
-        private static readonly Regex ParserIncludeStartJavaScript = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
-        private static readonly Regex ParserIncludeEndJavaScript = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
+        private static readonly Regex ParserIncludeStartJavaScriptGoPhp = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
+        private static readonly Regex ParserIncludeEndJavaScriptGoPhp = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
 
         private Grammar _grammar;
         private ParserCompiliedState _result;
@@ -109,6 +111,10 @@ namespace AntlrGrammarEditor
 
                     case Runtime.Go:
                         arguments = PrepareGoFiles(generatedFiles, runtimeDir, workingDirectory);
+                        break;
+
+                    case Runtime.Php:
+                        arguments = PreparePhpFiles(generatedFiles, runtimeDir, workingDirectory);
                         break;
                 }
 
@@ -326,14 +332,16 @@ namespace AntlrGrammarEditor
                     antlrCaseInsensitiveInputStream);
             }
 
-            File.WriteAllText(Path.Combine(workingDirectory, PythonHelperFileName), stringBuilder.ToString());
+            string compileTestFileName = GenerateCompilerHelperFileName();
+
+            File.WriteAllText(Path.Combine(workingDirectory, compileTestFileName), stringBuilder.ToString());
 
             string arguments = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 arguments += _currentRuntimeInfo.Runtime == Runtime.Python2 ? "-2 " : "-3 ";
             }
-            arguments += PythonHelperFileName;
+            arguments += compileTestFileName;
 
             return arguments;
         }
@@ -347,14 +355,17 @@ namespace AntlrGrammarEditor
                 stringBuilder.AppendLine($"var {shortFileName} = require('./{shortFileName}');");
             }
 
-            File.WriteAllText(Path.Combine(workingDirectory, JavaScriptHelperFileName), stringBuilder.ToString());
+            string compileTestFileName = GenerateCompilerHelperFileName();
+
+            File.WriteAllText(Path.Combine(workingDirectory, compileTestFileName), stringBuilder.ToString());
+
             if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.js"),
                     Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);
             }
 
-            return JavaScriptHelperFileName;
+            return compileTestFileName;
         }
 
         private string PrepareGoFiles(List<string> generatedFiles, string runtimeDir, string workingDirectory)
@@ -382,6 +393,33 @@ namespace AntlrGrammarEditor
             return "build " + compiledFiles;
         }
 
+        private string PreparePhpFiles(List<string> generatedFiles, string runtimeDir, string workingDirectory)
+        {
+            var stringBuilder = new StringBuilder();
+
+            stringBuilder.AppendLine("<?php");
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine($"require_once '{GetPhpAutoloadPath()}';");
+
+            foreach (string file in generatedFiles)
+            {
+                var shortFileName = Path.GetFileNameWithoutExtension(file);
+                stringBuilder.AppendLine($"require_once '{shortFileName}.php';");
+            }
+
+            string compileTestFileName = GenerateCompilerHelperFileName();
+
+            File.WriteAllText(Path.Combine(workingDirectory, compileTestFileName), stringBuilder.ToString());
+
+            if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            {
+                File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.php"),
+                    Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.php"), true);
+            }
+
+            return compileTestFileName;
+        }
+
         private void PrepareParserCode(string workingDirectory, string runtimeDir)
         {
             string templateFile = Path.Combine(workingDirectory, _currentRuntimeInfo.MainFile);
@@ -392,30 +430,46 @@ namespace AntlrGrammarEditor
 
             code = code.Replace(TemplateGrammarName, _grammar.Name);
 
-            if (!string.IsNullOrWhiteSpace(packageName))
+            string newPackageValue = "";
+
+            bool isPackageNameEmpty = string.IsNullOrWhiteSpace(packageName);
+
+            if (!isPackageNameEmpty)
             {
                 if (runtime.IsCSharpRuntime())
                 {
-                    code = code.Replace(PackageNamePart, "using " + packageName + ";");
+                    newPackageValue = "using " + packageName + ";";
                 }
                 else if (runtime == Runtime.Java)
                 {
-                    code = code.Replace(PackageNamePart, "import " + packageName + ".*;");
+                    newPackageValue = "import " + packageName + ".*;";
                 }
                 else if (runtime == Runtime.Go)
                 {
-                    code = code.Replace(PackageNamePart, "\"./" + packageName + "\"")
-                        .Replace("/*$PackageName2$*/", packageName + ".");
+                    newPackageValue = "\"./" + packageName + "\"";
                 }
-            }
-            else
-            {
-                code = code.Replace(PackageNamePart, "");
-                if (runtime == Runtime.Go)
+                else if (runtime == Runtime.Php)
                 {
-                    code = code.Replace("/*$PackageName2$*/", "");
+                    newPackageValue = $"use {packageName}\\{_grammar.Name}Lexer;";
+                    if (_grammar.Type != GrammarType.Lexer)
+                    {
+                        newPackageValue += $"{Environment.NewLine}use {packageName}\\{_grammar.Name}Parser;";
+                    }
                 }
             }
+
+            code = code.Replace(PackageNamePart, newPackageValue);
+
+            if (runtime == Runtime.Go)
+            {
+                code = code.Replace("/*$PackageName2$*/", isPackageNameEmpty ? "" : packageName + ".");
+            }
+            else if (runtime == Runtime.Php)
+            {
+                code = code.Replace(RuntimesPath, GetPhpAutoloadPath());
+            }
+
+            string caseInsensitiveBlockMarker = GenerateCaseInsensitiveBlockMarker();
 
             if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
@@ -429,6 +483,11 @@ namespace AntlrGrammarEditor
                 else if (runtime == Runtime.Go)
                 {
                     caseInsensitiveStream = "New" + caseInsensitiveStream;
+                }
+                if (runtime == Runtime.Php)
+                {
+                    antlrInputStream = antlrInputStream + "::fromPath";
+                    caseInsensitiveStream = caseInsensitiveStream + "::fromPath";
                 }
 
                 var antlrInputStreamRegex = new Regex($@"{antlrInputStream}\(([^\)]+)\)");
@@ -444,25 +503,22 @@ namespace AntlrGrammarEditor
                 if (runtime.IsPythonRuntime())
                 {
                     code = code.Replace("from antlr4.InputStream import InputStream", "")
-                        .Replace("'''AntlrCaseInsensitive'''",
+                        .Replace(caseInsensitiveBlockMarker,
                             "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
                 }
                 else if (runtime == Runtime.JavaScript)
                 {
-                    code = code.Replace("/*AntlrCaseInsensitive*/",
+                    code = code.Replace(caseInsensitiveBlockMarker,
                         "var AntlrCaseInsensitiveInputStream = require('./AntlrCaseInsensitiveInputStream').AntlrCaseInsensitiveInputStream;");
+                }
+                else if (runtime == Runtime.Php)
+                {
+                    code = code.Replace(caseInsensitiveBlockMarker, "require_once 'AntlrCaseInsensitiveInputStream.php';");
                 }
             }
             else
             {
-                if (runtime.IsPythonRuntime())
-                {
-                    code = code.Replace("'''AntlrCaseInsensitive'''", "");
-                }
-                else if (runtime == Runtime.JavaScript)
-                {
-                    code = code.Replace("/*AntlrCaseInsensitive*/", "");
-                }
+                code = code.Replace(caseInsensitiveBlockMarker, "");
             }
 
             Regex parserPartStart, parserPartEnd;
@@ -484,9 +540,9 @@ namespace AntlrGrammarEditor
                 parserPartStart = ParserPartStart;
                 parserPartEnd = ParserPartEnd;
 
-                if (runtime == Runtime.JavaScript || runtime == Runtime.Go)
+                if (runtime == Runtime.JavaScript || runtime == Runtime.Go || runtime == Runtime.Php)
                 {
-                    code = RemoveCodeOrClearMarkers(code, ParserIncludeStartJavaScript, ParserIncludeEndJavaScript);
+                    code = RemoveCodeOrClearMarkers(code, ParserIncludeStartJavaScriptGoPhp, ParserIncludeEndJavaScriptGoPhp);
                 }
             }
 
@@ -519,6 +575,17 @@ namespace AntlrGrammarEditor
             return code;
         }
 
+        private string GenerateCompilerHelperFileName() =>
+            _currentRuntimeInfo.Runtime + CompilerHelperFileName + "." + _currentRuntimeInfo.Extensions[0];
+
+        private string GenerateCaseInsensitiveBlockMarker() =>
+            _currentRuntimeInfo.Runtime.IsPythonRuntime()
+                ? $"'''{CaseInsensitiveBlock}'''"
+                : $"/*{CaseInsensitiveBlock}*/";
+
+        private string GetPhpAutoloadPath() =>
+            Helpers.RuntimesPath.Replace("\\", "/") + "/Php/vendor/autoload.php";
+
         private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Data))
@@ -543,6 +610,10 @@ namespace AntlrGrammarEditor
                 else if (runtime == Runtime.Go)
                 {
                     AddGoError(e.Data);
+                }
+                else if (runtime == Runtime.Php)
+                {
+                    AddPhpError(e.Data);
                 }
             }
         }
@@ -698,13 +769,12 @@ namespace AntlrGrammarEditor
                     codeFileName = codeFileName.Remove(codeFileName.IndexOf('"'));
                     codeFileName = Path.GetFileName(codeFileName);
 
-                    List<TextSpanMapping> mapping;
-                    if (_grammarCodeMapping.TryGetValue(codeFileName, out mapping))
+                    if (_grammarCodeMapping.TryGetValue(codeFileName, out var mapping))
                     {
                         try
                         {
                             var lineStr = "\", line ";
-                            lineStr = _buffer[i].Substring(_buffer[i].IndexOf(lineStr) + lineStr.Length);
+                            lineStr = _buffer[i].Substring(_buffer[i].IndexOf(lineStr, StringComparison.Ordinal) + lineStr.Length);
                             int commaIndex = lineStr.IndexOf(',');
                             if (commaIndex != -1)
                             {
@@ -833,6 +903,26 @@ namespace AntlrGrammarEditor
             {
                 AddError(new ParsingError(TextSpan.Empty, data, WorkflowStage.ParserCompilied));
             }
+        }
+
+        private void AddPhpError(string data)
+        {
+            // PHP Parse error:  syntax error, unexpected ';' in <file_name.php> on line 145
+            var dataSpan = data.AsSpan();
+            int messageIndex = data.IndexOf(':') + 1;
+            const string inString = "in ";
+            int inIndex = data.IndexOf(inString, messageIndex, StringComparison.InvariantCulture);
+            string message = dataSpan.Slice(messageIndex, inIndex - messageIndex).Trim().ToString();
+
+            const string onLineString = " on line ";
+            int lastOnIndex = data.LastIndexOf(onLineString, StringComparison.InvariantCulture);
+            int line = int.Parse(dataSpan.Slice(lastOnIndex + onLineString.Length).ToString());
+
+            int fileNameIndex = inIndex + inString.Length;
+            string fileName = dataSpan.Slice(fileNameIndex, lastOnIndex - fileNameIndex).ToString();
+
+            var codeSource = new CodeSource(Path.GetFileNameWithoutExtension(fileName), File.ReadAllText(fileName)); // TODO: reuse existed files
+            AddError(new ParsingError(line, LineColumnTextSpan.StartColumn, message, codeSource, WorkflowStage.ParserCompilied));
         }
 
         private string GetGrammarFromCodeFileName(RuntimeInfo runtimeInfo, string codeFileName)

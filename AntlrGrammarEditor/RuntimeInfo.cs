@@ -137,6 +137,18 @@ namespace AntlrGrammarEditor
                 antlrInputStream: "",
                 runtimeToolName: "swift",
                 versionArg: "--version"
+            ),
+            [Runtime.Php] = new RuntimeInfo
+            (
+                runtime: Runtime.Php,
+                name: "Php",
+                dLanguage: "PHP",
+                runtimeLibrary: "",
+                extensions: new[] { "php" },
+                mainFile: "index.php",
+                antlrInputStream: "InputStream",
+                runtimeToolName: "php",
+                versionArg: "--version"
             )
         };
 

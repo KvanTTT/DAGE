@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace AntlrGrammarEditor
@@ -10,6 +11,18 @@ namespace AntlrGrammarEditor
         private static bool _javaInitialized;
 
         private static string javaVersion;
+
+        public static string RuntimesPath { get; private set; }
+
+        static Helpers()
+        {
+            GetRuntimesPath();
+        }
+
+        static void GetRuntimesPath([CallerFilePath] string thisFilePath = null)
+        {
+            RuntimesPath = Path.Combine(Path.GetDirectoryName(thisFilePath), "AntlrRuntimes");
+        }
 
         public static string JavaVersion
         {

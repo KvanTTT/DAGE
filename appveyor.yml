@@ -35,6 +35,8 @@ before_build:
     node -v
 
     go version
+
+    # php --version
 build_script:
 - ps: |
     if ($isWindows) {
