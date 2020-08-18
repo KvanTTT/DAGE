@@ -36,7 +36,7 @@ before_build:
 
     go version
 
-    php --version
+    # php --version
 build_script:
 - ps: |
     if ($isWindows) {
