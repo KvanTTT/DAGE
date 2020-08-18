@@ -1,4 +1,4 @@
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.WorkflowState
 {
     public static class StateUtils
     {
@@ -6,14 +6,14 @@ namespace AntlrGrammarEditor
             where T : IWorkflowState
         {
             IWorkflowState state = workflowState;
-            
+
             while (state != null)
             {
                 if (state is T stateT)
                 {
                     return stateT;
                 }
-                
+
                 state = state.PreviousState;
             }
 

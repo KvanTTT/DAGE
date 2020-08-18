@@ -2,6 +2,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Tests
 {

@@ -1,4 +1,4 @@
-﻿namespace AntlrGrammarEditor
+﻿namespace AntlrGrammarEditor.Processors
 {
     public enum WorkflowStage
     {

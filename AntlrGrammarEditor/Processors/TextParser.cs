@@ -3,8 +3,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using AntlrGrammarEditor.WorkflowState;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.Processors
 {
     public class TextParser : StageProcessor
     {

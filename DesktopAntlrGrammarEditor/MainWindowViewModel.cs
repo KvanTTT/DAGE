@@ -15,6 +15,8 @@ using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.WorkflowState;
 
 namespace DesktopAntlrGrammarEditor
 {

@@ -1,6 +1,6 @@
 using System;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.Processors
 {
     public abstract class StageProcessor
     {

@@ -7,8 +7,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using AntlrGrammarEditor.WorkflowState;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.Processors
 {
     public class ParserCompiler : StageProcessor
     {

@@ -1,8 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AntlrGrammarEditor.WorkflowState;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.Processors
 {
     public class Workflow
     {

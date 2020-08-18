@@ -1,6 +1,7 @@
 ﻿using System;
+using AntlrGrammarEditor.Processors;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.WorkflowState
 {
     public class InputState : IWorkflowState
     {

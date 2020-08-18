@@ -2,8 +2,9 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using AntlrGrammarEditor.WorkflowState;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.Processors
 {
     public class ParserGenerator : StageProcessor
     {
