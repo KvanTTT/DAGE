@@ -110,7 +110,7 @@ namespace AntlrGrammarEditor.Processors
 
         private string PrepareCSharpToolAndArgs(Grammar grammar, out string args)
         {
-            args = $"\"{Path.Combine("bin", "netcoreapp2.1", grammar.Name + ".dll")}\"";
+            args = $"\"{Path.Combine("bin", "netcoreapp3.1", grammar.Name + ".dll")}\"";
             return "dotnet";
         }
 
