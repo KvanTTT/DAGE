@@ -211,6 +211,26 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
+        public PredictionMode PredictionMode
+        {
+            get => _workflow.PredictionMode;
+            set
+            {
+                var currentPredictionMode = _workflow.PredictionMode;
+                if (currentPredictionMode != value)
+                {
+                    _workflow.PredictionMode = value;
+
+                    if (AutoProcessing)
+                    {
+                        Process();
+                    }
+
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
+
         public ObservableCollection<string> Rules { get; } = new ObservableCollection<string>();
 
         public RuntimeInfo SelectedRuntime
@@ -263,6 +283,13 @@ namespace DesktopAntlrGrammarEditor
         public ObservableCollection<object> GrammarErrors { get; } = new ObservableCollection<object>();
 
         public ObservableCollection<FileName> TextFiles { get; } = new ObservableCollection<FileName>();
+
+        public ObservableCollection<PredictionMode> PredictionModes { get; } = new ObservableCollection<PredictionMode>
+        {
+            PredictionMode.LL,
+            PredictionMode.SLL,
+            PredictionMode.FullLL
+        };
 
         public FileName OpenedTextFile
         {

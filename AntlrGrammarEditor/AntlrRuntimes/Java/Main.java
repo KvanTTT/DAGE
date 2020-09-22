@@ -1,4 +1,5 @@
 ﻿import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.PredictionMode;
 import java.lang.reflect.Method;
 import java.util.List;
 /*$PackageName$*/
@@ -18,13 +19,27 @@ public class Main {
 
 /*$ParserPart*/
             String rootRule = null;
+            String mode = "ll";
+
             if (args.length > 1) {
                 rootRule = args[1];
+                if (args.length > 2) {
+                    // TODO: process OnlyTokenize parameter
+                    if (args.length > 3) {
+                        mode = args[3].toLowerCase();
+                    }
+                }
             }
 
             ListTokenSource tokensSource = new ListTokenSource(tokens);
             CommonTokenStream tokensStream = new CommonTokenStream(tokensSource);
             __TemplateGrammarName__Parser parser = new __TemplateGrammarName__Parser(tokensStream);
+            PredictionMode predictionMode = mode.equals("sll")
+                ? PredictionMode.SLL
+                : mode.equals("ll")
+                    ? PredictionMode.LL
+                    : PredictionMode.LL_EXACT_AMBIG_DETECTION;
+            parser.getInterpreter().setPredictionMode(predictionMode);
             String ruleName = rootRule == null ? __TemplateGrammarName__Parser.ruleNames[0] : rootRule;
             Method parseMethod = __TemplateGrammarName__Parser.class.getDeclaredMethod(ruleName);
             ParserRuleContext ast = (ParserRuleContext)parseMethod.invoke(parser);

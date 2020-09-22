@@ -2,6 +2,7 @@ import sys;
 from antlr4.InputStream import InputStream
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.ListTokenSource import ListTokenSource
+from antlr4.atn.PredictionMode import PredictionMode
 from __TemplateGrammarName__Lexer import __TemplateGrammarName__Lexer
 '''$ParserInclude'''from __TemplateGrammarName__Parser import __TemplateGrammarName__Parser'''ParserInclude$'''
 '''AntlrCaseInsensitive'''
@@ -9,7 +10,8 @@ from __TemplateGrammarName__Lexer import __TemplateGrammarName__Lexer
 def main(argv):
     fileName = '../../Text'
 
-    if len(argv) > 0:
+    argvLen = len(argv)
+    if argvLen > 0:
         fileName = argv[1]
 
     code = open(fileName, 'r').read()
@@ -18,12 +20,18 @@ def main(argv):
     tokens = lexer.getAllTokens()
 
 '''$ParserPart'''
-    if len(argv) > 1:
+    mode = 'll'
+    if argvLen > 1:
         rootRule = argv[2]
+        if argvLen > 2:
+            # TODO: onlyTokenize parameter processing
+            if argvLen > 3:
+                mode = argv[4].lower()
 
     tokensSource = ListTokenSource(tokens)
     tokensStream = CommonTokenStream(tokensSource)
     parser = __TemplateGrammarName__Parser(tokensStream)
+    parser._interp.predictionMode = PredictionMode.SLL if mode == "sll" else PredictionMode.LL if mode == "ll" else PredictionMode.LL_EXACT_AMBIG_DETECTION
     ruleName = __TemplateGrammarName__Parser.ruleNames[0] if rootRule is None else rootRule
     tree = getattr(parser, ruleName)()
     '''PrintTree'''

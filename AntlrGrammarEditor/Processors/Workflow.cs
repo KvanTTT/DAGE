@@ -10,6 +10,7 @@ namespace AntlrGrammarEditor.Processors
         private Grammar _grammar;
         private Runtime _runtime = Runtime.Java;
         private string _root = "";
+        private PredictionMode _predictionMode = PredictionMode.LL;
         private string _textFileName = "";
         private string _packageName;
         private string _generatorTool;
@@ -68,6 +69,20 @@ namespace AntlrGrammarEditor.Processors
                 {
                     StopIfRequired();
                     _root = value;
+                    RollbackToStage(WorkflowStage.ParserCompilied);
+                }
+            }
+        }
+
+        public PredictionMode PredictionMode
+        {
+            get => _predictionMode;
+            set
+            {
+                if (_predictionMode != value)
+                {
+                    StopIfRequired();
+                    _predictionMode = value;
                     RollbackToStage(WorkflowStage.ParserCompilied);
                 }
             }
@@ -247,7 +262,8 @@ namespace AntlrGrammarEditor.Processors
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         RuntimeLibrary = RuntimeLibrary,
                         ErrorEvent = _errorEvent,
-                        Root = Root
+                        Root = Root,
+                        PredictionMode = PredictionMode
                     };
                     textParser.TextParsedOutputEvent += _textParsedOutputEvent;
                     var textParsedState = textParser.Parse((ParserCompiliedState)_currentState, _cancellationTokenSource.Token);

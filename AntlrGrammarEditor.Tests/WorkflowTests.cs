@@ -401,6 +401,60 @@ namespace AntlrGrammarEditor.Tests
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        public void CheckPredictionMode(Runtime runtime)
+        {
+            var grammarText = $@"
+grammar {TestGrammarName};
+
+root
+    : (stmt1 | stmt2) EOF
+    ;
+    
+stmt1
+    : name
+    ;
+
+stmt2
+    : 'static' name '.' Id
+    ;
+
+name
+    : Id ('.' Id)*
+    ;
+
+Dot        : '.';
+Static     : 'static';
+Id         : [A-Za-z]+;
+Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
+";
+
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            var workflow = new Workflow(grammar);
+            workflow.Runtime = runtime;
+            workflow.TextFileName = TestTextName;
+            File.WriteAllText(TestTextName, @"static a.b");
+
+            workflow.PredictionMode = PredictionMode.LL;
+            var llState = workflow.Process();
+            TextParsedState llTextParsedState = llState as TextParsedState;
+            Assert.IsNotNull(llTextParsedState);
+            Assert.IsFalse(llState.HasErrors);
+
+            workflow.PredictionMode = PredictionMode.SLL;
+            var sllState = workflow.Process();
+            var sllTextParsedState = sllState as TextParsedState;
+            Assert.IsNotNull(sllTextParsedState);
+            Assert.IsTrue(sllTextParsedState.HasErrors);
+        }
+
+        [TestCase(Runtime.CSharpOptimized)]
+        [TestCase(Runtime.CSharpStandard)]
+        [TestCase(Runtime.Java)]
+        [TestCase(Runtime.Python2)]
+        [TestCase(Runtime.Python3)]
+        [TestCase(Runtime.JavaScript)]
+        [TestCase(Runtime.Go)]
+        [TestCase(Runtime.Php)]
         public void CheckLexerOnlyGrammar(Runtime runtime)
         {
             var grammarText =

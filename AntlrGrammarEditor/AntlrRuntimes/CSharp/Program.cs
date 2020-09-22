@@ -1,4 +1,5 @@
 ﻿using Antlr4.Runtime;
+using Antlr4.Runtime.Atn;
 using Antlr4.Runtime.Tree;
 using System;
 using System.Collections.Generic;
@@ -38,6 +39,7 @@ class Program
 /*$ParserPart*/
             string rootRule = null;
             bool notParse = false;
+            string predictionMode = "ll";
 
             if (args.Length > 1)
             {
@@ -45,6 +47,10 @@ class Program
                 if (args.Length > 2)
                 {
                     bool.TryParse(args[2], out notParse);
+                    if (args.Length > 3)
+                    {
+                        predictionMode = args[3].ToLowerInvariant();
+                    }
                 }
             }
 
@@ -55,6 +61,25 @@ class Program
                 var parser = new __TemplateGrammarName__Parser(tokensStream);
                 parser.RemoveErrorListeners();
                 parser.AddErrorListener(new ParserErrorListener());
+                parser.Interpreter.PredictionMode = predictionMode == "sll" ?
+#if CSharpOptimized
+                    PredictionMode.Sll
+#else
+                    PredictionMode.SLL
+#endif
+                    : predictionMode == "ll" ?
+#if CSharpOptimized
+                    PredictionMode.Ll
+#else
+                    PredictionMode.LL
+#endif
+                    :
+#if CSharpOptimized
+                    PredictionMode.LlExactAmbigDetection
+#else
+                    PredictionMode.LL_EXACT_AMBIG_DETECTION
+#endif
+                    ;
 
                 stopwatch.Restart();
                 string ruleName = rootRule == null ? __TemplateGrammarName__Parser.ruleNames[0] : rootRule;

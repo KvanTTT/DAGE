@@ -17,6 +17,8 @@ namespace AntlrGrammarEditor.Processors
 
         public bool OnlyTokenize { get; set; }
 
+        public PredictionMode PredictionMode { get; set; }
+
         public EventHandler<(TextParsedOutput, object)> TextParsedOutputEvent { get; set; }
 
         public string RuntimeLibrary { get; set; }
@@ -76,7 +78,7 @@ namespace AntlrGrammarEditor.Processors
                         break;
                 }
 
-                args += $" \"{TextFileName}\" {_result.RootOrDefault} {OnlyTokenize.ToString().ToLowerInvariant()}";
+                args += $" \"{TextFileName}\" {_result.RootOrDefault} {OnlyTokenize.ToString().ToLowerInvariant()} {PredictionMode.ToString().ToLowerInvariant()}";
 
                 _result.Command = toolName + " " + args;
                 processor = new Processor(toolName, args, workingDirectory);

@@ -19,7 +19,8 @@ import (
 func main() {
 	fileName := "../../Text"
 
-	if len(os.Args) > 1 {
+	argsLen := len(os.Args)
+	if argsLen > 1 {
 		fileName = os.Args[1]
 	}
 
@@ -39,12 +40,29 @@ func main() {
 	_ = allTokens
 /*$ParserPart*/
 	rootRule := ""
+	mode := "ll"
 
-	if len(os.Args) > 2 {
+	if argsLen > 2 {
 		rootRule = os.Args[2]
+		if argsLen > 3 {
+			// TODO: tokenizeOnly processing
+			if argsLen > 4 {
+				mode = strings.ToLower(os.Args[4])
+			}
+		}
 	}
 
 	parser := /*$PackageName2$*/New__TemplateGrammarName__Parser(tokensStream)
+
+	var predictionMode int
+	if mode == "sll" {
+		predictionMode = antlr.PredictionModeSLL
+	} else if mode == "ll" {
+		predictionMode = antlr.PredictionModeLL
+	} else {
+		predictionMode = antlr.PredictionModeLLExactAmbigDetection
+	}
+    parser.Interpreter.SetPredictionMode(predictionMode)
 
 	var ruleName string
 	if rootRule == "" {
