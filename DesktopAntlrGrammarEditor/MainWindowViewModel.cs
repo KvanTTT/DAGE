@@ -24,7 +24,7 @@ namespace DesktopAntlrGrammarEditor
     {
         private readonly Window _window;
         private readonly Settings _settings;
-        private Workflow _workflow;
+        private readonly Workflow _workflow;
         private string _openedGrammarFile = "";
         private FileName _openedTextFile = FileName.Empty;
         private FileState _grammarFileState, _textFileState;
@@ -36,6 +36,10 @@ namespace DesktopAntlrGrammarEditor
         private readonly ListBox _textErrorsListBox;
         private bool _autoprocessing;
         private WorkflowStage _endStage = WorkflowStage.TextParsed;
+        private CodeSource _grammarCode = CodeSource.Empty;
+        private CodeSource _text = CodeSource.Empty;
+        private LineColumnTextSpan _grammarLineColumn;
+        private LineColumnTextSpan _textLineColumn;
 
         private Grammar Grammar => _workflow?.Grammar;
 
@@ -158,6 +162,7 @@ namespace DesktopAntlrGrammarEditor
                         _settings.Save();
 
                         _grammarTextBox.SetupHightlighting(value);
+                        _grammarCode = new CodeSource(_openedGrammarFile, _grammarTextBox.Text);
 
                         this.RaisePropertyChanged();
                     }
@@ -327,6 +332,7 @@ namespace DesktopAntlrGrammarEditor
                     _settings.OpenedTextFile = value.FullFileName;
                     _settings.Save();
 
+                    _text = new CodeSource(_openedTextFile.ShortFileName, _textTextBox.Text);
                     ClearParseResult();
 
                     this.RaisePropertyChanged();
@@ -399,6 +405,56 @@ namespace DesktopAntlrGrammarEditor
         }
 
         public bool IsParserExists => _workflow.Grammar.Type != GrammarType.Lexer;
+
+        public LineColumnTextSpan GrammarCursorPosition
+        {
+            get => _grammarLineColumn;
+            set
+            {
+                if (value != _grammarLineColumn)
+                {
+                    _grammarLineColumn = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
+
+        public LineColumnTextSpan TextCursorPosition
+        {
+            get => _textLineColumn;
+            set
+            {
+                if (value != _textLineColumn)
+                {
+                    _textLineColumn = value;
+                    this.RaisePropertyChanged();
+                }
+            }
+        }
+
+        private LineColumnTextSpan GetSelectionLineColumn(TextEditor textBox, CodeSource source)
+        {
+            try
+            {
+                int start = textBox.SelectionStart;
+                int end = textBox.SelectionStart + textBox.SelectionLength;
+                if (start > end)
+                {
+                    int t = start;
+                    start = end;
+                    end = t;
+                }
+
+                source.PositionToLineColumn(start, out int startLine, out int startColumn);
+                source.PositionToLineColumn(end, out int endLine, out int endColumn);
+
+                return new LineColumnTextSpan(startLine, startColumn, endLine, endColumn, source);
+            }
+            catch
+            {
+                return new LineColumnTextSpan();
+            }
+        }
 
         public ReactiveCommand<Unit, Unit> NewGrammarCommand { get; private set; }
 
@@ -566,6 +622,23 @@ namespace DesktopAntlrGrammarEditor
             {
                 _textFileState = FileState.Changed;
             });
+
+            grammarTextBoxObservable
+                .Throttle(TimeSpan.FromMilliseconds(200))
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(x => _grammarCode = new CodeSource(_openedGrammarFile, _grammarTextBox.Text));
+
+            textBoxObservable
+                .Throttle(TimeSpan.FromMilliseconds(200))
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(x => _text = new CodeSource(_openedTextFile.ShortFileName, _text.Text));
+
+            Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(100), RxApp.MainThreadScheduler)
+                .Subscribe(_ =>
+                {
+                    GrammarCursorPosition = GetSelectionLineColumn(_grammarTextBox, _grammarCode);
+                    TextCursorPosition = GetSelectionLineColumn(_textTextBox, _text);
+                });
 
             grammarTextBoxObservable
                 .Throttle(TimeSpan.FromMilliseconds(1000))
@@ -853,8 +926,8 @@ namespace DesktopAntlrGrammarEditor
 
             if (listBox.SelectedItem is ParsingError parsingError)
             {
-                TextEditor textBox = listBox == _grammarErrorsListBox ? _grammarTextBox : _textTextBox;
-                if (textBox == _grammarTextBox)
+                TextEditor textBox = ReferenceEquals(listBox, _grammarErrorsListBox) ? _grammarTextBox : _textTextBox;
+                if (ReferenceEquals(textBox, _grammarTextBox))
                 {
                     OpenedGrammarFile = parsingError.TextSpan.Source.Name;
                 }
