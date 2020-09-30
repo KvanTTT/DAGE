@@ -8,9 +8,9 @@ namespace AntlrGrammarEditor.Processors
     public class Workflow
     {
         private Grammar _grammar;
-        private Runtime _runtime = Runtime.Java;
-        private string _root = "";
-        private PredictionMode _predictionMode = PredictionMode.LL;
+        private Runtime? _runtime;
+        private string _root;
+        private PredictionMode? _predictionMode = AntlrGrammarEditor.Processors.PredictionMode.LL;
         private string _textFileName = "";
         private string _packageName;
         private string _generatorTool;
@@ -23,9 +23,9 @@ namespace AntlrGrammarEditor.Processors
         private event EventHandler<ParsingError> _errorEvent;
         private event EventHandler<(TextParsedOutput, object)> _textParsedOutputEvent;
 
-        public bool GenerateListener { get; set; }
+        public bool? GenerateListener { get; set; }
 
-        public bool GenerateVisitor { get; set; }
+        public bool? GenerateVisitor { get; set; }
 
         public WorkflowStage EndStage { get; set; } = WorkflowStage.TextParsed;
 
@@ -46,7 +46,7 @@ namespace AntlrGrammarEditor.Processors
             }
         }
 
-        public Runtime Runtime
+        public Runtime? Runtime
         {
             get => _runtime;
             set
@@ -69,12 +69,12 @@ namespace AntlrGrammarEditor.Processors
                 {
                     StopIfRequired();
                     _root = value;
-                    RollbackToStage(WorkflowStage.ParserCompilied);
+                    RollbackToStage(WorkflowStage.ParserCompiled);
                 }
             }
         }
 
-        public PredictionMode PredictionMode
+        public PredictionMode? PredictionMode
         {
             get => _predictionMode;
             set
@@ -83,7 +83,7 @@ namespace AntlrGrammarEditor.Processors
                 {
                     StopIfRequired();
                     _predictionMode = value;
-                    RollbackToStage(WorkflowStage.ParserCompilied);
+                    RollbackToStage(WorkflowStage.ParserCompiled);
                 }
             }
         }
@@ -97,7 +97,7 @@ namespace AntlrGrammarEditor.Processors
                 {
                     StopIfRequired();
                     _textFileName = value;
-                    RollbackToStage(WorkflowStage.ParserCompilied);
+                    RollbackToStage(WorkflowStage.ParserCompiled);
                 }
             }
         }
@@ -210,7 +210,7 @@ namespace AntlrGrammarEditor.Processors
                         ClearErrorsEvent?.Invoke(this, WorkflowStage.TextParsed);
                         break;
 
-                    case WorkflowStage.ParserCompilied:
+                    case WorkflowStage.ParserCompiled:
                     case WorkflowStage.ParserGenerated:
                     case WorkflowStage.GrammarChecked:
                         ClearErrorsEvent?.Invoke(this, _currentState.Stage);
@@ -228,6 +228,8 @@ namespace AntlrGrammarEditor.Processors
 
         private void ProcessOneStep()
         {
+            GrammarCheckedState grammarCheckedState;
+
             switch (_currentState.Stage)
             {
                 case WorkflowStage.Input:
@@ -236,15 +238,17 @@ namespace AntlrGrammarEditor.Processors
                     break;
 
                 case WorkflowStage.GrammarChecked:
-                    var parserGenerator = new ParserGenerator(Runtime)
+                    grammarCheckedState = (GrammarCheckedState) _currentState;
+
+                    var parserGenerator = new ParserGenerator(Runtime ?? grammarCheckedState.Runtime ?? AntlrGrammarEditor.Runtime.Java)
                     {
                         ErrorEvent = _errorEvent,
                         GeneratorTool = GeneratorTool,
-                        PackageName = PackageName,
-                        GenerateListener = GenerateListener,
-                        GenerateVisitor = GenerateVisitor
+                        PackageName = !string.IsNullOrWhiteSpace(PackageName) ? PackageName : grammarCheckedState.Package,
+                        GenerateListener = GenerateListener ?? grammarCheckedState.Listener ?? false,
+                        GenerateVisitor = GenerateVisitor ?? grammarCheckedState.Visitor ?? false
                     };
-                    _currentState = parserGenerator.Generate((GrammarCheckedState)_currentState, _cancellationTokenSource.Token);
+                    _currentState = parserGenerator.Generate(grammarCheckedState, _cancellationTokenSource.Token);
                     break;
 
                 case WorkflowStage.ParserGenerated:
@@ -256,18 +260,19 @@ namespace AntlrGrammarEditor.Processors
                     _currentState = parserCompiler.Compile((ParserGeneratedState)_currentState, _cancellationTokenSource.Token);
                     break;
 
-                case WorkflowStage.ParserCompilied:
+                case WorkflowStage.ParserCompiled:
+                    grammarCheckedState = (GrammarCheckedState) _currentState.PreviousState.PreviousState;
+
                     var textParser = new TextParser(TextFileName)
                     {
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         RuntimeLibrary = RuntimeLibrary,
                         ErrorEvent = _errorEvent,
-                        Root = Root,
-                        PredictionMode = PredictionMode
+                        Root = !string.IsNullOrWhiteSpace(Root) ? Root : grammarCheckedState.Root,
+                        PredictionMode = PredictionMode ?? grammarCheckedState.PredictionMode ?? Processors.PredictionMode.LL
                     };
                     textParser.TextParsedOutputEvent += _textParsedOutputEvent;
-                    var textParsedState = textParser.Parse((ParserCompiliedState)_currentState, _cancellationTokenSource.Token);
-                    _currentState = textParsedState;
+                    _currentState = textParser.Parse((ParserCompiledState)_currentState, _cancellationTokenSource.Token);
                     break;
             }
 

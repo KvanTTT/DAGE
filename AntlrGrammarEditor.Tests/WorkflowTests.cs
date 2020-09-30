@@ -182,9 +182,9 @@ namespace AntlrGrammarEditor.Tests
             workflow.Runtime = runtime;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage, state.Exception?.ToString());
+            Assert.AreEqual(WorkflowStage.ParserCompiled, state.Stage, state.Exception?.ToString());
 
-            ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
+            ParserCompiledState parserGeneratedState = state as ParserCompiledState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
             //Assert.AreEqual(runtime == Runtime.Go ? 1 : 2, parserGeneratedState.Errors[0].TextSpan.GetLineColumn().BeginLine);
         }
@@ -280,7 +280,7 @@ namespace AntlrGrammarEditor.Tests
 
             var state = workflow.Process();
             Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
-            Assert.IsTrue(((TextParsedState)state).ParserCompiliedState.ParserGeneratedState.Errors[0].IsWarning);
+            Assert.IsTrue(((TextParsedState)state).ParserCompiledState.ParserGeneratedState.Errors[0].IsWarning);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -476,6 +476,81 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
             Assert.IsFalse(state.HasErrors);
         }
 
+        [Test]
+        public void CheckIncorrectGrammarDefinedOptions()
+        {
+            var grammarText =
+                @$"grammar {TestGrammarName};
+// caseInsensitiveType=incorrect;
+// language=incorrect;
+// package=incorrect;
+// visitor=incorrect;
+// listener=incorrect;
+// root=incorrect;
+// predictionMode=incorrect;
+
+// caseInsensitiveType=lower;
+// language=JavaScript;
+// package=package;
+// visitor=true;
+// listener=true;
+// root=root;
+// predictionMode=sll;
+
+root:
+    .*? ;
+
+TOKEN: 'token';";
+
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            var workflow = new Workflow(grammar);
+            workflow.TextFileName = TestTextName;
+            workflow.EndStage = WorkflowStage.GrammarChecked;
+            var state = (GrammarCheckedState) workflow.Process();
+
+            Assert.AreEqual(CaseInsensitiveType.lower, state.CaseInsensitiveType);
+            Assert.AreEqual(Runtime.JavaScript, state.Runtime);
+            Assert.AreEqual("package", state.Package);
+            Assert.AreEqual(true, state.Listener);
+            Assert.AreEqual(true, state.Visitor);
+            Assert.AreEqual("root", state.Root);
+            Assert.AreEqual(PredictionMode.SLL, state.PredictionMode);
+
+            CheckIncorrect("caseInsensitiveType");
+            CheckIncorrect("language");
+            CheckIncorrect("package", true);
+            CheckIncorrect("visitor");
+            CheckIncorrect("listener");
+            CheckIncorrect("root");
+            CheckIncorrect("predictionMode");
+
+            void CheckIncorrect(string optionName, bool notError = false)
+            {
+                Func<ParsingError, bool> checker = error => error.Message.Contains(optionName != "root" ? $"Incorrect option {optionName}" : "Root incorrect is not exist");
+                if (!notError)
+                {
+                    Assert.IsTrue(state.Errors.Any(checker));
+                }
+                else
+                {
+                    Assert.IsFalse(state.Errors.Any(checker));
+                }
+            }
+
+            CheckDuplication("caseInsensitiveType");
+            CheckDuplication("language");
+            CheckDuplication("package");
+            CheckDuplication("visitor");
+            CheckDuplication("listener");
+            CheckDuplication("root");
+            CheckDuplication("predictionMode");
+
+            void CheckDuplication(string optionName)
+            {
+                Assert.IsTrue(state.Errors.Any(error => error.Message.Contains($"Option {optionName} is already defined")));
+            }
+        }
+
         [TestCase(Runtime.CSharpOptimized)]
         [TestCase(Runtime.CSharpStandard)]
         [TestCase(Runtime.Java)]
@@ -503,9 +578,9 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
             workflow.Runtime = runtime;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserCompilied, state.Stage, state.Exception?.ToString());
+            Assert.AreEqual(WorkflowStage.ParserCompiled, state.Stage, state.Exception?.ToString());
 
-            ParserCompiliedState parserGeneratedState = state as ParserCompiliedState;
+            ParserCompiledState parserGeneratedState = state as ParserCompiledState;
             var errors = parserGeneratedState.Errors;
             Assert.AreEqual(8, errors.Count);
             Assert.AreEqual(2, errors.Where(e => e.TextSpan.GetLineColumn().BeginLine == 3).Count());

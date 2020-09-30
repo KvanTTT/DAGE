@@ -7,7 +7,7 @@ namespace AntlrGrammarEditor
     public class GrammarInfoCollectorListener : ANTLRv4ParserBaseListener
     {
         private bool _question;
-        private bool _lexer, _parser;
+        private bool _lexerRule, _parserRule;
 
         public List<string> Rules { get; } = new List<string>();
 
@@ -17,6 +17,8 @@ namespace AntlrGrammarEditor
 
         public CodeSource GrammarSource { get; private set; }
 
+        public GrammarType GrammarType { get; private set; }
+
         public string SuperClass { get; private set; }
 
         public void CollectInfo(CodeSource grammarSource, ANTLRv4Parser.GrammarSpecContext context)
@@ -24,6 +26,15 @@ namespace AntlrGrammarEditor
             GrammarSource = grammarSource;
             var walker = new ParseTreeWalker();
             walker.Walk(this, context);
+        }
+
+        public override void EnterGrammarType(ANTLRv4Parser.GrammarTypeContext context)
+        {
+            GrammarType = context.LEXER() != null
+                ? GrammarType.Lexer
+                : context.PARSER() != null
+                    ? GrammarType.Separated
+                    : GrammarType.Combined;
         }
 
         public override void EnterOption([NotNull] ANTLRv4Parser.OptionContext context)
@@ -38,16 +49,19 @@ namespace AntlrGrammarEditor
 
         public override void EnterAction([NotNull] ANTLRv4Parser.ActionContext context)
         {
-            if (context.actionScopeName() != null)
+            var actionScopeName = context.actionScopeName();
+            if (actionScopeName == null)
             {
-                if (context.actionScopeName().LEXER() != null)
-                {
-                    _lexer = true;
-                }
-                else if (context.actionScopeName().PARSER() != null)
-                {
-                    _parser = true;
-                }
+                return;
+            }
+
+            if (actionScopeName.LEXER() != null)
+            {
+                _lexerRule = true;
+            }
+            else if (actionScopeName.PARSER() != null)
+            {
+                _parserRule = true;
             }
         }
 
@@ -57,11 +71,11 @@ namespace AntlrGrammarEditor
             {
                 if (context.actionScopeName().LEXER() != null)
                 {
-                    _lexer = false;
+                    _lexerRule = false;
                 }
                 else if (context.actionScopeName().PARSER() != null)
                 {
-                    _parser = false;
+                    _parserRule = false;
                 }
             }
         }
@@ -73,23 +87,23 @@ namespace AntlrGrammarEditor
 
         public override void EnterLexerRuleSpec([NotNull] ANTLRv4Parser.LexerRuleSpecContext context)
         {
-            _lexer = true;
+            _lexerRule = true;
         }
 
         public override void ExitLexerRuleSpec([NotNull] ANTLRv4Parser.LexerRuleSpecContext context)
         {
-            _lexer = false;
+            _lexerRule = false;
         }
 
         public override void EnterParserRuleSpec([NotNull] ANTLRv4Parser.ParserRuleSpecContext context)
         {
             Rules.Add(context.RULE_REF().GetText());
-            _parser = true;
+            _parserRule = true;
         }
 
         public override void ExitParserRuleSpec([NotNull] ANTLRv4Parser.ParserRuleSpecContext context)
         {
-            _parser = false;
+            _parserRule = false;
         }
 
         public override void EnterLexerElement([NotNull] ANTLRv4Parser.LexerElementContext context)
@@ -130,13 +144,13 @@ namespace AntlrGrammarEditor
             var textSpan = context.GetTextSpan(GrammarSource);
             textSpan = new TextSpan(textSpan.Start + 1, textSpan.Length - 2, GrammarSource);
 
-            if (_lexer || _parser)
+            if (_lexerRule || _parserRule)
             {
                 var codeInsertion = new CodeInsertion
                 {
                     TextSpan = textSpan,
                     Text = text,
-                    Lexer = _lexer,
+                    Lexer = _lexerRule,
                     Predicate = _question
                 };
                 CodeInsertions.Add(codeInsertion);
