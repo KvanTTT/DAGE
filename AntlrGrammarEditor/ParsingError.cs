@@ -5,13 +5,13 @@ namespace AntlrGrammarEditor
 {
     public class ParsingError
     {
-        public TextSpan TextSpan { get; set; }
+        public TextSpan TextSpan { get; }
 
-        public string Message { get; set; }
+        public string Message { get; }
 
-        public bool IsWarning { get; set; }
+        public bool IsWarning { get; }
 
-        public WorkflowStage WorkflowStage { get; set; } = WorkflowStage.GrammarChecked;
+        public WorkflowStage WorkflowStage { get; }
 
         public ParsingError(Exception ex, WorkflowStage stage)
         {
@@ -20,23 +20,24 @@ namespace AntlrGrammarEditor
             WorkflowStage = stage;
         }
 
-        public ParsingError(string message, CodeSource codeSource, WorkflowStage stage)
-            : this(1, 1, message, codeSource, stage)
+        public ParsingError(string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
+            : this(1, 1, message, codeSource, stage, isWarning)
         {
         }
 
-        public ParsingError(int line, int column, string message, CodeSource codeSource, WorkflowStage stage)
-            : this(new LineColumnTextSpan(line, column, codeSource).GetTextSpan(), message, stage)
+        public ParsingError(int line, int column, string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
+            : this(new LineColumnTextSpan(line, column, codeSource).GetTextSpan(), message, stage, isWarning)
         {
             Message = message;
             WorkflowStage = stage;
         }
 
-        public ParsingError(TextSpan textSpan, string message, WorkflowStage stage)
+        public ParsingError(TextSpan textSpan, string message, WorkflowStage stage, bool isWarning = false)
         {
             TextSpan = textSpan;
             Message = message;
             WorkflowStage = stage;
+            IsWarning = isWarning;
         }
 
         public override bool Equals(object obj)

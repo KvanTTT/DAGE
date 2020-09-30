@@ -17,7 +17,7 @@ namespace AntlrGrammarEditor.WorkflowState
                 state = state.PreviousState;
             }
 
-            return default(T);
+            return default;
         }
     }
 }

@@ -31,7 +31,7 @@ namespace AntlrGrammarEditor.Processors
         private static readonly Regex ParserIncludeEndJavaScriptGoPhp = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
 
         private Grammar _grammar;
-        private ParserCompiliedState _result;
+        private ParserCompiledState _result;
         private List<string> _buffer;
         private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping;
         private RuntimeInfo _currentRuntimeInfo;
@@ -43,13 +43,13 @@ namespace AntlrGrammarEditor.Processors
         {
         }
 
-        public ParserCompiliedState Compile(ParserGeneratedState state,
+        public ParserCompiledState Compile(ParserGeneratedState state,
             CancellationToken cancellationToken = default)
         {
             _grammar = state.GrammarCheckedState.InputState.Grammar;
             Runtime runtime = state.Runtime;
 
-            _result = new ParserCompiliedState(state);
+            _result = new ParserCompiledState(state);
 
             _currentRuntimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
 
@@ -151,7 +151,7 @@ namespace AntlrGrammarEditor.Processors
                 _result.Exception = ex;
                 if (!(ex is OperationCanceledException))
                 {
-                    AddError(new ParsingError(ex, WorkflowStage.ParserCompilied));
+                    AddError(new ParsingError(ex, WorkflowStage.ParserCompiled));
                 }
             }
             finally
@@ -664,7 +664,7 @@ namespace AntlrGrammarEditor.Processors
                 }
                 catch
                 {
-                    error = new ParsingError(errorString, grammarSource, WorkflowStage.ParserCompilied);
+                    error = new ParsingError(errorString, grammarSource, WorkflowStage.ParserCompiled);
                 }
                 AddError(error);
             }
@@ -688,16 +688,9 @@ namespace AntlrGrammarEditor.Processors
                     }
 
                     string codeFileName = strs[0];
-                    if (int.TryParse(strs[1], out int codeLine))
-                    {
-                        bool isWarning = strs[2].Trim() == "warning";
-                        error = GenerateError(data, codeFileName, codeLine, 1, rest);
-                        error.IsWarning = isWarning;
-                    }
-                    else
-                    {
-                        error = null;
-                    }
+                    error = int.TryParse(strs[1], out int codeLine)
+                        ? GenerateError(data, codeFileName, codeLine, 1, rest, strs[2].Trim() == "warning")
+                        : null;
                 }
                 catch
                 {
@@ -706,7 +699,7 @@ namespace AntlrGrammarEditor.Processors
 
                 if (error == null)
                 {
-                    error = new ParsingError(data, CodeSource.Empty, WorkflowStage.ParserCompilied);
+                    error = new ParsingError(data, CodeSource.Empty, WorkflowStage.ParserCompiled);
                 }
 
                 AddError(error);
@@ -717,7 +710,7 @@ namespace AntlrGrammarEditor.Processors
             }
         }
 
-        private ParsingError GenerateError(string data, string codeFileName, int line, int column, string rest)
+        private ParsingError GenerateError(string data, string codeFileName, int line, int column, string rest, bool isWarning = false)
         {
             ParsingError error;
             TextSpan textSpan;
@@ -726,7 +719,8 @@ namespace AntlrGrammarEditor.Processors
             {
                 string grammarFileName = GetGrammarFromCodeFileName(_currentRuntimeInfo, codeFileName);
                 textSpan = TextHelpers.GetSourceTextSpanForLine(textSpanMappings, line, grammarFileName);
-                error = new ParsingError(textSpan, $"{grammarFileName}:{textSpan.GetLineColumn().BeginLine}:{rest}", WorkflowStage.ParserCompilied);
+                error = new ParsingError(textSpan, $"{grammarFileName}:{textSpan.GetLineColumn().BeginLine}:{rest}",
+                    WorkflowStage.ParserCompiled, isWarning);
             }
             else
             {
@@ -737,7 +731,7 @@ namespace AntlrGrammarEditor.Processors
                 textSpan = codeSource != null
                     ? new LineColumnTextSpan(line, column, codeSource).GetTextSpan()
                     : TextSpan.Empty;
-                error = new ParsingError(textSpan, data, WorkflowStage.ParserCompilied);
+                error = new ParsingError(textSpan, data, WorkflowStage.ParserCompiled, isWarning);
             }
 
             return error;
@@ -809,7 +803,7 @@ namespace AntlrGrammarEditor.Processors
                 finalMessage += errorSpan.GetLineColumn().BeginLine + ":";
             }
             finalMessage += message == "" ? "Unknown Error" : message;
-            AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));
+            AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompiled));
 
         }
 
@@ -861,7 +855,7 @@ namespace AntlrGrammarEditor.Processors
                 finalMessage += errorSpan.GetLineColumn().BeginLine + ":";
             }
             finalMessage += message == "" ? "Unknown Error" : message;
-            AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));
+            AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompiled));
         }
 
         private void AddGoError(string data)
@@ -898,11 +892,11 @@ namespace AntlrGrammarEditor.Processors
                     finalMessage += errorSpan.GetLineColumn().BeginLine + ":";
                 }
                 finalMessage += message == "" ? "Unknown Error" : message;
-                AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompilied));
+                AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompiled));
             }
             else
             {
-                AddError(new ParsingError(TextSpan.Empty, data, WorkflowStage.ParserCompilied));
+                AddError(new ParsingError(TextSpan.Empty, data, WorkflowStage.ParserCompiled));
             }
         }
 
@@ -923,7 +917,7 @@ namespace AntlrGrammarEditor.Processors
             string fileName = dataSpan.Slice(fileNameIndex, lastOnIndex - fileNameIndex).ToString();
 
             var codeSource = new CodeSource(Path.GetFileNameWithoutExtension(fileName), File.ReadAllText(fileName)); // TODO: reuse existed files
-            AddError(new ParsingError(line, LineColumnTextSpan.StartColumn, message, codeSource, WorkflowStage.ParserCompilied));
+            AddError(new ParsingError(line, LineColumnTextSpan.StartColumn, message, codeSource, WorkflowStage.ParserCompiled));
         }
 
         private string GetGrammarFromCodeFileName(RuntimeInfo runtimeInfo, string codeFileName)

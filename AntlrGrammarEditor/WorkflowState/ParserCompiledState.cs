@@ -5,9 +5,9 @@ using AntlrGrammarEditor.Processors;
 
 namespace AntlrGrammarEditor.WorkflowState
 {
-    public class ParserCompiliedState : IWorkflowState
+    public class ParserCompiledState : IWorkflowState
     {
-        public WorkflowStage Stage => WorkflowStage.ParserCompilied;
+        public WorkflowStage Stage => WorkflowStage.ParserCompiled;
 
         public bool HasErrors => Exception != null || Errors.Any(error => !error.IsWarning);
 
@@ -21,7 +21,7 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public string Command { get; set; }
 
-        public ParserCompiliedState(ParserGeneratedState parserGeneratedState)
+        public ParserCompiledState(ParserGeneratedState parserGeneratedState)
         {
             ParserGeneratedState =
                 parserGeneratedState ?? throw new ArgumentNullException(nameof(parserGeneratedState));

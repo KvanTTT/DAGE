@@ -5,7 +5,7 @@
         Input,
         GrammarChecked,
         ParserGenerated,
-        ParserCompilied,
+        ParserCompiled,
         TextTokenized,
         TextParsed
     }

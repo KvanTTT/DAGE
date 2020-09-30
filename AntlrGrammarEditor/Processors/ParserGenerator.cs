@@ -147,11 +147,9 @@ namespace AntlrGrammarEditor.Processors
                         }
                     }
                 }
-                ParsingError error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated);
-                if (strs.Length > 0 && strs[0].StartsWith("warning"))
-                {
-                    error.IsWarning = true;
-                }
+
+                bool isWarning = strs.Length > 0 && strs[0].StartsWith("warning");
+                ParsingError error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated, isWarning);
                 ErrorEvent?.Invoke(this, error);
                 _result.Errors.Add(error);
             }

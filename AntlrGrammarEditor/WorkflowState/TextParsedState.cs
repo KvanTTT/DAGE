@@ -11,7 +11,7 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public bool HasErrors => Exception != null || Errors.Any(error => !error.IsWarning);
 
-        public IWorkflowState PreviousState => ParserCompiliedState;
+        public IWorkflowState PreviousState => ParserCompiledState;
 
         public Exception Exception { get; set; }
 
@@ -19,7 +19,7 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public string Root { get; set; }
 
-        public ParserCompiliedState ParserCompiliedState { get; }
+        public ParserCompiledState ParserCompiledState { get; }
 
         public List<ParsingError> Errors { get; } = new List<ParsingError>();
 
@@ -34,13 +34,13 @@ namespace AntlrGrammarEditor.WorkflowState
         public string Command { get; set; }
 
         public string RootOrDefault => string.IsNullOrEmpty(Root)
-            ? ParserCompiliedState.ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault()
+            ? ParserCompiledState.ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault()
             : Root;
 
-        public TextParsedState(ParserCompiliedState parserCompiliedState, CodeSource text)
+        public TextParsedState(ParserCompiledState parserCompiledState, CodeSource text)
         {
-            ParserCompiliedState =
-                parserCompiliedState ?? throw new ArgumentNullException(nameof(parserCompiliedState));
+            ParserCompiledState =
+                parserCompiledState ?? throw new ArgumentNullException(nameof(parserCompiledState));
             Text = text ?? throw new ArgumentNullException(nameof(text));
         }
     }
