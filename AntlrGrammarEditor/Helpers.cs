@@ -101,5 +101,10 @@ namespace AntlrGrammarEditor
         {
             return runtime == Runtime.Python2 || runtime == Runtime.Python3;
         }
+
+        public static string FormatErrorMessage(CodeSource codeSource, int line, int charPositionInLine, string msg, bool isWarning = false)
+        {
+            return $"{(isWarning ? "Warning" : "Error")}: {Path.GetFileName(codeSource.Name)}:{line}:{charPositionInLine}: {msg}";
+        }
     }
 }
