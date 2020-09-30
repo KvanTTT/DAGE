@@ -5,9 +5,9 @@ namespace AntlrGrammarEditor
 {
     public class CodeSource : IEquatable<CodeSource>
     {
-        public static CodeSource Empty = new CodeSource("", "");
+        public static readonly CodeSource Empty = new CodeSource("", "");
 
-        private int[] lineIndexes;
+        private int[] _lineIndexes;
 
         public string Name { get; }
         public string Text { get; }
@@ -20,20 +20,25 @@ namespace AntlrGrammarEditor
             InitLineIndexes();
         }
 
-        public int LineColumnToPosition(int line, int column)
+        public LineColumnTextSpan ToLineColumn(TextSpan textSpan)
         {
-            return lineIndexes[line - LineColumnTextSpan.StartLine] + column - LineColumnTextSpan.StartColumn;
+            PositionToLineColumn(textSpan.Start, out int startLine, out int startColumn);
+            PositionToLineColumn(textSpan.End, out int endLine, out int endColumn);
+            return new LineColumnTextSpan(startLine, startColumn, endLine, endColumn, textSpan.Source);
         }
+
+        public int LineColumnToPosition(int line, int column) =>
+            _lineIndexes[line - LineColumnTextSpan.StartLine] + column - LineColumnTextSpan.StartColumn;
 
         public void PositionToLineColumn(int pos, out int line, out int column)
         {
-            line = Array.BinarySearch(lineIndexes, pos);
+            line = Array.BinarySearch(_lineIndexes, pos);
             if (line < 0)
             {
-                line = (line == -1) ? 0 : (~line - 1);
+                line = line == -1 ? 0 : ~line - 1;
             }
 
-            column = pos - lineIndexes[line] + LineColumnTextSpan.StartColumn;
+            column = pos - _lineIndexes[line] + LineColumnTextSpan.StartColumn;
             line += LineColumnTextSpan.StartLine;
         }
 
@@ -41,15 +46,15 @@ namespace AntlrGrammarEditor
         {
             line = line - LineColumnTextSpan.StartLine;
 
-            if (line < 0 || line >= lineIndexes.Length)
+            if (line < 0 || line >= _lineIndexes.Length)
             {
                 throw new IndexOutOfRangeException(nameof(line));
             }
 
             int endInd;
-            if (line + 1 < lineIndexes.Length)
+            if (line + 1 < _lineIndexes.Length)
             {
-                endInd = lineIndexes[line + 1] - 1;
+                endInd = _lineIndexes[line + 1] - 1;
                 if (endInd - 1 > 0 && Text[endInd - 1] == '\r')
                 {
                     endInd--;
@@ -60,7 +65,7 @@ namespace AntlrGrammarEditor
                 endInd = Text.Length;
             }
 
-            return new TextSpan(lineIndexes[line], endInd - lineIndexes[line], this);
+            return new TextSpan(_lineIndexes[line], endInd - _lineIndexes[line], this);
         }
 
         public bool Equals(CodeSource other) => Name.Equals(other.Name);
@@ -69,8 +74,6 @@ namespace AntlrGrammarEditor
 
         private void InitLineIndexes()
         {
-            int currentLine = LineColumnTextSpan.StartLine;
-            int currentColumn = LineColumnTextSpan.StartColumn;
             string text = Text;
 
             var lineIndexesBuffer = new List<int>(text.Length / 25) { 0 };
@@ -80,22 +83,16 @@ namespace AntlrGrammarEditor
                 char c = text[textIndex];
                 if (c == '\r' || c == '\n' || c == '\u2028' || c == '\u2029')
                 {
-                    currentLine++;
-                    currentColumn = LineColumnTextSpan.StartColumn;
                     if (c == '\r' && textIndex + 1 < text.Length && text[textIndex + 1] == '\n')
                     {
                         textIndex++;
                     }
                     lineIndexesBuffer.Add(textIndex + 1);
                 }
-                else
-                {
-                    currentColumn++;
-                }
                 textIndex++;
             }
 
-            lineIndexes = lineIndexesBuffer.ToArray();
+            _lineIndexes = lineIndexesBuffer.ToArray();
         }
     }
 }
