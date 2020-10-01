@@ -22,6 +22,9 @@ namespace DesktopAntlrGrammarEditor
 {
     public class MainWindowViewModel : ReactiveObject
     {
+        private static readonly RuntimeInfoWrapper AutodetectRuntime = new RuntimeInfoWrapper(null);
+
+        private readonly Dictionary<Runtime, RuntimeInfoWrapper> _runtimeInfoWrappers;
         private readonly Window _window;
         private readonly Settings _settings;
         private readonly Workflow _workflow;
@@ -66,7 +69,7 @@ namespace DesktopAntlrGrammarEditor
             {
                 _window.Height = _settings.Height;
             }
-            if (_settings.Left != -1 && _settings.Top != -1)
+            if (_settings.Left > 0 && _settings.Top > 0)
             {
                 _window.Position = new PixelPoint(_settings.Left, _settings.Top);
             }
@@ -104,7 +107,26 @@ namespace DesktopAntlrGrammarEditor
             }
 
             _workflow = new Workflow(grammar);
-            SelectedRuntime = RuntimeInfo.InitOrGetRuntimeInfo(_workflow.Runtime);
+
+            var availableRuntimes = new[]
+            {
+                Runtime.Java, Runtime.CSharpStandard, Runtime.CSharpOptimized, Runtime.Python2, Runtime.Python3,
+                Runtime.Go, Runtime.Php
+            };
+
+            _runtimeInfoWrappers = new Dictionary<Runtime, RuntimeInfoWrapper>();
+
+            foreach (Runtime runtime in availableRuntimes)
+            {
+                _runtimeInfoWrappers.Add(runtime, new RuntimeInfoWrapper(RuntimeInfo.InitOrGetRuntimeInfo(runtime)));
+            }
+
+            var list = new List<RuntimeInfoWrapper> {AutodetectRuntime};
+            list.AddRange(_runtimeInfoWrappers.Values);
+
+            Runtimes = new ObservableCollection<RuntimeInfoWrapper>(list);
+
+            SelectedRuntime = GetAutoOrSelectedRuntime();
             PackageName = packageName;
             Root = root;
 
@@ -216,7 +238,7 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public PredictionMode PredictionMode
+        public PredictionMode? PredictionMode
         {
             get => _workflow.PredictionMode;
             set
@@ -238,16 +260,16 @@ namespace DesktopAntlrGrammarEditor
 
         public ObservableCollection<string> Rules { get; } = new ObservableCollection<string>();
 
-        public RuntimeInfo SelectedRuntime
+        public RuntimeInfoWrapper SelectedRuntime
         {
-            get => RuntimeInfo.Runtimes[_workflow.Runtime];
+            get => GetAutoOrSelectedRuntime();
             set
             {
-                if (RuntimeInfo.Runtimes[_workflow.Runtime] != value)
+                if (GetAutoOrSelectedRuntime() != value)
                 {
-                    _workflow.Runtime = value.Runtime;
+                    _workflow.Runtime = value.RuntimeInfo?.Runtime;
 
-                    InitGrammarAndCompiliedFiles();
+                    InitGrammarAndCompiledFiles();
 
                     if (!GrammarFiles.Contains(OpenedGrammarFile))
                     {
@@ -264,20 +286,16 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
+        public RuntimeInfo DetectedRuntime => _runtimeInfoWrappers[_workflow.DetectedRuntime].RuntimeInfo;
+
+        private RuntimeInfoWrapper GetAutoOrSelectedRuntime() =>
+            _workflow.Runtime.HasValue
+                ? _runtimeInfoWrappers[_workflow.Runtime.Value]
+                : AutodetectRuntime;
+
         public string CurrentState => _workflow.CurrentState.Stage.ToString();
 
-        public ObservableCollection<RuntimeInfo> Runtimes { get; } =
-            new ObservableCollection<RuntimeInfo>(new List<RuntimeInfo>
-            {
-                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.CSharpOptimized),
-                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.CSharpStandard),
-                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Java),
-                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Python2),
-                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Python3),
-                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.JavaScript),
-                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Go),
-                RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Php),
-            });
+        public ObservableCollection<RuntimeInfoWrapper> Runtimes { get; }
 
         public string GrammarErrorsText => $"Grammar Errors ({GrammarErrors.Count})";
 
@@ -291,9 +309,9 @@ namespace DesktopAntlrGrammarEditor
 
         public ObservableCollection<PredictionMode> PredictionModes { get; } = new ObservableCollection<PredictionMode>
         {
-            PredictionMode.LL,
-            PredictionMode.SLL,
-            PredictionMode.FullLL
+            AntlrGrammarEditor.Processors.PredictionMode.LL,
+            AntlrGrammarEditor.Processors.PredictionMode.SLL,
+            AntlrGrammarEditor.Processors.PredictionMode.FullLL
         };
 
         public FileName OpenedTextFile
@@ -550,10 +568,12 @@ namespace DesktopAntlrGrammarEditor
             Observable.FromEventPattern<IWorkflowState>(
                 ev => _workflow.StateChanged += ev, ev => _workflow.StateChanged -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(ev =>
-                {
-                    this.RaisePropertyChanged(nameof(CurrentState));
-                });
+                .Subscribe(ev => this.RaisePropertyChanged(nameof(CurrentState)));
+
+            Observable.FromEventPattern<Runtime>(
+                    ev => _workflow.DetectedRuntimeEvent += ev, ev => _workflow.DetectedRuntimeEvent -= ev)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(ev => this.RaisePropertyChanged(nameof(DetectedRuntime)));
 
             Observable.FromEventPattern<ParsingError>(
                 ev => _workflow.ErrorEvent += ev, ev => _workflow.ErrorEvent -= ev)
@@ -564,7 +584,7 @@ namespace DesktopAntlrGrammarEditor
                     {
                         case WorkflowStage.GrammarChecked:
                         case WorkflowStage.ParserGenerated:
-                        case WorkflowStage.ParserCompilied:
+                        case WorkflowStage.ParserCompiled:
                             GrammarErrors.Add(ev.EventArgs);
                             this.RaisePropertyChanged(nameof(GrammarErrorsText));
                             this.RaisePropertyChanged(nameof(GrammarErrorsExpanded));
@@ -590,10 +610,10 @@ namespace DesktopAntlrGrammarEditor
                          case TextParsedOutput.ParserTime:
                              break;
                          case TextParsedOutput.Tokens:
-                             Tokens = (string)ev.EventArgs.Item2;
+                             //Tokens = (string)ev.EventArgs.Item2;
                              break;
                          case TextParsedOutput.Tree:
-                             Tree = (string)ev.EventArgs.Item2;
+                             //Tree = (string)ev.EventArgs.Item2;
                              break;
                      }
                  });
@@ -613,15 +633,9 @@ namespace DesktopAntlrGrammarEditor
                 h => _textTextBox.TextChanged += h,
                 h => _textTextBox.TextChanged -= h);
 
-            grammarTextBoxObservable.Subscribe(x =>
-            {
-                _grammarFileState = FileState.Changed;
-            });
+            grammarTextBoxObservable.Subscribe(x => _grammarFileState = FileState.Changed);
 
-            textBoxObservable.Subscribe(x =>
-            {
-                _textFileState = FileState.Changed;
-            });
+            textBoxObservable.Subscribe(x => _textFileState = FileState.Changed);
 
             grammarTextBoxObservable
                 .Throttle(TimeSpan.FromMilliseconds(200))
@@ -664,7 +678,7 @@ namespace DesktopAntlrGrammarEditor
                     if (_textFileState == FileState.Changed)
                     {
                         _workflow.TextFileName = OpenedTextFile.FullFileName;
-                        _workflow.RollbackToStage(WorkflowStage.ParserCompilied);
+                        _workflow.RollbackToStage(WorkflowStage.ParserCompiled);
 
                         if (AutoProcessing)
                         {
@@ -871,7 +885,7 @@ namespace DesktopAntlrGrammarEditor
                 case WorkflowStage.Input:
                 case WorkflowStage.GrammarChecked:
                 case WorkflowStage.ParserGenerated:
-                case WorkflowStage.ParserCompilied:
+                case WorkflowStage.ParserCompiled:
                     errorsList = GrammarErrors;
                     grammarErrors = true;
                     break;
@@ -960,9 +974,7 @@ namespace DesktopAntlrGrammarEditor
 
         private void InitFiles()
         {
-            RuntimeInfo selectedRuntime = SelectedRuntime;
-
-            InitGrammarAndCompiliedFiles();
+            InitGrammarAndCompiledFiles();
 
             TextFiles.Clear();
             foreach (var file in Grammar.TextFiles)
@@ -971,39 +983,45 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private void InitGrammarAndCompiliedFiles()
+        private void InitGrammarAndCompiledFiles()
         {
-            RuntimeInfo value = SelectedRuntime;
+            var value = SelectedRuntime;
 
-            string runtimeName = value.Runtime.ToString();
+            var runtimeInfo = value.RuntimeInfo;
+            if (runtimeInfo == null)
+            {
+                return;
+            }
+
+            string runtimeName = runtimeInfo.Runtime.ToString();
             string runtimeFilesPath = Path.Combine(Grammar.Directory, runtimeName);
 
             if (!Directory.Exists(runtimeFilesPath))
             {
-                runtimeName = value.Runtime.GetGeneralRuntimeName();
+                runtimeName = runtimeInfo.Runtime.GetGeneralRuntimeName();
                 runtimeFilesPath = Path.Combine(Grammar.Directory, runtimeName);
             }
 
-            var runtimeGrammarAndCompiliedFiles = new List<string>();
+            var runtimeGrammarAndCompiledFiles = new List<string>();
             if (Directory.Exists(runtimeFilesPath))
             {
-                runtimeGrammarAndCompiliedFiles = GetGrammarAndCompiliedFiles(runtimeFilesPath, runtimeName, value.Extensions[0]);
+                runtimeGrammarAndCompiledFiles = GetGrammarAndCompiliedFiles(runtimeFilesPath, runtimeName, runtimeInfo.Extensions[0]);
             }
 
-            List<string> grammarAndCompiliedFiles = GetGrammarAndCompiliedFiles(Grammar.Directory, "", value.Extensions[0]);
+            List<string> grammarAndCompiliedFiles = GetGrammarAndCompiliedFiles(Grammar.Directory, "", runtimeInfo.Extensions[0]);
 
             Grammar.Files.Clear();
 
             foreach (string fileName in grammarAndCompiliedFiles)
             {
-                string runtimeFile = runtimeGrammarAndCompiliedFiles
+                string runtimeFile = runtimeGrammarAndCompiledFiles
                     .FirstOrDefault(f => Path.GetFileName(f) == fileName);
 
                 string addedFile;
                 if (runtimeFile != null)
                 {
                     addedFile = runtimeFile;
-                    runtimeGrammarAndCompiliedFiles.Remove(runtimeFile);
+                    runtimeGrammarAndCompiledFiles.Remove(runtimeFile);
                 }
                 else
                 {
@@ -1013,7 +1031,7 @@ namespace DesktopAntlrGrammarEditor
                 Grammar.Files.Add(addedFile);
             }
 
-            foreach (string fileName in runtimeGrammarAndCompiliedFiles)
+            foreach (string fileName in runtimeGrammarAndCompiledFiles)
             {
                 Grammar.Files.Add(fileName);
             }
@@ -1068,9 +1086,11 @@ namespace DesktopAntlrGrammarEditor
                 return;
             }
 
-            RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(SelectedRuntime.Runtime);
+            RuntimeInfo runtimeInfo = SelectedRuntime.RuntimeInfo != null
+                ? RuntimeInfo.InitOrGetRuntimeInfo(SelectedRuntime.RuntimeInfo.Runtime)
+                : null;
 
-            if (EndStage >= WorkflowStage.ParserCompilied && runtimeInfo.Version == null)
+            if (EndStage >= WorkflowStage.ParserCompiled && runtimeInfo != null && runtimeInfo.Version == null)
             {
                 string message = $"Install {runtimeInfo.RuntimeToolName}";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

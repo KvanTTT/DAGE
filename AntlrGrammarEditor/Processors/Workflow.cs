@@ -20,18 +20,11 @@ namespace AntlrGrammarEditor.Processors
         private CancellationTokenSource _cancellationTokenSource;
         private object _lockObj = new object();
 
-        private event EventHandler<ParsingError> _errorEvent;
-        private event EventHandler<(TextParsedOutput, object)> _textParsedOutputEvent;
-
         public bool? GenerateListener { get; set; }
 
         public bool? GenerateVisitor { get; set; }
 
         public WorkflowStage EndStage { get; set; } = WorkflowStage.TextParsed;
-
-        public event EventHandler<IWorkflowState> StateChanged;
-
-        public event EventHandler<WorkflowStage> ClearErrorsEvent;
 
         public IWorkflowState CurrentState => _currentState;
 
@@ -59,6 +52,8 @@ namespace AntlrGrammarEditor.Processors
                 }
             }
         }
+
+        public Runtime DetectedRuntime { get; private set; }
 
         public string Root
         {
@@ -132,17 +127,15 @@ namespace AntlrGrammarEditor.Processors
             }
         }
 
-        public event EventHandler<ParsingError> ErrorEvent
-        {
-            add => _errorEvent += value;
-            remove => _errorEvent -= value;
-        }
+        public event EventHandler<IWorkflowState> StateChanged;
 
-        public event EventHandler<(TextParsedOutput, object)> TextParsedOutputEvent
-        {
-            add => _textParsedOutputEvent += value;
-            remove => _textParsedOutputEvent -= value;
-        }
+        public event EventHandler<WorkflowStage> ClearErrorsEvent;
+
+        public event EventHandler<ParsingError> ErrorEvent;
+
+        public event EventHandler<(TextParsedOutput, object)> TextParsedOutputEvent;
+
+        public event EventHandler<Runtime> DetectedRuntimeEvent;
 
         public Workflow(Grammar grammar)
         {
@@ -204,8 +197,8 @@ namespace AntlrGrammarEditor.Processors
                 switch (_currentState.Stage)
                 {
                     case WorkflowStage.TextParsed:
-                        _textParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tokens, ""));
-                        _textParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tree, ""));
+                        TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tokens, ""));
+                        TextParsedOutputEvent?.Invoke(this, (TextParsedOutput.Tree, ""));
                         ClearErrorsEvent?.Invoke(this, WorkflowStage.TextTokenized);
                         ClearErrorsEvent?.Invoke(this, WorkflowStage.TextParsed);
                         break;
@@ -233,16 +226,19 @@ namespace AntlrGrammarEditor.Processors
             switch (_currentState.Stage)
             {
                 case WorkflowStage.Input:
-                    var grammarChecker = new GrammarChecker {ErrorEvent = _errorEvent};
+                    var grammarChecker = new GrammarChecker {ErrorEvent = ErrorEvent};
                     _currentState = grammarChecker.Check((InputState)_currentState, _cancellationTokenSource.Token);
                     break;
 
                 case WorkflowStage.GrammarChecked:
                     grammarCheckedState = (GrammarCheckedState) _currentState;
 
-                    var parserGenerator = new ParserGenerator(Runtime ?? grammarCheckedState.Runtime ?? AntlrGrammarEditor.Runtime.Java)
+                    DetectedRuntime = Runtime ?? grammarCheckedState.Runtime ?? AntlrGrammarEditor.Runtime.Java;
+                    DetectedRuntimeEvent?.Invoke(this, DetectedRuntime);
+
+                    var parserGenerator = new ParserGenerator(DetectedRuntime)
                     {
-                        ErrorEvent = _errorEvent,
+                        ErrorEvent = ErrorEvent,
                         GeneratorTool = GeneratorTool,
                         PackageName = !string.IsNullOrWhiteSpace(PackageName) ? PackageName : grammarCheckedState.Package,
                         GenerateListener = GenerateListener ?? grammarCheckedState.Listener ?? false,
@@ -254,7 +250,7 @@ namespace AntlrGrammarEditor.Processors
                 case WorkflowStage.ParserGenerated:
                     var parserCompiler = new ParserCompiler
                     {
-                        ErrorEvent = _errorEvent,
+                        ErrorEvent = ErrorEvent,
                         RuntimeLibrary = RuntimeLibrary
                     };
                     _currentState = parserCompiler.Compile((ParserGeneratedState)_currentState, _cancellationTokenSource.Token);
@@ -267,11 +263,11 @@ namespace AntlrGrammarEditor.Processors
                     {
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         RuntimeLibrary = RuntimeLibrary,
-                        ErrorEvent = _errorEvent,
+                        ErrorEvent = ErrorEvent,
                         Root = !string.IsNullOrWhiteSpace(Root) ? Root : grammarCheckedState.Root,
                         PredictionMode = PredictionMode ?? grammarCheckedState.PredictionMode ?? Processors.PredictionMode.LL
                     };
-                    textParser.TextParsedOutputEvent += _textParsedOutputEvent;
+                    textParser.TextParsedOutputEvent += TextParsedOutputEvent;
                     _currentState = textParser.Parse((ParserCompiledState)_currentState, _cancellationTokenSource.Token);
                     break;
             }

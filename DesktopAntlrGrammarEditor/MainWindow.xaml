@@ -24,7 +24,7 @@
         </StackPanel>
         <StackPanel Grid.Column="6" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal" >
           <TextBlock HorizontalAlignment="Right" Text="Runtime" />
-          <ComboBox Width="90" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></ComboBox>
+          <ComboBox Width="100" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></ComboBox>
         </StackPanel>
       </Grid>
 
@@ -90,9 +90,11 @@
           </Grid>
       </Expander>
 
-      <Grid Grid.Row="5" ColumnDefinitions="120,120">
+      <Grid Grid.Row="5" ColumnDefinitions="120,120,120,120">
         <TextBlock Grid.Column="0" Text="Position: "/>
         <TextBlock Grid.Column="1" Text="{Binding TextCursorPosition}" />
+        <TextBlock Grid.Column="2" Text="Runtime: " />
+        <TextBlock Grid.Column="3" Text="{Binding DetectedRuntime}"></TextBlock>
       </Grid>
     </Grid>
   </Grid>
