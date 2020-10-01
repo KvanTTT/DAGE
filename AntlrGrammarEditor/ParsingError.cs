@@ -32,6 +32,14 @@ namespace AntlrGrammarEditor
             WorkflowStage = stage;
         }
 
+        public ParsingError(int beginLine, int beginColumn, int endLine, int endColumn,
+            string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
+            : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, codeSource).GetTextSpan(), message, stage, isWarning)
+        {
+            Message = message;
+            WorkflowStage = stage;
+        }
+
         public ParsingError(TextSpan textSpan, string message, WorkflowStage stage, bool isWarning = false)
         {
             TextSpan = textSpan;
