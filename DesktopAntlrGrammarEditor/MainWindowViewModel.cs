@@ -610,10 +610,10 @@ namespace DesktopAntlrGrammarEditor
                          case TextParsedOutput.ParserTime:
                              break;
                          case TextParsedOutput.Tokens:
-                             //Tokens = (string)ev.EventArgs.Item2;
+                             Tokens = (string)ev.EventArgs.Item2;
                              break;
                          case TextParsedOutput.Tree:
-                             //Tree = (string)ev.EventArgs.Item2;
+                             Tree = (string)ev.EventArgs.Item2;
                              break;
                      }
                  });
@@ -957,6 +957,8 @@ namespace DesktopAntlrGrammarEditor
                     if (parsingError.TextSpan.End >= textBox.Text.Length)
                     {
                         beginIndex = textBox.Text.Length - 1;
+                        if (beginIndex < 0)
+                            beginIndex = 0;
                     }
 
                     selectTextSpan = new TextSpan(beginIndex, 1, parsingError.TextSpan.Source);

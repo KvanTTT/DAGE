@@ -23,19 +23,22 @@ namespace AntlrGrammarEditor
                     {
                         if (ExtractTokenLength("no viable alternative at input ", ""))
                         {
-                            var tokenValueSpan = tokenValue.AsSpan();
-                            int newIndex = start;
-
-                            while (newIndex > 0)
+                            if (length > 0)
                             {
-                                var span = source.Text.AsSpan(newIndex, length);
-                                if (span.SequenceEqual(tokenValueSpan))
-                                {
-                                    length = newIndex + length - start;
-                                    break;
-                                }
+                                var tokenValueSpan = tokenValue.AsSpan();
+                                int newIndex = start;
 
-                                newIndex--;
+                                while (newIndex > 0)
+                                {
+                                    var span = source.Text.AsSpan(newIndex, length);
+                                    if (span.SequenceEqual(tokenValueSpan))
+                                    {
+                                        length = newIndex + length - start;
+                                        break;
+                                    }
+
+                                    newIndex--;
+                                }
                             }
                         }
                     }
@@ -53,7 +56,7 @@ namespace AntlrGrammarEditor
                     {
                         tokenValue = errorMessage.Substring(errorTitle.Length, secondIndex - errorTitle.Length);
                         tokenValue = TrimAndUnescape(tokenValue);
-                        length = tokenValue.Length;
+                        length = tokenValue == "<EOF>" ? 0 : tokenValue.Length;
                     }
 
                     return true;

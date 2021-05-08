@@ -178,8 +178,9 @@ namespace AntlrGrammarEditor.Processors
                     string errorMessage = words[2];
                     int.TryParse(parts[0], out int beginLine);
                     int.TryParse(parts[1], out int beginColumn);
-                    int start = _result.Text.LineColumnToPosition(beginLine, beginColumn + 1);
-                    errorString = $"{words[0]} {beginLine}:{beginColumn + 1} {words[2]}";
+                    beginColumn += 1;
+                    int start = _result.Text.LineColumnToPosition(beginLine, beginColumn);
+                    errorString = $"{words[0]} {beginLine}:{beginColumn} {words[2]}";
                     error = new ParsingError(TextHelpers.ExtractTextSpan(start, errorMessage, _result.Text),
                         errorString, WorkflowStage.TextParsed);
                 }
