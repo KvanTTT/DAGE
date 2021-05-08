@@ -7,7 +7,7 @@ namespace AntlrGrammarEditor
 {
     public class RuntimeInfo
     {
-        public static Dictionary<Runtime, RuntimeInfo> Runtimes = new Dictionary<Runtime, RuntimeInfo>()
+        public static readonly Dictionary<Runtime, RuntimeInfo> Runtimes = new Dictionary<Runtime, RuntimeInfo>()
         {
             [Runtime.CSharpOptimized] = new RuntimeInfo
             (
@@ -44,8 +44,7 @@ namespace AntlrGrammarEditor
                 mainFile: "Main.java",
                 antlrInputStream: "CharStreams.fromFileName",
                 runtimeToolName: "javac",
-                versionArg: "-version",
-                errorVersionStream: true
+                versionArg: "-version"
             ),
             [Runtime.Python2] = new RuntimeInfo
             (
@@ -60,8 +59,7 @@ namespace AntlrGrammarEditor
                 baseVisitorPostfix: null,
                 interpreted: true,
                 runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python2",
-                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-2 " : "") + "--version",
-                errorVersionStream: true
+                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-2 " : "") + "--version"
             ),
             [Runtime.Python3] = new RuntimeInfo
             (
@@ -76,8 +74,7 @@ namespace AntlrGrammarEditor
                 baseVisitorPostfix: null,
                 interpreted: true,
                 runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python3",
-                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-3 " : "") + "--version",
-                errorVersionStream: false
+                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-3 " : "") + "--version"
             ),
             [Runtime.JavaScript] = new RuntimeInfo
             (
@@ -92,8 +89,7 @@ namespace AntlrGrammarEditor
                 baseVisitorPostfix: null,
                 interpreted: true,
                 runtimeToolName: "node",
-                versionArg: "-v",
-                errorVersionStream: false
+                versionArg: "-v"
             ),
             [Runtime.CPlusPlus] = new RuntimeInfo
             (
@@ -123,8 +119,7 @@ namespace AntlrGrammarEditor
                 baseListenerPostfix: "_base_listener",
                 listenerPostfix: "_listener",
                 baseVisitorPostfix: "_base_visitor",
-                visitorPostfix: "_visitor",
-                errorVersionStream: false
+                visitorPostfix: "_visitor"
             ),
             [Runtime.Swift] = new RuntimeInfo
             (
@@ -169,10 +164,7 @@ namespace AntlrGrammarEditor
         public string BaseVisitorPostfix { get; }
         public string VisitorPostfix { get; }
         public string VersionArg { get; }
-        public bool ErrorVersionStream { get; }
-
         public bool Initialized { get; private set; }
-
         public string Version { get; private set; }
 
         public static RuntimeInfo InitOrGetRuntimeInfo(Runtime runtime)
@@ -185,10 +177,8 @@ namespace AntlrGrammarEditor
                     var processor = new Processor(runtimeInfo.RuntimeToolName, runtimeInfo.VersionArg);
                     string version = "";
 
-                    if (runtimeInfo.ErrorVersionStream)
-                        processor.ErrorDataReceived += VersionCollectFunc;
-                    else
-                        processor.OutputDataReceived += VersionCollectFunc;
+                    processor.ErrorDataReceived += VersionCollectFunc;
+                    processor.OutputDataReceived += VersionCollectFunc;
 
                     void VersionCollectFunc(object sender, DataReceivedEventArgs e)
                     {
@@ -197,7 +187,12 @@ namespace AntlrGrammarEditor
                     }
 
                     processor.Start();
-                    runtimeInfo.Version = version.Trim();
+                    if (runtime.IsPythonRuntime() && version.StartsWith("Python", StringComparison.OrdinalIgnoreCase))
+                        version = version.Substring("Python".Length);
+                    else if (version.StartsWith(runtimeInfo.RuntimeToolName, StringComparison.OrdinalIgnoreCase))
+                        version = version.Substring(runtimeInfo.RuntimeToolName.Length);
+                    version = version.Trim();
+                    runtimeInfo.Version = version;
                 }
                 catch
                 {
@@ -214,8 +209,7 @@ namespace AntlrGrammarEditor
             string jarGenerator = "antlr-4.8-complete.jar",
             string lexerPostfix = "Lexer", string parserPostfix = "Parser",
             string baseListenerPostfix = "BaseListener", string listenerPostfix = "Listener",
-            string baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor",
-            bool errorVersionStream = false)
+            string baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor")
         {
             Runtime = runtime;
             Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -234,7 +228,6 @@ namespace AntlrGrammarEditor
             BaseVisitorPostfix = baseVisitorPostfix;
             VisitorPostfix = visitorPostfix ?? throw new ArgumentNullException(nameof(visitorPostfix));
             VersionArg = versionArg ?? throw new ArgumentNullException(nameof(versionArg));
-            ErrorVersionStream = errorVersionStream;
         }
 
         public override string ToString()
