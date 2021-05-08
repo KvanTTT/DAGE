@@ -12,6 +12,8 @@ namespace AntlrGrammarEditor
 
         public CodeSource Source { get; }
 
+        public LineColumnTextSpan LineColumn => Source.ToLineColumn(this);
+
         public TextSpan(int start, int length, CodeSource codeSource)
         {
             Source = codeSource ?? throw new ArgumentNullException(nameof(codeSource));

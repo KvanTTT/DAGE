@@ -86,10 +86,10 @@ namespace AntlrGrammarEditor.Tests
         public void GrammarCheckedStageErrors()
         {
             var grammarText = $@"grammar {TestGrammarName};
-                start: DIGIT+;
-                CHAR:   a-z]+;
-                DIGIT: [0-9]+;
-                WS:    [ \r\n\t]+ -> skip;";
+start: DIGIT+;
+CHAR:   a-z]+;
+DIGIT: [0-9]+;
+WS:    [ \r\n\t]+ -> skip;";
             var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
 
             var state = workflow.Process();
@@ -98,10 +98,15 @@ namespace AntlrGrammarEditor.Tests
             var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
-                new [] {
-                    new ParsingError(3, 25, "error: test.g4:3:25: token recognition error at: '-z'", grammarSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 27, "error: test.g4:3:27: token recognition error at: ']'", grammarSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 28, "error: test.g4:3:28: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", grammarSource, WorkflowStage.GrammarChecked)
+                new[]
+                {
+                    new ParsingError(3, 10, 3, 12, "Error: test.g4:3:10: token recognition error at: '-z'", grammarSource,
+                        WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 12, 3, 13, "Error: test.g4:3:12: token recognition error at: ']'", grammarSource,
+                        WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 13, 3, 14,
+                        "Error: test.g4:3:13: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", grammarSource,
+                        WorkflowStage.GrammarChecked)
                 },
                 grammarCheckedState.Errors);
         }
@@ -110,12 +115,12 @@ namespace AntlrGrammarEditor.Tests
         public void SeparatedLexerAndParserErrors()
         {
             var lexerText = $@"lexer grammar {TestGrammarName};
-                CHAR:   a-z]+;
-                DIGIT: [0-9]+;
-                WS:    [ \r\n\t]+ -> skip;";
+CHAR:   a-z]+;
+DIGIT: [0-9]+;
+WS:    [ \r\n\t]+ -> skip;";
             var parserText = $@"parser grammar {TestGrammarName};
-                start: DIGIT+;
-                #";
+start: DIGIT+;
+#";
             var workflow = new Workflow(GrammarFactory.CreateDefaultSeparatedAndFill(lexerText, parserText, TestGrammarName, "."));
 
             var state = workflow.Process();
@@ -126,10 +131,10 @@ namespace AntlrGrammarEditor.Tests
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new ParsingError(2, 25, $"error: {TestGrammarName}Lexer.g4:2:25: token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(2, 27, $"error: {TestGrammarName}Lexer.g4:2:27: token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(2, 28, $"error: {TestGrammarName}Lexer.g4:2:28: mismatched input '+' expecting {{ASSIGN, PLUS_ASSIGN}}", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 16, $"error: {TestGrammarName}Parser.g4:3:16: extraneous input '#' expecting {{<EOF>, 'mode'}}", testParserSource, WorkflowStage.GrammarChecked)
+                    new ParsingError(2, 10, 2, 12, $"Error: {TestGrammarName}Lexer.g4:2:10: token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(2, 12, 2, 13, $"Error: {TestGrammarName}Lexer.g4:2:12: token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(2, 13, 2, 14, $"Error: {TestGrammarName}Lexer.g4:2:13: mismatched input '+' expecting {{ASSIGN, PLUS_ASSIGN}}", testLexerSource, WorkflowStage.GrammarChecked),
+                    new ParsingError(3, 1, 3, 2, $"Error: {TestGrammarName}Parser.g4:3:1: extraneous input '#' expecting {{<EOF>, 'mode'}}", testParserSource, WorkflowStage.GrammarChecked)
                 },
                 grammarCheckedState.Errors);
         }
@@ -252,11 +257,11 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             var textSource = textParsedState.Text;
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new ParsingError(1, 1, 1, 2, "line 1:0 token recognition error at: '#'", textSource, WorkflowStage.TextParsed),
-                    new ParsingError(2, 10, 2, 11, "line 2:9 missing '))' at ';'", textSource, WorkflowStage.TextParsed),
-                    new ParsingError(3, 11, 3, 14, "line 3:10 extraneous input 'id2' expecting ';'", textSource, WorkflowStage.TextParsed),
-                    new ParsingError(4, 5, 4, 7, "line 4:4 no viable alternative at input 'aa  dd'", textSource, WorkflowStage.TextParsed),
-                    new ParsingError(5, 7, 5, 10, "line 5:6 mismatched input '123' expecting Id", textSource, WorkflowStage.TextParsed)
+                    new ParsingError(1, 1, 1, 2, "line 1:1 token recognition error at: '#'", textSource, WorkflowStage.TextParsed),
+                    new ParsingError(2, 10, 2, 11, "line 2:10 missing '))' at ';'", textSource, WorkflowStage.TextParsed),
+                    new ParsingError(3, 11, 3, 14, "line 3:11 extraneous input 'id2' expecting ';'", textSource, WorkflowStage.TextParsed),
+                    new ParsingError(4, 5, 4, 7, "line 4:5 no viable alternative at input 'aa  dd'", textSource, WorkflowStage.TextParsed),
+                    new ParsingError(5, 7, 5, 10, "line 5:7 mismatched input '123' expecting Id", textSource, WorkflowStage.TextParsed)
                 },
                 textParsedState.Errors);
 
@@ -349,7 +354,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             var state = workflow.Process();
             TextParsedState textParsedState = state as TextParsedState;
             Assert.IsNotNull(textParsedState);
-            Assert.IsFalse(state.HasErrors);
+            Assert.IsFalse(textParsedState.HasErrors, textParsedState.Errors.FirstOrDefault()?.ToString() ?? "");
 
             var allFiles = Directory.GetFiles(Path.Combine(ParserGenerator.HelperDirectoryName, TestGrammarName, runtime.ToString()));
 

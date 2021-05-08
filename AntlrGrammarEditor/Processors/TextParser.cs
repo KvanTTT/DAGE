@@ -179,61 +179,9 @@ namespace AntlrGrammarEditor.Processors
                     int.TryParse(parts[0], out int beginLine);
                     int.TryParse(parts[1], out int beginColumn);
                     int start = _result.Text.LineColumnToPosition(beginLine, beginColumn + 1);
-                    string tokenValue = "";
-                    int tokenLength = 0;
-
-                    if (!ExtractTokenLength("token recognition error at: ", ""))
-                    {
-                        if (ExtractTokenLength("missing ", " at "))
-                        {
-                            tokenLength = 1;
-                        }
-                        else if (!ExtractTokenLength("extraneous input ", " expecting "))
-                        {
-                            if (!ExtractTokenLength("mismatched input ", " expecting "))
-                            {
-                                if (ExtractTokenLength("no viable alternative at input ", ""))
-                                {
-                                    var tokenValueSpan = tokenValue.AsSpan();
-                                    int newIndex = start;
-
-                                    while (newIndex > 0)
-                                    {
-                                        var span = _result.Text.Text.AsSpan(newIndex, tokenLength);
-                                        if (span.SequenceEqual(tokenValueSpan))
-                                        {
-                                            tokenLength = newIndex + tokenLength - start;
-                                            break;
-                                        }
-
-                                        newIndex--;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    bool ExtractTokenLength(string errorTitle, string errorTitle2)
-                    {
-                        if (errorMessage.StartsWith(errorTitle))
-                        {
-                            int secondIndex = errorTitle2 != ""
-                                ? errorMessage.IndexOf(errorTitle2, StringComparison.Ordinal)
-                                : errorMessage.Length;
-                            if (secondIndex != -1)
-                            {
-                                tokenValue = errorMessage.Substring(errorTitle.Length, secondIndex - errorTitle.Length);
-                                tokenValue = TrimAndUnescape(tokenValue);
-                                tokenLength = tokenValue.Length;
-                            }
-
-                            return true;
-                        }
-
-                        return false;
-                    }
-
-                    error = new ParsingError(new TextSpan(start, tokenLength, _result.Text), errorString, WorkflowStage.TextParsed);
+                    errorString = $"{words[0]} {beginLine}:{beginColumn + 1} {words[2]}";
+                    error = new ParsingError(TextHelpers.ExtractTextSpan(start, errorMessage, _result.Text),
+                        errorString, WorkflowStage.TextParsed);
                 }
                 catch
                 {
@@ -241,13 +189,6 @@ namespace AntlrGrammarEditor.Processors
                 }
                 AddError(error);
             }
-        }
-
-        private static string TrimAndUnescape(string tokenValue)
-        {
-            tokenValue = tokenValue.Trim('\'');
-            tokenValue = tokenValue.Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\t", "\t");
-            return tokenValue;
         }
 
         private void TextParsing_OutputDataReceived(object sender, DataReceivedEventArgs e)
