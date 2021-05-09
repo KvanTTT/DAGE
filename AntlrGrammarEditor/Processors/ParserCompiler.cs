@@ -353,13 +353,14 @@ namespace AntlrGrammarEditor.Processors
             foreach (string file in generatedFiles)
             {
                 var shortFileName = Path.GetFileNameWithoutExtension(file);
-                stringBuilder.AppendLine($"var {shortFileName} = require('./{shortFileName}');");
+                stringBuilder.AppendLine($"import {shortFileName} from './{shortFileName}.js';");
             }
 
             string compileTestFileName = GenerateCompilerHelperFileName();
 
             File.WriteAllText(Path.Combine(workingDirectory, compileTestFileName), stringBuilder.ToString());
 
+            File.Copy(Path.Combine(runtimeDir, "package.json"), Path.Combine(workingDirectory, "package.json"), true);
             if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.js"),
@@ -510,7 +511,7 @@ namespace AntlrGrammarEditor.Processors
                 else if (runtime == Runtime.JavaScript)
                 {
                     code = code.Replace(caseInsensitiveBlockMarker,
-                        "var AntlrCaseInsensitiveInputStream = require('./AntlrCaseInsensitiveInputStream').AntlrCaseInsensitiveInputStream;");
+                        "import AntlrCaseInsensitiveInputStream from './AntlrCaseInsensitiveInputStream.js';");
                 }
                 else if (runtime == Runtime.Php)
                 {
@@ -706,7 +707,7 @@ namespace AntlrGrammarEditor.Processors
             }
             else
             {
-                //AddError(new ParsingError(TextSpan.Empty, data, WorkflowStage.ParserCompilied));
+                //AddError(new ParsingError(TextSpan.Empty, data, WorkflowStage.ParserCompiled));
             }
         }
 
@@ -824,23 +825,48 @@ namespace AntlrGrammarEditor.Processors
             //    at Object.<anonymous> (Absolute\Path\To\AntlrJavaScriptTest.js:1:85)
             //    at Module._compile (module.js:409:26)
             //    at Object.Module._extensions..js (module.js:416:10)
+
+            // (node:17616) ExperimentalWarning: The ESM module loader is experimental.
             string message = "";
             string grammarFileName = "";
             TextSpan errorSpan = TextSpan.Empty;
+            bool isWarning = false;
+            string firstLine = _buffer[0];
+            int semicolonLastIndex = firstLine.LastIndexOf(':');
             try
             {
-                int semicolonLastIndex = _buffer[0].LastIndexOf(':');
-                string codeFileName = Path.GetFileName(_buffer[0].Remove(semicolonLastIndex));
-                if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> mapping))
+                if (semicolonLastIndex != -1)
                 {
-                    int codeLine = int.Parse(_buffer[0].Substring(semicolonLastIndex + 1));
-                    grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.JavaScript], codeFileName);
-                    errorSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine, grammarFileName);
+                    string beforeLastPart = firstLine.Remove(semicolonLastIndex);
+                    string lastPart = firstLine.Substring(semicolonLastIndex + 1);
+
+                    if (!int.TryParse(lastPart, out int codeLine) && beforeLastPart.Contains("Warning"))
+                    {
+                        AddError(new ParsingError(errorSpan, firstLine, WorkflowStage.ParserCompiled, true));
+                        if (_buffer.Count == 1)
+                            return;
+
+                        firstLine = _buffer[1];
+                        semicolonLastIndex = firstLine.LastIndexOf(':');
+                        beforeLastPart = firstLine.Remove(semicolonLastIndex);
+                        lastPart = firstLine.Substring(semicolonLastIndex + 1);
+                    }
+
+                    string codeFileName = Path.GetFileName(beforeLastPart);
+                    if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> mapping) &&
+                        int.TryParse(lastPart, out codeLine))
+                    {
+                        grammarFileName =
+                            GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.JavaScript], codeFileName);
+                        errorSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine, grammarFileName);
+                    }
                 }
             }
             catch
             {
+                // ignored
             }
+
             if (_buffer.Count > 0)
             {
                 message = _buffer.LastOrDefault(line => !line.StartsWith("    at")) ?? "";

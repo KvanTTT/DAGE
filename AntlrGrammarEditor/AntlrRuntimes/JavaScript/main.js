@@ -1,8 +1,8 @@
-var fs = require("fs");
-var antlr4 = require('antlr4/index');
-let PredictionMode = require('antlr4/atn/PredictionMode').PredictionMode;
-var __TemplateGrammarName__Lexer = require('./__TemplateGrammarName__Lexer').__TemplateGrammarName__Lexer;
-/*$ParserInclude*/var __TemplateGrammarName__Parser = require('./__TemplateGrammarName__Parser').__TemplateGrammarName__Parser;/*ParserInclude$*/
+import fs from 'fs';
+import antlr4 from 'antlr4';
+import PredictionMode from 'antlr4/atn/PredictionMode.js';
+import __TemplateGrammarName__Lexer from './__TemplateGrammarName__Lexer.js';
+/*$ParserInclude*/import __TemplateGrammarName__Parser from './__TemplateGrammarName__Parser.js';/*ParserInclude$*/
 /*AntlrCaseInsensitive*/
 
 var fileName = "../../Text"
@@ -31,10 +31,10 @@ if (process.argv.length > 3) {
 }
 var parser = new __TemplateGrammarName__Parser(tokensStream);
 parser._interp.predictionMode = mode === "sll"
-    ? PredictionMode.SLL
+    ? PredictionMode.PredictionMode.SLL
     : mode === "ll"
-        ? PredictionMode.LL
-        : PredictionMode.LL_EXACT_AMBIG_DETECTION;
+        ? PredictionMode.PredictionMode.LL
+        : PredictionMode.PredictionMode.LL_EXACT_AMBIG_DETECTION;
 var ruleName = rootRule === undefined ? parser.ruleNames[0] : rootRule;
 var ast = parser[ruleName]();
 console.log("Tree " + ast.toStringTree(null, parser));

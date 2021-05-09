@@ -39,7 +39,7 @@ namespace AntlrGrammarEditor
                 runtime: Runtime.Java,
                 name: "Java",
                 dLanguage: "Java",
-                runtimeLibrary: "antlr-runtime-4.8.jar",
+                runtimeLibrary: "antlr-runtime-4.9.2.jar",
                 extensions: new[] { "java" },
                 mainFile: "Main.java",
                 antlrInputStream: "CharStreams.fromFileName",
@@ -203,10 +203,10 @@ namespace AntlrGrammarEditor
             return runtimeInfo;
         }
 
-        public RuntimeInfo(Runtime runtime, string name,
+        private RuntimeInfo(Runtime runtime, string name,
             string dLanguage, string runtimeLibrary, string[] extensions, string mainFile, string antlrInputStream,
             string runtimeToolName, string versionArg, bool interpreted = false,
-            string jarGenerator = "antlr-4.8-complete.jar",
+            string jarGenerator = "antlr-4.9.2-complete.jar",
             string lexerPostfix = "Lexer", string parserPostfix = "Parser",
             string baseListenerPostfix = "BaseListener", string listenerPostfix = "Listener",
             string baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor")

@@ -1,4 +1,4 @@
-var antlr4 = require('antlr4/index');
+import antlr4 from 'antlr4';
 
 function AntlrCaseInsensitiveInputStream(data, lowerCase) {
     antlr4.InputStream.call(this, data);
@@ -27,4 +27,4 @@ AntlrCaseInsensitiveInputStream.prototype.LA = function (offset) {
     return this._lookaheadData[pos];
 };
 
-exports.AntlrCaseInsensitiveInputStream = AntlrCaseInsensitiveInputStream;
+export default AntlrCaseInsensitiveInputStream;

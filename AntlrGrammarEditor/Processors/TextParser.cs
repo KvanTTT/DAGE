@@ -166,8 +166,10 @@ namespace AntlrGrammarEditor.Processors
 
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
+            var runtime = _result.ParserCompiledState.ParserGeneratedState.Runtime;
             if (!string.IsNullOrEmpty(e.Data) &&
-                !(_result.ParserCompiledState.ParserGeneratedState.Runtime == Runtime.Java && e.IsIgnoreJavaError()))
+                !(runtime == Runtime.Java && e.IsIgnoreJavaError()) &&
+                !(runtime == Runtime.JavaScript && e.Data.Contains("Warning:")))
             {
                 var errorString = Helpers.FixEncoding(e.Data);
                 ParsingError error;
