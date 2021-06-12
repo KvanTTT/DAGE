@@ -3,19 +3,13 @@ using AntlrGrammarEditor.Processors;
 
 namespace AntlrGrammarEditor.WorkflowState
 {
-    public class InputState : IWorkflowState
+    public class InputState : WorkflowState
     {
-        public WorkflowStage Stage => WorkflowStage.Input;
+        public override WorkflowStage Stage => WorkflowStage.Input;
 
-        public bool HasErrors => Exception != null;
-
-        public IWorkflowState PreviousState => null;
-
-        public Exception Exception { get; set; }
+        public override WorkflowState PreviousState => null;
 
         public Grammar Grammar { get; }
-
-        public string Command { get; set; }
 
         public InputState(Grammar grammar)
         {

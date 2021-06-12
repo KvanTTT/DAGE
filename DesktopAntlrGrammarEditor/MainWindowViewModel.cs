@@ -565,7 +565,7 @@ namespace DesktopAntlrGrammarEditor
 
         private void SetupWorkflowSubscriptions()
         {
-            Observable.FromEventPattern<IWorkflowState>(
+            Observable.FromEventPattern<WorkflowState>(
                 ev => _workflow.StateChanged += ev, ev => _workflow.StateChanged -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev => this.RaisePropertyChanged(nameof(CurrentState)));

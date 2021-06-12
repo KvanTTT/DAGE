@@ -15,7 +15,7 @@ namespace AntlrGrammarEditor.Processors
         private string _packageName;
         private string _generatorTool;
 
-        private IWorkflowState _currentState;
+        private WorkflowState.WorkflowState _currentState;
 
         private CancellationTokenSource _cancellationTokenSource;
         private object _lockObj = new object();
@@ -26,7 +26,7 @@ namespace AntlrGrammarEditor.Processors
 
         public WorkflowStage EndStage { get; set; } = WorkflowStage.TextParsed;
 
-        public IWorkflowState CurrentState => _currentState;
+        public WorkflowState.WorkflowState CurrentState => _currentState;
 
         public Grammar Grammar
         {
@@ -127,7 +127,7 @@ namespace AntlrGrammarEditor.Processors
             }
         }
 
-        public event EventHandler<IWorkflowState> StateChanged;
+        public event EventHandler<WorkflowState.WorkflowState> StateChanged;
 
         public event EventHandler<WorkflowStage> ClearErrorsEvent;
 
@@ -142,15 +142,15 @@ namespace AntlrGrammarEditor.Processors
             Grammar = grammar;
         }
 
-        public Task<IWorkflowState> ProcessAsync()
+        public Task<WorkflowState.WorkflowState> ProcessAsync()
         {
             StopIfRequired();
 
-            Func<IWorkflowState> func = Process;
+            Func<WorkflowState.WorkflowState> func = Process;
             return Task.Run(func);
         }
 
-        public IWorkflowState Process()
+        public WorkflowState.WorkflowState Process()
         {
             _cancellationTokenSource = new CancellationTokenSource();
 

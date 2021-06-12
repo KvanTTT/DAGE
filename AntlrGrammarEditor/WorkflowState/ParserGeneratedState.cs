@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using AntlrGrammarEditor.Processors;
 
 namespace AntlrGrammarEditor.WorkflowState
 {
-    public class ParserGeneratedState : IWorkflowState
+    public class ParserGeneratedState : WorkflowState
     {
-        public WorkflowStage Stage => WorkflowStage.ParserGenerated;
+        public override WorkflowStage Stage => WorkflowStage.ParserGenerated;
 
-        public bool HasErrors => Exception != null || Errors.Any(error => !error.IsWarning);
-
-        public IWorkflowState PreviousState => GrammarCheckedState;
+        public override WorkflowState PreviousState => GrammarCheckedState;
 
         public GrammarCheckedState GrammarCheckedState { get; }
 
@@ -22,12 +18,6 @@ namespace AntlrGrammarEditor.WorkflowState
         public bool IncludeListener { get; }
 
         public bool IncludeVisitor { get; }
-
-        public Exception Exception { get; set; }
-
-        public List<ParsingError> Errors { get; } = new List<ParsingError>();
-
-        public string Command { get; set; }
 
         public ParserGeneratedState(GrammarCheckedState grammarCheckedState, string packageName, Runtime runtime, bool includeListener, bool includeVisitor)
         {

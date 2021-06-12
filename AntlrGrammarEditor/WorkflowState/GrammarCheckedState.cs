@@ -1,19 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using AntlrGrammarEditor.Processors;
 
 namespace AntlrGrammarEditor.WorkflowState
 {
-    public class GrammarCheckedState : IWorkflowState
+    public class GrammarCheckedState : WorkflowState
     {
-        public WorkflowStage Stage => WorkflowStage.GrammarChecked;
+        public override WorkflowStage Stage => WorkflowStage.GrammarChecked;
 
-        public bool HasErrors => Exception != null || Errors.Any(error => !error.IsWarning);
-
-        public IWorkflowState PreviousState => InputState;
-
-        public Exception Exception { get; set; }
+        public override WorkflowState PreviousState => InputState;
 
         public InputState InputState { get; }
 
@@ -39,13 +34,9 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public List<string> Rules { get; set; } = new List<string>();
 
-        public List<ParsingError> Errors { get; } = new List<ParsingError>();
-
         public string LexerSuperClass { get; set; }
 
         public string ParserSuperClass { get; set; }
-
-        public string Command { get; set; }
 
         public GrammarCheckedState(InputState inputState)
         {
