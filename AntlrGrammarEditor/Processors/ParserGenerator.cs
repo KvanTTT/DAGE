@@ -113,10 +113,10 @@ namespace AntlrGrammarEditor.Processors
             }
             catch (Exception ex)
             {
-                _result.Exception = ex;
+                _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.ParserGenerated));
                 if (!(ex is OperationCanceledException))
                 {
-                    ErrorEvent?.Invoke(this, new ParsingError(ex, WorkflowStage.ParserGenerated));
+                    DiagnosisEvent?.Invoke(this, new Diagnosis(ex, WorkflowStage.ParserGenerated));
                 }
             }
             finally
@@ -149,9 +149,9 @@ namespace AntlrGrammarEditor.Processors
                 }
 
                 bool isWarning = parts.Length > 0 && parts[0].StartsWith("warning");
-                ParsingError error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated, isWarning);
-                ErrorEvent?.Invoke(this, error);
-                _result.Errors.Add(error);
+                Diagnosis diagnosis = new Diagnosis(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated, isWarning);
+                DiagnosisEvent?.Invoke(this, diagnosis);
+                _result.AddDiagnosis(diagnosis);
             }
         }
 

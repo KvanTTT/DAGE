@@ -12,8 +12,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Lexer;
 
-        public CaseInsensitiveTypeOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<ParsingError> errorEvent) :
-            base(codeSource, grammarType, errorEvent)
+        public CaseInsensitiveTypeOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
+            base(codeSource, grammarType, diagnosisEvent)
         {
         }
     }
@@ -24,8 +24,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Combined;
 
-        public RuntimeOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<ParsingError> errorEvent)
-            : base(codeSource, grammarType, errorEvent)
+        public RuntimeOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+            : base(codeSource, grammarType, diagnosisEvent)
         {
         }
     }
@@ -36,8 +36,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Combined;
 
-        public PackageOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<ParsingError> errorEvent)
-            : base(codeSource, grammarType, errorEvent)
+        public PackageOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+            : base(codeSource, grammarType, diagnosisEvent)
         {
         }
     }
@@ -48,8 +48,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Separated;
 
-        public VisitorOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<ParsingError> errorEvent) :
-            base(codeSource, grammarType, errorEvent)
+        public VisitorOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
+            base(codeSource, grammarType, diagnosisEvent)
         {
         }
     }
@@ -60,8 +60,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Separated;
 
-        public ListenerOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<ParsingError> errorEvent) :
-            base(codeSource, grammarType, errorEvent)
+        public ListenerOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
+            base(codeSource, grammarType, diagnosisEvent)
         {
         }
     }
@@ -74,8 +74,8 @@ namespace AntlrGrammarEditor.Processors
 
         public List<string> ExistingRules { get; }
 
-        public RootOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<ParsingError> errorEvent, List<string> existingRules)
-            : base(codeSource, grammarType, errorEvent)
+        public RootOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent, List<string> existingRules)
+            : base(codeSource, grammarType, diagnosisEvent)
         {
             ExistingRules = existingRules;
         }
@@ -98,8 +98,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Separated;
 
-        public PredictionModeOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<ParsingError> errorEvent)
-            : base(codeSource, grammarType, errorEvent)
+        public PredictionModeOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+            : base(codeSource, grammarType, diagnosisEvent)
         {
         }
     }
@@ -118,14 +118,14 @@ namespace AntlrGrammarEditor.Processors
 
         private bool IsAlreadyDefined { get; set; }
 
-        public Action<ParsingError> ErrorAction { get; }
+        public Action<Diagnosis> ErrorAction { get; }
 
-        protected OptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<ParsingError> errorEvent)
+        protected OptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
         {
             Regex = new Regex($@"({Name})\s*=\s*(\w+);", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             CodeSource = codeSource ?? throw new ArgumentNullException(nameof(codeSource));
             GrammarType = grammarType;
-            ErrorAction = errorEvent ?? throw new ArgumentNullException(nameof(errorEvent));
+            ErrorAction = diagnosisEvent ?? throw new ArgumentNullException(nameof(diagnosisEvent));
         }
 
         public bool Match(IToken token, out T value)
@@ -215,7 +215,7 @@ namespace AntlrGrammarEditor.Processors
         {
             var warningTextSpan = new TextSpan(token.StartIndex + group.Index, group.Length, codeSource);
             var lineColumn = codeSource.ToLineColumn(warningTextSpan);
-            var error = new ParsingError(warningTextSpan,
+            var error = new Diagnosis(warningTextSpan,
                 Helpers.FormatErrorMessage(codeSource, lineColumn.BeginLine, lineColumn.BeginColumn, message, true),
                 WorkflowStage.GrammarChecked, true);
             ErrorAction(error);

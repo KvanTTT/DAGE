@@ -67,7 +67,7 @@ namespace AntlrGrammarEditor.Tests
             {
                 workflow.Runtime = runtime;
                 var state = (ParserGeneratedState)workflow.Process();
-                Assert.IsFalse(state.HasErrors, state.ErrorMessage);
+                Assert.IsFalse(state.HasErrors, state.DiagnosisMessage);
 
                 RuntimeInfo runtimeInfo = RuntimeInfo.Runtimes[runtime];
                 var extensions = runtimeInfo.Extensions;
@@ -93,22 +93,22 @@ WS:    [ \r\n\t]+ -> skip;";
             var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.ErrorMessage);
+            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.DiagnosisMessage);
 
             var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
                 new[]
                 {
-                    new ParsingError(3, 10, 3, 12, "Error: test.g4:3:10: token recognition error at: '-z'", grammarSource,
+                    new Diagnosis(3, 10, 3, 12, "Error: test.g4:3:10: token recognition error at: '-z'", grammarSource,
                         WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 12, 3, 13, "Error: test.g4:3:12: token recognition error at: ']'", grammarSource,
+                    new Diagnosis(3, 12, 3, 13, "Error: test.g4:3:12: token recognition error at: ']'", grammarSource,
                         WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 13, 3, 14,
+                    new Diagnosis(3, 13, 3, 14,
                         "Error: test.g4:3:13: mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", grammarSource,
                         WorkflowStage.GrammarChecked)
                 },
-                grammarCheckedState.Errors);
+                grammarCheckedState.Diagnoses);
         }
 
         [Test]
@@ -130,12 +130,12 @@ start: DIGIT+;
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new ParsingError(2, 10, 2, 12, $"Error: {TestGrammarName}Lexer.g4:2:10: token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(2, 12, 2, 13, $"Error: {TestGrammarName}Lexer.g4:2:12: token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(2, 13, 2, 14, $"Error: {TestGrammarName}Lexer.g4:2:13: mismatched input '+' expecting {{ASSIGN, PLUS_ASSIGN}}", testLexerSource, WorkflowStage.GrammarChecked),
-                    new ParsingError(3, 1, 3, 2, $"Error: {TestGrammarName}Parser.g4:3:1: extraneous input '#' expecting {{<EOF>, 'mode'}}", testParserSource, WorkflowStage.GrammarChecked)
+                    new Diagnosis(2, 10, 2, 12, $"Error: {TestGrammarName}Lexer.g4:2:10: token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
+                    new Diagnosis(2, 12, 2, 13, $"Error: {TestGrammarName}Lexer.g4:2:12: token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
+                    new Diagnosis(2, 13, 2, 14, $"Error: {TestGrammarName}Lexer.g4:2:13: mismatched input '+' expecting {{ASSIGN, PLUS_ASSIGN}}", testLexerSource, WorkflowStage.GrammarChecked),
+                    new Diagnosis(3, 1, 3, 2, $"Error: {TestGrammarName}Parser.g4:3:1: extraneous input '#' expecting {{<EOF>, 'mode'}}", testParserSource, WorkflowStage.GrammarChecked)
                 },
-                grammarCheckedState.Errors);
+                grammarCheckedState.Diagnoses);
         }
 
         [Test]
@@ -151,18 +151,18 @@ start: DIGIT+;
             var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage, state.ErrorMessage);
+            Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage, state.DiagnosisMessage);
 
             var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
             char separator = Path.DirectorySeparatorChar;
             string testGrammarFullName = $"{Environment.CurrentDirectory}{separator}.{separator}{TestGrammarName}.g4";
             ParserGeneratedState parserGeneratedState = state as ParserGeneratedState;
-            string str = new ParsingError(2, 24, $"error(56): {testGrammarFullName}:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated).ToString();
+            string str = new Diagnosis(2, 24, $"error(56): {testGrammarFullName}:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated).ToString();
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new ParsingError(2, 24, $"error(56): {testGrammarFullName}:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
+                    new Diagnosis(2, 24, $"error(56): {testGrammarFullName}:2:24: reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
                 },
-                parserGeneratedState.Errors);
+                parserGeneratedState.Diagnoses);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -187,10 +187,10 @@ start: DIGIT+;
             workflow.Runtime = runtime;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserCompiled, state.Stage, state.ErrorMessage);
+            Assert.AreEqual(WorkflowStage.ParserCompiled, state.Stage, state.DiagnosisMessage);
 
             ParserCompiledState parserGeneratedState = state as ParserCompiledState;
-            Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
+            Assert.GreaterOrEqual(parserGeneratedState.Diagnoses.Count, 1);
             //Assert.AreEqual(runtime == Runtime.Go ? 1 : 2, parserGeneratedState.Errors[0].TextSpan.GetLineColumn().BeginLine);
         }
 
@@ -252,19 +252,19 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName};
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.ErrorMessage);
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.DiagnosisMessage);
 
             TextParsedState textParsedState = (TextParsedState)state;
             var textSource = textParsedState.Text;
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new ParsingError(1, 1, 1, 2, "line 1:1 token recognition error at: '#'", textSource, WorkflowStage.TextParsed),
-                    new ParsingError(2, 10, 2, 11, "line 2:10 missing '))' at ';'", textSource, WorkflowStage.TextParsed),
-                    new ParsingError(3, 11, 3, 14, "line 3:11 extraneous input 'id2' expecting ';'", textSource, WorkflowStage.TextParsed),
-                    new ParsingError(4, 5, 4, 7, "line 4:5 no viable alternative at input 'aa  dd'", textSource, WorkflowStage.TextParsed),
-                    new ParsingError(5, 7, 5, 10, "line 5:7 mismatched input '123' expecting Id", textSource, WorkflowStage.TextParsed)
+                    new Diagnosis(1, 1, 1, 2, "line 1:1 token recognition error at: '#'", textSource, WorkflowStage.TextParsed),
+                    new Diagnosis(2, 10, 2, 11, "line 2:10 missing '))' at ';'", textSource, WorkflowStage.TextParsed),
+                    new Diagnosis(3, 11, 3, 14, "line 3:11 extraneous input 'id2' expecting ';'", textSource, WorkflowStage.TextParsed),
+                    new Diagnosis(4, 5, 4, 7, "line 4:5 no viable alternative at input 'aa  dd'", textSource, WorkflowStage.TextParsed),
+                    new Diagnosis(5, 7, 5, 10, "line 5:7 mismatched input '123' expecting Id", textSource, WorkflowStage.TextParsed)
                 },
-                textParsedState.Errors);
+                textParsedState.Diagnoses);
 
             // TODO: unify in different runtimes
             //Assert.AreEqual("(root (missingToken error (( <missing '))'> ;) (extraneousToken error id1 id2 ;) (noViableAlternative aa dd) (mismatchedInput error 123 456 ;) EOF)", textParsedState.Tree);
@@ -303,9 +303,9 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.ErrorMessage);
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.DiagnosisMessage);
             TextParsedState textParsedState = state as TextParsedState;
-            Assert.AreEqual(0, textParsedState.Errors.Count, string.Join(Environment.NewLine, textParsedState.Errors));
+            Assert.AreEqual(0, textParsedState.Diagnoses.Count, string.Join(Environment.NewLine, textParsedState.Diagnoses));
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
         }
 
@@ -324,8 +324,8 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.ErrorMessage);
-            Assert.IsTrue(((TextParsedState)state).ParserCompiledState.ParserGeneratedState.Errors[0].IsWarning);
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.DiagnosisMessage);
+            Assert.IsTrue(((TextParsedState)state).ParserCompiledState.ParserGeneratedState.Diagnoses[0].IsWarning);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -355,7 +355,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
 
             var allFiles = Directory.GetFiles(Path.Combine(ParserGenerator.HelperDirectoryName, TestGrammarName, runtime.ToString()));
 
@@ -384,16 +384,16 @@ error 123 456 ;   // mismatched input '123' expecting Id");
 
             File.WriteAllText(TestTextName, "V1");
             var state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
 
             workflow.Root = "root1";
             state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
 
             workflow.Root = "root2";
             File.WriteAllText(TestTextName, "V2");
             state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -446,7 +446,7 @@ TOKEN:  'a';";
 
             File.WriteAllText(TestTextName, "A");
             var state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -491,11 +491,11 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
 
             workflow.PredictionMode = PredictionMode.LL;
             var llState = workflow.Process();
-            Assert.IsTrue((llState as TextParsedState)?.HasErrors == false, llState.ErrorMessage);
+            Assert.IsTrue((llState as TextParsedState)?.HasErrors == false, llState.DiagnosisMessage);
 
             workflow.PredictionMode = PredictionMode.SLL;
             var sllState = workflow.Process();
-            Assert.IsTrue((sllState as TextParsedState)?.HasErrors == true, sllState.ErrorMessage);
+            Assert.IsTrue((sllState as TextParsedState)?.HasErrors == true, sllState.DiagnosisMessage);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -521,7 +521,7 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
             var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName};
 
             var state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
         }
 
         [Test]
@@ -574,17 +574,17 @@ TOKEN: 'token';";
 
             void CheckIncorrect(string optionName, bool notError = false)
             {
-                bool Checker(ParsingError error) => error.Message.Contains(optionName != "root"
+                bool Checker(Diagnosis error) => error.Message.Contains(optionName != "root"
                     ? $"Incorrect option {optionName}"
                     : "Root incorrect is not exist");
 
                 if (!notError)
                 {
-                    Assert.IsTrue(state.Errors.Any(Checker));
+                    Assert.IsTrue(state.Diagnoses.Any(Checker));
                 }
                 else
                 {
-                    Assert.IsFalse(state.Errors.Any(Checker));
+                    Assert.IsFalse(state.Diagnoses.Any(Checker));
                 }
             }
 
@@ -598,7 +598,7 @@ TOKEN: 'token';";
 
             void CheckDuplication(string optionName)
             {
-                Assert.IsTrue(state.Errors.Any(error => error.Message.Contains($"Option {optionName} is already defined")));
+                Assert.IsTrue(state.Diagnoses.Any(error => error.Message.Contains($"Option {optionName} is already defined")));
             }
         }
 
@@ -630,10 +630,10 @@ TOKEN: 'token';";
             workflow.Runtime = runtime;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserCompiled, state.Stage, state.Exception?.ToString());
+            Assert.AreEqual(WorkflowStage.ParserCompiled, state.Stage, state.DiagnosisMessage);
 
             ParserCompiledState parserGeneratedState = state as ParserCompiledState;
-            var errors = parserGeneratedState.Errors;
+            var errors = parserGeneratedState.Diagnoses;
             Assert.AreEqual(8, errors.Count);
             Assert.AreEqual(2, errors.Where(e => e.TextSpan.GetLineColumn().BeginLine == 3).Count());
             Assert.AreEqual(2, errors.Where(e => e.TextSpan.GetLineColumn().BeginLine == 6).Count());

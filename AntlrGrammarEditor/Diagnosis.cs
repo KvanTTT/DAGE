@@ -3,7 +3,7 @@ using AntlrGrammarEditor.Processors;
 
 namespace AntlrGrammarEditor
 {
-    public class ParsingError
+    public class Diagnosis
     {
         public TextSpan TextSpan { get; }
 
@@ -13,26 +13,26 @@ namespace AntlrGrammarEditor
 
         public WorkflowStage WorkflowStage { get; }
 
-        public ParsingError(Exception ex, WorkflowStage stage)
+        public Diagnosis(Exception ex, WorkflowStage stage)
         {
             TextSpan = TextSpan.Empty;
             Message = ex.ToString();
             WorkflowStage = stage;
         }
 
-        public ParsingError(string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
+        public Diagnosis(string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
             : this(1, 1, message, codeSource, stage, isWarning)
         {
         }
 
-        public ParsingError(int line, int column, string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
+        public Diagnosis(int line, int column, string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
             : this(new LineColumnTextSpan(line, column, codeSource).GetTextSpan(), message, stage, isWarning)
         {
             Message = message;
             WorkflowStage = stage;
         }
 
-        public ParsingError(int beginLine, int beginColumn, int endLine, int endColumn,
+        public Diagnosis(int beginLine, int beginColumn, int endLine, int endColumn,
             string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
             : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, codeSource).GetTextSpan(), message, stage, isWarning)
         {
@@ -40,7 +40,7 @@ namespace AntlrGrammarEditor
             WorkflowStage = stage;
         }
 
-        public ParsingError(TextSpan textSpan, string message, WorkflowStage stage, bool isWarning = false)
+        public Diagnosis(TextSpan textSpan, string message, WorkflowStage stage, bool isWarning = false)
         {
             TextSpan = textSpan;
             Message = message;
@@ -50,11 +50,12 @@ namespace AntlrGrammarEditor
 
         public override bool Equals(object obj)
         {
-            if (obj is ParsingError parsingError)
+            if (obj is Diagnosis diagnosis)
             {
-                return TextSpan.Equals(parsingError.TextSpan) &&
-                       Message == parsingError.Message &&
-                       WorkflowStage == parsingError.WorkflowStage;
+                return TextSpan.Equals(diagnosis.TextSpan) &&
+                       Message == diagnosis.Message &&
+                       WorkflowStage == diagnosis.WorkflowStage &&
+                       IsWarning == diagnosis.IsWarning;
             }
 
             return false;

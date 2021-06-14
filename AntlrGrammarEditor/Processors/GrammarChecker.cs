@@ -17,13 +17,10 @@ namespace AntlrGrammarEditor.Processors
             try
             {
                 var antlrErrorListener = new AntlrErrorListener();
-                antlrErrorListener.ErrorEvent += ErrorEvent;
+                antlrErrorListener.ErrorEvent += DiagnosisEvent;
                 antlrErrorListener.ErrorEvent += (sender, error) =>
                 {
-                    lock (_result.Errors)
-                    {
-                        _result.Errors.Add(error);
-                    }
+                    _result.AddDiagnosis(error);
                 };
 
                 foreach (string grammarFileName in grammar.Files)
@@ -33,10 +30,10 @@ namespace AntlrGrammarEditor.Processors
             }
             catch (Exception ex)
             {
-                _result.Exception = ex;
+                _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.GrammarChecked));
                 if (!(ex is OperationCanceledException))
                 {
-                    ErrorEvent?.Invoke(this, new ParsingError(ex, WorkflowStage.GrammarChecked));
+                    DiagnosisEvent?.Invoke(this, new Diagnosis(ex, WorkflowStage.GrammarChecked));
                 }
             }
 
@@ -93,19 +90,19 @@ namespace AntlrGrammarEditor.Processors
                 _result.Rules = grammarInfoCollectorListener.Rules;
             }
 
-            void ErrorAction(ParsingError parsingError)
+            void DiagnosisAction(Diagnosis diagnosis)
             {
-                ErrorEvent?.Invoke(this, parsingError);
-                _result.Errors.Add(parsingError);
+                DiagnosisEvent?.Invoke(this, diagnosis);
+                _result.AddDiagnosis(diagnosis);
             }
 
-            var caseInsensitiveTypeOptionMatcher = new CaseInsensitiveTypeOptionMatcher(codeSource, grammarType, ErrorAction);
-            var runtimeOptionMatcher = new RuntimeOptionMatcher(codeSource, grammarType, ErrorAction);
-            var visitorOptionMatcher = new VisitorOptionMatcher(codeSource, grammarType, ErrorAction);
-            var listenerOptionMatcher = new ListenerOptionMatcher(codeSource, grammarType, ErrorAction);
-            var packageOptionMatcher = new PackageOptionMatcher(codeSource, grammarType, ErrorAction);
-            var rootOptionMatcher = new RootOptionMatcher(codeSource, grammarType, ErrorAction, _result.Rules);
-            var predictionOptionMatcher = new PredictionModeOptionMatcher(codeSource, grammarType, ErrorAction);
+            var caseInsensitiveTypeOptionMatcher = new CaseInsensitiveTypeOptionMatcher(codeSource, grammarType, DiagnosisAction);
+            var runtimeOptionMatcher = new RuntimeOptionMatcher(codeSource, grammarType, DiagnosisAction);
+            var visitorOptionMatcher = new VisitorOptionMatcher(codeSource, grammarType, DiagnosisAction);
+            var listenerOptionMatcher = new ListenerOptionMatcher(codeSource, grammarType, DiagnosisAction);
+            var packageOptionMatcher = new PackageOptionMatcher(codeSource, grammarType, DiagnosisAction);
+            var rootOptionMatcher = new RootOptionMatcher(codeSource, grammarType, DiagnosisAction, _result.Rules);
+            var predictionOptionMatcher = new PredictionModeOptionMatcher(codeSource, grammarType, DiagnosisAction);
 
             foreach (IToken token in tokens)
             {

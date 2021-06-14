@@ -6,7 +6,7 @@ namespace AntlrGrammarEditor
 {
     public class AntlrErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
     {
-        public event EventHandler<ParsingError> ErrorEvent;
+        public event EventHandler<Diagnosis> ErrorEvent;
 
         public CodeSource CodeSource { get; set; }
 
@@ -15,7 +15,7 @@ namespace AntlrGrammarEditor
             int column = charPositionInLine + 1;
             var message = Helpers.FormatErrorMessage(CodeSource, line, column, msg);
             var start = CodeSource.LineColumnToPosition(line, column);
-            var parserError = new ParsingError( TextHelpers.ExtractTextSpan(start, msg, CodeSource), message, WorkflowStage.GrammarChecked);
+            var parserError = new Diagnosis(TextHelpers.ExtractTextSpan(start, msg, CodeSource), message, WorkflowStage.GrammarChecked);
             ErrorEvent?.Invoke(this, parserError);
         }
 
@@ -23,7 +23,7 @@ namespace AntlrGrammarEditor
         {
             var message = Helpers.FormatErrorMessage(CodeSource, line, charPositionInLine + 1, msg);
             var textSpan = TextSpan.FromBounds(offendingSymbol.StartIndex, offendingSymbol.StopIndex + 1, CodeSource);
-            var lexerError = new ParsingError(textSpan, message, WorkflowStage.GrammarChecked);
+            var lexerError = new Diagnosis(textSpan, message, WorkflowStage.GrammarChecked);
             ErrorEvent?.Invoke(this, lexerError);
         }
     }

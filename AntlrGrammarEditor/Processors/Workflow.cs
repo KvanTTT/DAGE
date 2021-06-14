@@ -131,7 +131,7 @@ namespace AntlrGrammarEditor.Processors
 
         public event EventHandler<WorkflowStage> ClearErrorsEvent;
 
-        public event EventHandler<ParsingError> ErrorEvent;
+        public event EventHandler<Diagnosis> DiagnosisEvent;
 
         public event EventHandler<(TextParsedOutput, object)> TextParsedOutputEvent;
 
@@ -226,7 +226,7 @@ namespace AntlrGrammarEditor.Processors
             switch (_currentState.Stage)
             {
                 case WorkflowStage.Input:
-                    var grammarChecker = new GrammarChecker {ErrorEvent = ErrorEvent};
+                    var grammarChecker = new GrammarChecker {DiagnosisEvent = DiagnosisEvent};
                     _currentState = grammarChecker.Check((InputState)_currentState, _cancellationTokenSource.Token);
                     break;
 
@@ -238,7 +238,7 @@ namespace AntlrGrammarEditor.Processors
 
                     var parserGenerator = new ParserGenerator(DetectedRuntime)
                     {
-                        ErrorEvent = ErrorEvent,
+                        DiagnosisEvent = DiagnosisEvent,
                         GeneratorTool = GeneratorTool,
                         PackageName = !string.IsNullOrWhiteSpace(PackageName) ? PackageName : grammarCheckedState.Package,
                         GenerateListener = GenerateListener ?? grammarCheckedState.Listener ?? false,
@@ -250,7 +250,7 @@ namespace AntlrGrammarEditor.Processors
                 case WorkflowStage.ParserGenerated:
                     var parserCompiler = new ParserCompiler
                     {
-                        ErrorEvent = ErrorEvent,
+                        DiagnosisEvent = DiagnosisEvent,
                         RuntimeLibrary = RuntimeLibrary
                     };
                     _currentState = parserCompiler.Compile((ParserGeneratedState)_currentState, _cancellationTokenSource.Token);
@@ -263,7 +263,7 @@ namespace AntlrGrammarEditor.Processors
                     {
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         RuntimeLibrary = RuntimeLibrary,
-                        ErrorEvent = ErrorEvent,
+                        DiagnosisEvent = DiagnosisEvent,
                         Root = !string.IsNullOrWhiteSpace(Root) ? Root : grammarCheckedState.Root,
                         PredictionMode = PredictionMode ?? grammarCheckedState.PredictionMode ?? Processors.PredictionMode.LL
                     };

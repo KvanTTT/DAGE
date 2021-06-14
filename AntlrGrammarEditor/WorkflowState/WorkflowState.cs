@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using AntlrGrammarEditor.Processors;
@@ -8,27 +7,33 @@ namespace AntlrGrammarEditor.WorkflowState
 {
     public abstract class WorkflowState
     {
+        private readonly List<Diagnosis> _diagnoses = new List<Diagnosis>();
+
         public abstract WorkflowStage Stage { get; }
 
         public abstract WorkflowState PreviousState { get; }
 
-        public bool HasErrors => Exception != null || Errors.Any(error => !error.IsWarning);
+        public bool HasErrors => Diagnoses.Any(error => !error.IsWarning);
 
-        public Exception Exception { get; set; }
-
-        public List<ParsingError> Errors { get; } = new List<ParsingError>();
+        public IReadOnlyList<Diagnosis> Diagnoses => _diagnoses;
 
         public string Command { get; set; }
 
-        public string ErrorMessage
+        public void AddDiagnosis(Diagnosis diagnosis)
+        {
+            lock (_diagnoses)
+            {
+                _diagnoses.Add(diagnosis);
+            }
+        }
+
+        public string DiagnosisMessage
         {
             get
             {
                 var result = new StringBuilder();
-                if (Exception != null)
-                    result.Append(Exception);
-                foreach (ParsingError parsingError in Errors)
-                    result.Append(parsingError);
+                foreach (Diagnosis diagnosis in Diagnoses)
+                    result.Append(diagnosis);
                 return result.ToString();
             }
         }

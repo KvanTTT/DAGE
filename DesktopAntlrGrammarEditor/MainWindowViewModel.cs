@@ -111,7 +111,7 @@ namespace DesktopAntlrGrammarEditor
             var availableRuntimes = new[]
             {
                 Runtime.Java, Runtime.CSharpStandard, Runtime.CSharpOptimized, Runtime.Python2, Runtime.Python3,
-                Runtime.Go, Runtime.Php, Runtime.Dart
+                Runtime.JavaScript, Runtime.Go, Runtime.Php, Runtime.Dart
             };
 
             _runtimeInfoWrappers = new Dictionary<Runtime, RuntimeInfoWrapper>();
@@ -575,8 +575,8 @@ namespace DesktopAntlrGrammarEditor
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev => this.RaisePropertyChanged(nameof(DetectedRuntime)));
 
-            Observable.FromEventPattern<ParsingError>(
-                ev => _workflow.ErrorEvent += ev, ev => _workflow.ErrorEvent -= ev)
+            Observable.FromEventPattern<Diagnosis>(
+                ev => _workflow.DiagnosisEvent += ev, ev => _workflow.DiagnosisEvent -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev =>
                 {
@@ -902,9 +902,9 @@ namespace DesktopAntlrGrammarEditor
                     int i = 0;
                     while (i < errorsList.Count)
                     {
-                        if (errorsList[i] is ParsingError parsingError)
+                        if (errorsList[i] is Diagnosis diagnosis)
                         {
-                            if (parsingError.WorkflowStage == e)
+                            if (diagnosis.WorkflowStage == e)
                             {
                                 errorsList.RemoveAt(i);
                                 continue;
@@ -938,30 +938,36 @@ namespace DesktopAntlrGrammarEditor
             ListBox listBox = (ListBox)sender;
             listBox.Focus();
 
-            if (listBox.SelectedItem is ParsingError parsingError)
+            if (listBox.SelectedItem is Diagnosis diagnosis)
             {
                 TextEditor textBox = ReferenceEquals(listBox, _grammarErrorsListBox) ? _grammarTextBox : _textTextBox;
+                string diagnosisFileName = diagnosis.TextSpan.Source.Name;
+                if (string.IsNullOrEmpty(diagnosisFileName))
+                {
+                    return;
+                }
+
                 if (ReferenceEquals(textBox, _grammarTextBox))
                 {
-                    OpenedGrammarFile = parsingError.TextSpan.Source.Name;
+                    OpenedGrammarFile = diagnosisFileName;
                 }
 
                 TextSpan selectTextSpan;
-                if (parsingError.TextSpan.Length != 0)
+                if (diagnosis.TextSpan.Length != 0)
                 {
-                    selectTextSpan = parsingError.TextSpan;
+                    selectTextSpan = diagnosis.TextSpan;
                 }
                 else
                 {
-                    int beginIndex = parsingError.TextSpan.Start;
-                    if (parsingError.TextSpan.End >= textBox.Text.Length)
+                    int beginIndex = diagnosis.TextSpan.Start;
+                    if (diagnosis.TextSpan.End >= textBox.Text.Length)
                     {
                         beginIndex = textBox.Text.Length - 1;
                         if (beginIndex < 0)
                             beginIndex = 0;
                     }
 
-                    selectTextSpan = new TextSpan(beginIndex, 1, parsingError.TextSpan.Source);
+                    selectTextSpan = new TextSpan(beginIndex, 1, diagnosis.TextSpan.Source);
                 }
 
                 int length = textBox.Text.Length;

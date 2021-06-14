@@ -92,10 +92,11 @@ namespace AntlrGrammarEditor.Processors
                 {
                     _result = new TextParsedState(state, new CodeSource("", ""));
                 }
-                _result.Exception = ex;
+
+                _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.TextParsed));
                 if (!(ex is OperationCanceledException))
                 {
-                    AddError(new ParsingError(ex, WorkflowStage.TextParsed));
+                    AddDiagnosis(new Diagnosis(ex, WorkflowStage.TextParsed));
                 }
             }
             finally
@@ -158,26 +159,26 @@ namespace AntlrGrammarEditor.Processors
         {
             if (!e.IsIgnoredMessage(_result.ParserCompiledState.ParserGeneratedState.Runtime))
             {
-                var errorString = Helpers.FixEncoding(e.Data);
-                ParsingError error;
+                var diagnosisString = Helpers.FixEncoding(e.Data);
+                Diagnosis diagnosis;
                 try
                 {
-                    var words = errorString.Split(new[] { ' ' }, 3);
+                    var words = diagnosisString.Split(new[] { ' ' }, 3);
                     var parts = words[1].Split(':');
-                    string errorMessage = words[2];
+                    string diagnosisMessage = words[2];
                     int.TryParse(parts[0], out int beginLine);
                     int.TryParse(parts[1], out int beginColumn);
                     beginColumn += 1;
                     int start = _result.Text.LineColumnToPosition(beginLine, beginColumn);
-                    errorString = $"{words[0]} {beginLine}:{beginColumn} {words[2]}";
-                    error = new ParsingError(TextHelpers.ExtractTextSpan(start, errorMessage, _result.Text),
-                        errorString, WorkflowStage.TextParsed);
+                    diagnosisString = $"{words[0]} {beginLine}:{beginColumn} {words[2]}";
+                    diagnosis = new Diagnosis(TextHelpers.ExtractTextSpan(start, diagnosisMessage, _result.Text),
+                        diagnosisString, WorkflowStage.TextParsed);
                 }
                 catch
                 {
-                    error = new ParsingError(errorString, _result.Text, WorkflowStage.TextParsed);
+                    diagnosis = new Diagnosis(diagnosisString, _result.Text, WorkflowStage.TextParsed);
                 }
-                AddError(error);
+                AddDiagnosis(diagnosis);
             }
         }
 
@@ -212,15 +213,15 @@ namespace AntlrGrammarEditor.Processors
                 }
                 else
                 {
-                    AddError(new ParsingError(e.Data, CodeSource.Empty, WorkflowStage.TextParsed));
+                    AddDiagnosis(new Diagnosis(e.Data, CodeSource.Empty, WorkflowStage.TextParsed));
                 }
             }
         }
 
-        private void AddError(ParsingError error)
+        private void AddDiagnosis(Diagnosis diagnosis)
         {
-            ErrorEvent?.Invoke(this, error);
-            _result.Errors.Add(error);
+            DiagnosisEvent?.Invoke(this, diagnosis);
+            _result.AddDiagnosis(diagnosis);
         }
     }
 }
