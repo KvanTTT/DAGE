@@ -20,15 +20,20 @@ namespace AntlrGrammarEditor.Processors
 
         public const string RuntimesDirName = "AntlrRuntimes";
 
-        private static readonly string PackageNamePart = "/*$PackageName$*/";
+        private const string PackageNamePart = "/*$PackageName$*/";
+        private const string PartDart = @"/*$Part$*/";
         private static readonly Regex ParserPartStart = new Regex(@"/\*\$ParserPart\*/", RegexOptions.Compiled);
         private static readonly Regex ParserPartEnd = new Regex(@"/\*ParserPart\$\*/", RegexOptions.Compiled);
         private static readonly Regex ParserPartStartPython = new Regex(@"'''\$ParserPart'''", RegexOptions.Compiled);
         private static readonly Regex ParserPartEndPython = new Regex(@"'''ParserPart\$'''", RegexOptions.Compiled);
         private static readonly Regex ParserIncludeStartPython = new Regex(@"'''\$ParserInclude'''", RegexOptions.Compiled);
         private static readonly Regex ParserIncludeEndPython = new Regex(@"'''ParserInclude\$'''", RegexOptions.Compiled);
-        private static readonly Regex ParserIncludeStartJavaScriptGoPhp = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
-        private static readonly Regex ParserIncludeEndJavaScriptGoPhp = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
+        private static readonly Regex LexerIncludeStartDart = new Regex(@"/\*\$LexerInclude\*/", RegexOptions.Compiled);
+        private static readonly Regex LexerIncludeEndDart = new Regex(@"/\*LexerInclude\$\*/", RegexOptions.Compiled);
+        private static readonly Regex ParserIncludeStartJavaScriptGoPhpDart = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
+        private static readonly Regex ParserIncludeEndJavaScriptGoPhpDart = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
+
+        private static readonly Regex DartErrorMarker = new Regex(@"^([^:]+):(\d+):(\d+): ([^:]+): (.+)", RegexOptions.Compiled);
 
         private Grammar _grammar;
         private ParserCompiledState _result;
@@ -116,6 +121,15 @@ namespace AntlrGrammarEditor.Processors
 
                     case Runtime.Php:
                         arguments = PreparePhpFiles(generatedFiles, runtimeDir, workingDirectory);
+                        break;
+
+                    case Runtime.Dart:
+                        arguments = PrepareDartFiles(generatedFiles, runtimeDir, workingDirectory);
+                        // Get dependencies
+                        var dependenciesProcessor = new Processor(_currentRuntimeInfo.RuntimeToolName, "pub get",
+                            workingDirectory);
+                        // TODO: handle dependencies warnings and errors
+                        dependenciesProcessor.Start();
                         break;
                 }
 
@@ -333,9 +347,7 @@ namespace AntlrGrammarEditor.Processors
                     antlrCaseInsensitiveInputStream);
             }
 
-            string compileTestFileName = GenerateCompilerHelperFileName();
-
-            File.WriteAllText(Path.Combine(workingDirectory, compileTestFileName), stringBuilder.ToString());
+            var compileTestFileName = CreateHelperFile(workingDirectory, stringBuilder);
 
             string arguments = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -356,9 +368,7 @@ namespace AntlrGrammarEditor.Processors
                 stringBuilder.AppendLine($"import {shortFileName} from './{shortFileName}.js';");
             }
 
-            string compileTestFileName = GenerateCompilerHelperFileName();
-
-            File.WriteAllText(Path.Combine(workingDirectory, compileTestFileName), stringBuilder.ToString());
+            string compileTestFileName = CreateHelperFile(workingDirectory, stringBuilder);
 
             File.Copy(Path.Combine(runtimeDir, "package.json"), Path.Combine(workingDirectory, "package.json"), true);
             if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
@@ -409,14 +419,59 @@ namespace AntlrGrammarEditor.Processors
                 stringBuilder.AppendLine($"require_once '{shortFileName}.php';");
             }
 
-            string compileTestFileName = GenerateCompilerHelperFileName();
-
-            File.WriteAllText(Path.Combine(workingDirectory, compileTestFileName), stringBuilder.ToString());
+            string compileTestFileName = CreateHelperFile(workingDirectory, stringBuilder);
 
             if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.php"),
                     Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.php"), true);
+            }
+
+            return compileTestFileName;
+        }
+
+        private string PrepareDartFiles(List<string> generatedFiles, string runtimeDir, string workingDirectory)
+        {
+            var stringBuilder = new StringBuilder();
+
+            var packageName = _result.ParserGeneratedState.PackageName;
+            var lexerOnlyAndNotEmptyPackageName =
+                !string.IsNullOrEmpty(packageName) && _grammar.Type == GrammarType.Lexer;
+
+            if (lexerOnlyAndNotEmptyPackageName)
+            {
+                stringBuilder.AppendLine($"library {packageName};");
+                stringBuilder.AppendLine("import 'package:antlr4/antlr4.dart';");
+
+                var lexerFile = generatedFiles.FirstOrDefault(file =>
+                    Path.GetFileNameWithoutExtension(file).EndsWith(_currentRuntimeInfo.LexerPostfix));
+                if (lexerFile != null)
+                {
+                    stringBuilder.AppendLine($"part '{Path.GetFileNameWithoutExtension(lexerFile)}.dart';");
+                }
+            }
+            else
+            {
+                foreach (string file in generatedFiles)
+                {
+                    var shortFileName = Path.GetFileNameWithoutExtension(file);
+                    if (string.IsNullOrEmpty(packageName) || shortFileName.EndsWith(_currentRuntimeInfo.ParserPostfix))
+                    {
+                        stringBuilder.AppendLine($"import '{shortFileName}.dart';");
+                    }
+                }
+            }
+
+            stringBuilder.AppendLine();
+            stringBuilder.AppendLine("void main() {}");
+
+            string compileTestFileName = CreateHelperFile(workingDirectory, stringBuilder);
+
+            File.Copy(Path.Combine(runtimeDir, "pubspec.yaml"), Path.Combine(workingDirectory, "pubspec.yaml"), true);
+            if (_grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            {
+                File.Copy(Path.Combine(runtimeDir, "AntlrCaseInsensitiveInputStream.dart"),
+                    Path.Combine(workingDirectory, "AntlrCaseInsensitiveInputStream.dart"), true);
             }
 
             return compileTestFileName;
@@ -458,6 +513,13 @@ namespace AntlrGrammarEditor.Processors
                         newPackageValue += $"{Environment.NewLine}use {packageName}\\{_grammar.Name}Parser;";
                     }
                 }
+                else if (runtime == Runtime.Dart)
+                {
+                    if (_grammar.Type == GrammarType.Lexer)
+                    {
+                        newPackageValue = "library " + packageName + ";";
+                    }
+                }
             }
 
             code = code.Replace(PackageNamePart, newPackageValue);
@@ -469,6 +531,11 @@ namespace AntlrGrammarEditor.Processors
             else if (runtime == Runtime.Php)
             {
                 code = code.Replace(RuntimesPath, GetPhpAutoloadPath());
+            }
+            else if (runtime == Runtime.Dart)
+            {
+                code = code.Replace(PartDart, _grammar.Type == GrammarType.Lexer && !isPackageNameEmpty
+                    ? $"part '{_grammar.Name}Lexer.dart';" : "");
             }
 
             string caseInsensitiveBlockMarker = GenerateCaseInsensitiveBlockMarker();
@@ -486,10 +553,15 @@ namespace AntlrGrammarEditor.Processors
                 {
                     caseInsensitiveStream = "New" + caseInsensitiveStream;
                 }
-                if (runtime == Runtime.Php)
+                else if (runtime == Runtime.Php)
                 {
                     antlrInputStream = antlrInputStream + "::fromPath";
                     caseInsensitiveStream = caseInsensitiveStream + "::fromPath";
+                }
+                else if (runtime == Runtime.Dart)
+                {
+                    antlrInputStream = antlrInputStream + ".fromPath";
+                    caseInsensitiveStream = caseInsensitiveStream + ".fromPath";
                 }
 
                 var antlrInputStreamRegex = new Regex($@"{antlrInputStream}\(([^\)]+)\)");
@@ -517,6 +589,10 @@ namespace AntlrGrammarEditor.Processors
                 {
                     code = code.Replace(caseInsensitiveBlockMarker, "require_once 'AntlrCaseInsensitiveInputStream.php';");
                 }
+                else if (runtime == Runtime.Dart)
+                {
+                    code = code.Replace(caseInsensitiveBlockMarker, "import 'AntlrCaseInsensitiveInputStream.dart';");
+                }
             }
             else
             {
@@ -542,9 +618,15 @@ namespace AntlrGrammarEditor.Processors
                 parserPartStart = ParserPartStart;
                 parserPartEnd = ParserPartEnd;
 
-                if (runtime == Runtime.JavaScript || runtime == Runtime.Go || runtime == Runtime.Php)
+                if (runtime == Runtime.JavaScript || runtime == Runtime.Go || runtime == Runtime.Php || runtime == Runtime.Dart)
                 {
-                    code = RemoveCodeOrClearMarkers(code, ParserIncludeStartJavaScriptGoPhp, ParserIncludeEndJavaScriptGoPhp);
+                    code = RemoveCodeOrClearMarkers(code, ParserIncludeStartJavaScriptGoPhpDart, ParserIncludeEndJavaScriptGoPhpDart);
+                }
+
+                if (runtime == Runtime.Dart)
+                {
+                    code = RemoveCodeOrClearMarkers(code, LexerIncludeStartDart, LexerIncludeEndDart,
+                        () => !isPackageNameEmpty);
                 }
             }
 
@@ -553,32 +635,34 @@ namespace AntlrGrammarEditor.Processors
             File.WriteAllText(templateFile, code);
         }
 
-        private string RemoveCodeOrClearMarkers(string code, Regex parserPartStart, Regex parserPartEnd)
+        private string RemoveCodeOrClearMarkers(string code, Regex startMarker, Regex endMarker,
+            Func<bool> condition = null)
         {
-            if (_grammar.Type == GrammarType.Lexer)
+            if (condition?.Invoke() ?? _grammar.Type == GrammarType.Lexer)
             {
-                int parserStartIndex = parserPartStart.Match(code).Index;
-                Match parserEndMatch = parserPartEnd.Match(code);
+                int parserStartIndex = startMarker.Match(code).Index;
+                Match parserEndMatch = endMarker.Match(code);
                 int parserEndIndex = parserEndMatch.Index + parserEndMatch.Length;
-
-                /*while (parserEndIndex < code.Length && (code[parserEndIndex] == '\r' || code[parserEndIndex] == '\n'))
-                {
-                    parserEndIndex++;
-                }*/
 
                 code = code.Remove(parserStartIndex) + code.Substring(parserEndIndex);
             }
             else
             {
-                code = parserPartStart.Replace(code, m => "");
-                code = parserPartEnd.Replace(code, m => "");
+                code = startMarker.Replace(code, m => "");
+                code = endMarker.Replace(code, m => "");
             }
 
             return code;
         }
 
-        private string GenerateCompilerHelperFileName() =>
-            _currentRuntimeInfo.Runtime + CompilerHelperFileName + "." + _currentRuntimeInfo.Extensions[0];
+
+        private string CreateHelperFile(string workingDirectory, StringBuilder stringBuilder)
+        {
+            string compileTestFileName = _currentRuntimeInfo.Runtime + CompilerHelperFileName + "." +
+                                         _currentRuntimeInfo.Extensions[0];
+            File.WriteAllText(Path.Combine(workingDirectory, compileTestFileName), stringBuilder.ToString());
+            return compileTestFileName;
+        }
 
         private string GenerateCaseInsensitiveBlockMarker() =>
             _currentRuntimeInfo.Runtime.IsPythonRuntime()
@@ -592,8 +676,8 @@ namespace AntlrGrammarEditor.Processors
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
-                Console.WriteLine(e.Data);
                 Runtime runtime = _currentRuntimeInfo.Runtime;
+
                 if (runtime.IsCSharpRuntime())
                 {
                     AddCSharpError(e.Data);
@@ -602,11 +686,25 @@ namespace AntlrGrammarEditor.Processors
                 {
                     AddJavaError(e.Data);
                 }
-                else if (runtime.IsPythonRuntime() || runtime == Runtime.JavaScript)
+                else if (runtime.IsPythonRuntime())
                 {
-                    lock (_buffer)
+                    AddToBuffer(e.Data);
+                }
+                else if (runtime == Runtime.JavaScript)
+                {
+                    var match = Helpers.JavaScriptWarningMarker.Match(e.Data);
+                    if (match.Success)
                     {
-                        _buffer.Add(e.Data);
+                        AddError(new ParsingError(e.Data.Substring(match.Length), CodeSource.Empty,
+                            WorkflowStage.ParserCompiled,
+                            true));
+                    }
+                    else
+                    {
+                        if (e.Data != Helpers.JavaScriptIgnoreMessage)
+                        {
+                            AddToBuffer(e.Data);
+                        }
                     }
                 }
                 else if (runtime == Runtime.Go)
@@ -617,6 +715,18 @@ namespace AntlrGrammarEditor.Processors
                 {
                     AddPhpError(e.Data);
                 }
+                else if (runtime == Runtime.Dart)
+                {
+                    AddDartError(e.Data);
+                }
+            }
+        }
+
+        private void AddToBuffer(string data)
+        {
+            lock (_buffer)
+            {
+                _buffer.Add(data);
             }
         }
 
@@ -650,18 +760,18 @@ namespace AntlrGrammarEditor.Processors
                 {
                     // Format:
                     // Lexer.cs(106,11): error CS0103: The  name 'a' does not exist in the current context
-                    var strs = errorString.Split(':');
-                    int leftParenInd = strs[0].IndexOf('(');
-                    string codeFileName = strs[0].Remove(leftParenInd);
+                    var parts = errorString.Split(new [] { ':' }, 2);
+                    var firstPart = parts[0];
+                    int leftParenInd = firstPart.IndexOf('(');
+                    string codeFileName = firstPart.Remove(leftParenInd);
                     string grammarFileName = GetGrammarFromCodeFileName(_currentRuntimeInfo, codeFileName);
-                    string lineColumnString = strs[0].Substring(leftParenInd);
+                    string lineColumnString = firstPart.Substring(leftParenInd);
                     lineColumnString = lineColumnString.Substring(1, lineColumnString.Length - 2); // Remove parenthesis.
-                    var strs2 = lineColumnString.Split(',');
-                    int line = int.Parse(strs2[0]);
-                    int column = int.Parse(strs2[1]);
-                    string rest = string.Join(":", strs.Skip(1));
+                    var lineColumnParts = lineColumnString.Split(',');
+                    int line = int.Parse(lineColumnParts[0]);
+                    int column = int.Parse(lineColumnParts[1]);
 
-                    error = GenerateError(data, codeFileName, line, column, rest);
+                    error = GenerateError(data, codeFileName, line, column, parts[1]);
                 }
                 catch
                 {
@@ -680,17 +790,17 @@ namespace AntlrGrammarEditor.Processors
                 {
                     // Format:
                     // Lexer.java:98: error: cannot find symbol
-                    string[] strs = data.Split(':');
+                    string[] parts = data.Split(new [] { ':' }, 4);
 
-                    string rest = string.Join(":", strs.Skip(2));
-                    if (rest.Contains("warning: [deprecation] ANTLRInputStream"))
+                    string rest = parts[3];
+                    if (rest.StartsWith(" [deprecation] ANTLRInputStream"))
                     {
                         return;
                     }
 
-                    string codeFileName = strs[0];
-                    error = int.TryParse(strs[1], out int codeLine)
-                        ? GenerateError(data, codeFileName, codeLine, 1, rest, strs[2].Trim() == "warning")
+                    string codeFileName = parts[0];
+                    error = int.TryParse(parts[1], out int codeLine)
+                        ? GenerateError(data, codeFileName, codeLine, 1, rest, parts[2].Trim() == "warning")
                         : null;
                 }
                 catch
@@ -805,7 +915,6 @@ namespace AntlrGrammarEditor.Processors
             }
             finalMessage += message == "" ? "Unknown Error" : message;
             AddError(new ParsingError(errorSpan, finalMessage, WorkflowStage.ParserCompiled));
-
         }
 
         private void AddJavaScriptError()
@@ -830,7 +939,6 @@ namespace AntlrGrammarEditor.Processors
             string message = "";
             string grammarFileName = "";
             TextSpan errorSpan = TextSpan.Empty;
-            bool isWarning = false;
             string firstLine = _buffer[0];
             int semicolonLastIndex = firstLine.LastIndexOf(':');
             try
@@ -840,21 +948,9 @@ namespace AntlrGrammarEditor.Processors
                     string beforeLastPart = firstLine.Remove(semicolonLastIndex);
                     string lastPart = firstLine.Substring(semicolonLastIndex + 1);
 
-                    if (!int.TryParse(lastPart, out int codeLine) && beforeLastPart.Contains("Warning"))
-                    {
-                        AddError(new ParsingError(errorSpan, firstLine, WorkflowStage.ParserCompiled, true));
-                        if (_buffer.Count == 1)
-                            return;
-
-                        firstLine = _buffer[1];
-                        semicolonLastIndex = firstLine.LastIndexOf(':');
-                        beforeLastPart = firstLine.Remove(semicolonLastIndex);
-                        lastPart = firstLine.Substring(semicolonLastIndex + 1);
-                    }
-
                     string codeFileName = Path.GetFileName(beforeLastPart);
                     if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> mapping) &&
-                        int.TryParse(lastPart, out codeLine))
+                        int.TryParse(lastPart, out int codeLine))
                     {
                         grammarFileName =
                             GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.JavaScript], codeFileName);
@@ -867,10 +963,14 @@ namespace AntlrGrammarEditor.Processors
                 // ignored
             }
 
-            if (_buffer.Count > 0)
+            for (int i = 1; i < _buffer.Count; i++)
             {
-                message = _buffer.LastOrDefault(line => !line.StartsWith("    at")) ?? "";
+                if (string.IsNullOrEmpty(_buffer[i]) && i + 1 < _buffer.Count)
+                {
+                    message = _buffer[i + 1];
+                }
             }
+
             string finalMessage = "";
             if (grammarFileName != "")
             {
@@ -893,17 +993,17 @@ namespace AntlrGrammarEditor.Processors
                 string grammarFileName = "";
                 TextSpan errorSpan = TextSpan.Empty;
                 string message = "";
-                var strs = data.Split(':');
+                var parts = data.Split(':');
                 try
                 {
-                    string codeFileName = strs[0].Substring(2);
+                    string codeFileName = parts[0].Substring(2);
                     if (_grammarCodeMapping.TryGetValue(codeFileName, out var mapping))
                     {
-                        int codeLine = int.Parse(strs[1]);
+                        int codeLine = int.Parse(parts[1]);
                         grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Go], codeFileName);
                         errorSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine, grammarFileName);
                     }
-                    message = strs[3];
+                    message = parts[3];
                 }
                 catch
                 {
@@ -944,6 +1044,28 @@ namespace AntlrGrammarEditor.Processors
 
             var codeSource = new CodeSource(Path.GetFileNameWithoutExtension(fileName), File.ReadAllText(fileName)); // TODO: reuse existed files
             AddError(new ParsingError(line, LineColumnTextSpan.StartColumn, message, codeSource, WorkflowStage.ParserCompiled));
+        }
+
+        private void AddDartError(string data)
+        {
+            // TestParser.dart:64:9: Error: Expected an identifier, but got ';'.
+            var match = DartErrorMarker.Match(data);
+            if (match.Success)
+            {
+                var groups = match.Groups;
+                var errorSpan = TextSpan.Empty;
+                string codeFileName = Path.GetFileName(groups[1].Value);
+                if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> mapping) &&
+                    int.TryParse(groups[2].Value, out int codeLine))
+                {
+                    var grammarFileName =
+                        GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Dart], codeFileName);
+                    errorSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine, grammarFileName);
+                }
+
+                var message = groups[5].Value.Trim();
+                AddError(new ParsingError(errorSpan, message, WorkflowStage.ParserCompiled, false));
+            }
         }
 
         private string GetGrammarFromCodeFileName(RuntimeInfo runtimeInfo, string codeFileName)

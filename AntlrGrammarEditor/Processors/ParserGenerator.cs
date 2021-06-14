@@ -127,28 +127,28 @@ namespace AntlrGrammarEditor.Processors
 
         private void ParserGeneration_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreJavaError())
+            if (!e.IsIgnoredMessage(Runtime.Java))
             {
-                var strs = e.Data.Split(':');
+                var parts = e.Data.Split(':');
                 int line = 1, column = 1;
 
-                int locationIndex = strs.Length > 2 && strs[2].Length > 0 && strs[2][0] == '\\' ? 3 : 2;
-                if (strs.Length > locationIndex)
+                int locationIndex = parts.Length > 2 && parts[2].Length > 0 && parts[2][0] == '\\' ? 3 : 2;
+                if (parts.Length > locationIndex)
                 {
-                    if (!int.TryParse(strs[locationIndex], out line))
+                    if (!int.TryParse(parts[locationIndex], out line))
                     {
                         line = 1;
                     }
-                    if (strs.Length > locationIndex + 1)
+                    if (parts.Length > locationIndex + 1)
                     {
-                        if (!int.TryParse(strs[locationIndex + 1], out column))
+                        if (!int.TryParse(parts[locationIndex + 1], out column))
                         {
                             column = 1;
                         }
                     }
                 }
 
-                bool isWarning = strs.Length > 0 && strs[0].StartsWith("warning");
+                bool isWarning = parts.Length > 0 && parts[0].StartsWith("warning");
                 ParsingError error = new ParsingError(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated, isWarning);
                 ErrorEvent?.Invoke(this, error);
                 _result.Errors.Add(error);
@@ -157,7 +157,7 @@ namespace AntlrGrammarEditor.Processors
 
         private void ParserGeneration_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data) && !e.IsIgnoreJavaError())
+            if (!e.IsIgnoredMessage(Runtime.Java))
             {
             }
         }

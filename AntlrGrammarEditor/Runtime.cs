@@ -11,6 +11,7 @@
         CPlusPlus,
         Go,
         Swift,
-        Php
+        Php,
+        Dart
     }
 }

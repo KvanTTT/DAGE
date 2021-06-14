@@ -144,6 +144,18 @@ namespace AntlrGrammarEditor
                 antlrInputStream: "InputStream",
                 runtimeToolName: "php",
                 versionArg: "--version"
+            ),
+            [Runtime.Dart] = new RuntimeInfo
+            (
+                Runtime.Dart,
+                "Dart",
+                "Dart",
+                "",
+                new [] { "dart" },
+                "main.dart",
+                "InputStream",
+                "dart",
+                "--version"
             )
         };
 
@@ -182,7 +194,7 @@ namespace AntlrGrammarEditor
 
                     void VersionCollectFunc(object sender, DataReceivedEventArgs e)
                     {
-                        if (!(runtime == Runtime.Java && e.IsIgnoreJavaError()))
+                        if (!e.IsIgnoredMessage(Runtime.Java))
                             version += e.Data + Environment.NewLine;
                     }
 

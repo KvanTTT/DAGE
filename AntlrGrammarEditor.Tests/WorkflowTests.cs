@@ -67,7 +67,7 @@ namespace AntlrGrammarEditor.Tests
             {
                 workflow.Runtime = runtime;
                 var state = (ParserGeneratedState)workflow.Process();
-                Assert.IsFalse(state.HasErrors, string.Join(Environment.NewLine, state.Errors));
+                Assert.IsFalse(state.HasErrors, state.ErrorMessage);
 
                 RuntimeInfo runtimeInfo = RuntimeInfo.Runtimes[runtime];
                 var extensions = runtimeInfo.Extensions;
@@ -75,10 +75,10 @@ namespace AntlrGrammarEditor.Tests
                 var actualFilesCount = allFiles.Count(file => extensions.Any(ext => Path.GetExtension(file).EndsWith(ext)));
                 Assert.Greater(actualFilesCount, 0, $"Failed to initialize {runtime} runtime");
 
-                foreach (var file in allFiles)
+                /*foreach (var file in allFiles)
                 {
                     File.Delete(file);
-                }
+                }*/
             }
         }
 
@@ -93,7 +93,7 @@ WS:    [ \r\n\t]+ -> skip;";
             var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.Exception?.ToString());
+            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.ErrorMessage);
 
             var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
             GrammarCheckedState grammarCheckedState = state as GrammarCheckedState;
@@ -124,7 +124,6 @@ start: DIGIT+;
             var workflow = new Workflow(GrammarFactory.CreateDefaultSeparatedAndFill(lexerText, parserText, TestGrammarName, "."));
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.GrammarChecked, state.Stage, state.Exception?.ToString());
 
             var testLexerSource = new CodeSource(TestGrammarName + "Lexer.g4", File.ReadAllText(TestGrammarName + "Lexer.g4"));
             var testParserSource = new CodeSource(TestGrammarName + "Parser.g4", File.ReadAllText(TestGrammarName + "Parser.g4"));
@@ -152,7 +151,7 @@ start: DIGIT+;
             var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage, state.Exception?.ToString());
+            Assert.AreEqual(WorkflowStage.ParserGenerated, state.Stage, state.ErrorMessage);
 
             var grammarSource = new CodeSource(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
             char separator = Path.DirectorySeparatorChar;
@@ -174,6 +173,7 @@ start: DIGIT+;
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        [TestCase(Runtime.Dart)]
         public void ParserCompiledStageErrors(Runtime runtime)
         {
             var grammarText =
@@ -187,7 +187,7 @@ start: DIGIT+;
             workflow.Runtime = runtime;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.ParserCompiled, state.Stage, state.Exception?.ToString());
+            Assert.AreEqual(WorkflowStage.ParserCompiled, state.Stage, state.ErrorMessage);
 
             ParserCompiledState parserGeneratedState = state as ParserCompiledState;
             Assert.GreaterOrEqual(parserGeneratedState.Errors.Count, 1);
@@ -202,6 +202,7 @@ start: DIGIT+;
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        [TestCase(Runtime.Dart)]
         public void TextParsedStageErrors(Runtime runtime)
         {
             var grammarText =
@@ -251,7 +252,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName};
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.Exception?.ToString());
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.ErrorMessage);
 
             TextParsedState textParsedState = (TextParsedState)state;
             var textSource = textParsedState.Text;
@@ -277,6 +278,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        [TestCase(Runtime.Dart)]
         public void CaseInsensitive(Runtime runtime)
         {
             CheckCaseInsensitiveWorkflow(runtime, true);
@@ -301,7 +303,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.Exception?.ToString());
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.ErrorMessage);
             TextParsedState textParsedState = state as TextParsedState;
             Assert.AreEqual(0, textParsedState.Errors.Count, string.Join(Environment.NewLine, textParsedState.Errors));
             Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
@@ -322,7 +324,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
-            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage);
+            Assert.AreEqual(WorkflowStage.TextParsed, state.Stage, state.ErrorMessage);
             Assert.IsTrue(((TextParsedState)state).ParserCompiledState.ParserGeneratedState.Errors[0].IsWarning);
         }
 
@@ -334,6 +336,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        [TestCase(Runtime.Dart)]
         public void CheckListenersAndVisitors(Runtime runtime)
         {
             var grammarText =
@@ -352,9 +355,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
-            TextParsedState textParsedState = state as TextParsedState;
-            Assert.IsNotNull(textParsedState);
-            Assert.IsFalse(textParsedState.HasErrors, textParsedState.Errors.FirstOrDefault()?.ToString() ?? "");
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
 
             var allFiles = Directory.GetFiles(Path.Combine(ParserGenerator.HelperDirectoryName, TestGrammarName, runtime.ToString()));
 
@@ -370,6 +371,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        [TestCase(Runtime.Dart)]
         public void CheckCustomRoot(Runtime runtime)
         {
             var grammarText =
@@ -378,29 +380,20 @@ error 123 456 ;   // mismatched input '123' expecting Id");
                 "root2: 'V2';";
 
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            var workflow = new Workflow(grammar);
-            workflow.Runtime = runtime;
-            workflow.TextFileName = TestTextName;
+            var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName, Root = null};
 
-            workflow.Root = null;
             File.WriteAllText(TestTextName, "V1");
             var state = workflow.Process();
-            TextParsedState textParsedState = state as TextParsedState;
-            Assert.IsNotNull(textParsedState);
-            Assert.IsFalse(state.HasErrors);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
 
             workflow.Root = "root1";
             state = workflow.Process();
-            textParsedState = state as TextParsedState;
-            Assert.IsNotNull(textParsedState);
-            Assert.IsFalse(state.HasErrors);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
 
             workflow.Root = "root2";
             File.WriteAllText(TestTextName, "V2");
             state = workflow.Process();
-            textParsedState = state as TextParsedState;
-            Assert.IsNotNull(textParsedState);
-            Assert.IsFalse(state.HasErrors);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -411,16 +404,38 @@ error 123 456 ;   // mismatched input '123' expecting Id");
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        [TestCase(Runtime.Dart)]
         public void CheckPackageName(Runtime runtime)
+        {
+            CheckPackageName(runtime, false);
+            CheckPackageName(runtime, true);
+        }
+
+        private static void CheckPackageName(Runtime runtime, bool lexerOnly)
         {
             const string packageName = "TestLanguage";
 
-            var grammarText =
-                $@"grammar {TestGrammarName};
-                root:  TOKEN;
-                TOKEN:  'a';";
+            string lexerGrammarText, parserGrammarText;
+            GrammarType grammarType;
+            if (lexerOnly)
+            {
+                lexerGrammarText =
+$@"lexer grammar {TestGrammarName}Lexer;
+TOKEN: 'a';";
+                parserGrammarText = "";
+                grammarType = GrammarType.Lexer;
+            }
+            else
+            {
+                lexerGrammarText = "";
+                parserGrammarText =
+$@"grammar {TestGrammarName};
+root:  TOKEN;
+TOKEN:  'a';";
+                grammarType = GrammarType.Combined;
+            }
 
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            var grammar = GrammarFactory.CreateDefaultAndFill(grammarType, lexerGrammarText, parserGrammarText, TestGrammarName, ".");
             grammar.CaseInsensitiveType = CaseInsensitiveType.lower;
             var workflow = new Workflow(grammar)
             {
@@ -431,9 +446,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
 
             File.WriteAllText(TestTextName, "A");
             var state = workflow.Process();
-            var textParsedState = state as TextParsedState;
-            Assert.IsNotNull(textParsedState);
-            Assert.IsFalse(textParsedState.HasErrors);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -444,6 +457,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        [TestCase(Runtime.Dart)]
         public void CheckPredictionMode(Runtime runtime)
         {
             var grammarText = $@"
@@ -472,22 +486,16 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
 ";
 
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            var workflow = new Workflow(grammar);
-            workflow.Runtime = runtime;
-            workflow.TextFileName = TestTextName;
+            var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName};
             File.WriteAllText(TestTextName, @"static a.b");
 
             workflow.PredictionMode = PredictionMode.LL;
             var llState = workflow.Process();
-            TextParsedState llTextParsedState = llState as TextParsedState;
-            Assert.IsNotNull(llTextParsedState);
-            Assert.IsFalse(llState.HasErrors);
+            Assert.IsTrue((llState as TextParsedState)?.HasErrors == false, llState.ErrorMessage);
 
             workflow.PredictionMode = PredictionMode.SLL;
             var sllState = workflow.Process();
-            var sllTextParsedState = sllState as TextParsedState;
-            Assert.IsNotNull(sllTextParsedState);
-            Assert.IsTrue(sllTextParsedState.HasErrors);
+            Assert.IsTrue((sllState as TextParsedState)?.HasErrors == true, sllState.ErrorMessage);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
@@ -498,6 +506,7 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        [TestCase(Runtime.Dart)]
         public void CheckLexerOnlyGrammar(Runtime runtime)
         {
             var grammarText =
@@ -509,14 +518,10 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
             var grammar = GrammarFactory.CreateDefaultLexerAndFill(grammarText, TestGrammarName, ".");
             File.WriteAllText(TestTextName, "T1 1234");
 
-            var workflow = new Workflow(grammar);
-            workflow.Runtime = runtime;
-            workflow.TextFileName = TestTextName;
+            var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName};
 
             var state = workflow.Process();
-            TextParsedState textParsedState = state as TextParsedState;
-            Assert.IsNotNull(textParsedState);
-            Assert.IsFalse(state.HasErrors);
+            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.ErrorMessage);
         }
 
         [Test]
@@ -605,6 +610,7 @@ TOKEN: 'token';";
         [TestCase(Runtime.JavaScript)]
         [TestCase(Runtime.Go)]
         [TestCase(Runtime.Php)]
+        [TestCase(Runtime.Dart)]
         public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
         {
             Assert.Ignore("Not ready");

@@ -111,7 +111,7 @@ namespace DesktopAntlrGrammarEditor
             var availableRuntimes = new[]
             {
                 Runtime.Java, Runtime.CSharpStandard, Runtime.CSharpOptimized, Runtime.Python2, Runtime.Python3,
-                Runtime.Go, Runtime.Php
+                Runtime.Go, Runtime.Php, Runtime.Dart
             };
 
             _runtimeInfoWrappers = new Dictionary<Runtime, RuntimeInfoWrapper>();

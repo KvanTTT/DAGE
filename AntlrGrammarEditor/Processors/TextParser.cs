@@ -65,16 +65,12 @@ namespace AntlrGrammarEditor.Processors
                         toolName = PreparePythonToolAndArgs(runtimeInfo, out args);
                         break;
 
-                    case Runtime.JavaScript:
-                        toolName = PrepareJavaScriptToolAndArgs(runtimeInfo, out args);
-                        break;
-
                     case Runtime.Go:
                         toolName = PrepareGoToolAndArgs(workingDirectory, runtimeInfo);
                         break;
 
-                    case Runtime.Php:
-                        toolName = PreparePhpToolAndArgs(runtimeInfo, out args);
+                    default:
+                        toolName = PrepareDefaultToolAndArgs(runtimeInfo, out args);
                         break;
                 }
 
@@ -143,12 +139,6 @@ namespace AntlrGrammarEditor.Processors
             return runtimeInfo.RuntimeToolName;
         }
 
-        private static string PrepareJavaScriptToolAndArgs(RuntimeInfo runtimeInfo, out string args)
-        {
-            args = runtimeInfo.MainFile;
-            return runtimeInfo.RuntimeToolName;
-        }
-
         private static string PrepareGoToolAndArgs(string workingDirectory, RuntimeInfo runtimeInfo)
         {
             string fileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
@@ -158,7 +148,7 @@ namespace AntlrGrammarEditor.Processors
             return Path.Combine(workingDirectory, fileName);
         }
 
-        private static string PreparePhpToolAndArgs(RuntimeInfo runtimeInfo, out string args)
+        private static string PrepareDefaultToolAndArgs(RuntimeInfo runtimeInfo, out string args)
         {
             args = runtimeInfo.MainFile;
             return runtimeInfo.RuntimeToolName;
@@ -166,10 +156,7 @@ namespace AntlrGrammarEditor.Processors
 
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            var runtime = _result.ParserCompiledState.ParserGeneratedState.Runtime;
-            if (!string.IsNullOrEmpty(e.Data) &&
-                !(runtime == Runtime.Java && e.IsIgnoreJavaError()) &&
-                !(runtime == Runtime.JavaScript && e.Data.Contains("Warning:")))
+            if (!e.IsIgnoredMessage(_result.ParserCompiledState.ParserGeneratedState.Runtime))
             {
                 var errorString = Helpers.FixEncoding(e.Data);
                 ParsingError error;
@@ -196,8 +183,7 @@ namespace AntlrGrammarEditor.Processors
 
         private void TextParsing_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(e.Data) &&
-                !(_result.ParserCompiledState.ParserGeneratedState.Runtime == Runtime.Java && e.IsIgnoreJavaError()))
+            if (!e.IsIgnoredMessage(_result.ParserCompiledState.ParserGeneratedState.Runtime))
             {
                 var strs = e.Data.Split(new [] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
 

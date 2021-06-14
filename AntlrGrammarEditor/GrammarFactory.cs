@@ -167,7 +167,7 @@ namespace AntlrGrammarEditor
             return CreateDefaultAndFill(GrammarType.Lexer, grammarText, "", grammarName, directory);
         }
 
-        private static Grammar CreateDefaultAndFill(GrammarType type, string lexerText, string parserText, string grammarName, string directory)
+        public static Grammar CreateDefaultAndFill(GrammarType type, string lexerText, string parserText, string grammarName, string directory)
         {
             var result = new Grammar
             {

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AntlrGrammarEditor
 {
@@ -10,9 +11,14 @@ namespace AntlrGrammarEditor
     {
         private static bool _javaInitialized;
 
-        private static string javaVersion;
+        private static string _javaVersion;
 
         public static string RuntimesPath { get; private set; }
+
+        public static readonly Regex JavaScriptWarningMarker = new Regex(@"^\(node:\d+\) \w*?Warning: ", RegexOptions.Compiled);
+
+        public const string JavaScriptIgnoreMessage =
+            "(Use `node --trace-warnings ...` to show where the warning was created)";
 
         static Helpers()
         {
@@ -38,19 +44,19 @@ namespace AntlrGrammarEditor
                         string version = "";
                         processor.ErrorDataReceived += (sender, e) =>
                         {
-                            if (!e.IsIgnoreJavaError())
+                            if (!e.IsIgnoredMessage(Runtime.Java))
                                 version += e.Data + Environment.NewLine;
                         };
                         processor.Start();
-                        javaVersion = version.Trim();
+                        _javaVersion = version.Trim();
                     }
                     catch
                     {
-                        javaVersion = null;
+                        _javaVersion = null;
                     }
                 }
 
-                return javaVersion;
+                return _javaVersion;
             }
         }
 
@@ -72,9 +78,26 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        public static bool IsIgnoreJavaError(this DataReceivedEventArgs message)
+        public static bool IsIgnoredMessage(this DataReceivedEventArgs message, Runtime runtime)
         {
-            return message.Data?.Contains("Picked up JAVA_TOOL_OPTIONS") == true;
+            var data = message.Data;
+
+            if (string.IsNullOrWhiteSpace(data))
+            {
+                return true;
+            }
+
+            if (runtime == Runtime.Java)
+            {
+                return data.Contains("Picked up JAVA_TOOL_OPTIONS");
+            }
+
+            if (runtime == Runtime.JavaScript)
+            {
+                return JavaScriptWarningMarker.IsMatch(data) || data == JavaScriptIgnoreMessage;
+            }
+
+            return false;
         }
 
         public static string GetGeneralRuntimeName(this Runtime runtime)
