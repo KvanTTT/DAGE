@@ -13,21 +13,21 @@ namespace AntlrGrammarEditor
 
         private static readonly Regex CaseInsensitiveTypeRegex = new Regex(@"/\*\s*CaseInsensitiveType:\s*(\w+)\s*\*/");
 
-        public static Grammar Open(string fileOrDirectoryName, out string packageName, out string root)
+        public static Grammar Open(string fileOrDirectoryName, out string? packageName, out string? root)
         {
             List<string> grammarFiles;
             string grammarName = "";
             string directoryName;
             GrammarType grammarType = GrammarType.Combined;
             CaseInsensitiveType caseInsensitiveType = CaseInsensitiveType.None;
-            string lexerOrCombinedGrammarFile = null;
-            string parserGrammarFile = null;
+            string? lexerOrCombinedGrammarFile = null;
+            string? parserGrammarFile = null;
             packageName = null;
             root = null;
 
             if (File.Exists(fileOrDirectoryName))
             {
-                directoryName = Path.GetDirectoryName(fileOrDirectoryName);
+                directoryName = Path.GetDirectoryName(fileOrDirectoryName) ?? "";
                 string grammarFile = Path.GetFileName(fileOrDirectoryName);
                 grammarName = Path.GetFileNameWithoutExtension(grammarFile);
                 grammarFiles = new List<string> { grammarFile };
@@ -54,18 +54,18 @@ namespace AntlrGrammarEditor
 
                     grammarFiles = g4Files.Select(file => Path.GetFileName(file)).ToList();*/
 
-                    string lexerFileName =
+                    string? lexerFileName =
                         g4Files.FirstOrDefault(grammarFile => grammarFile.Contains(Grammar.LexerPostfix));
-                    if (!string.IsNullOrEmpty(lexerFileName))
+                    if (lexerFileName != null)
                     {
                         grammarFiles.Add(Path.GetFileName(lexerFileName));
                         grammarName = Path.GetFileNameWithoutExtension(lexerFileName).Replace(Grammar.LexerPostfix, "");
                         lexerOrCombinedGrammarFile = lexerFileName;
                     }
 
-                    string parserFileName =
+                    string? parserFileName =
                         g4Files.FirstOrDefault(grammarFile => grammarFile.Contains(Grammar.ParserPostfix));
-                    if (!string.IsNullOrEmpty(parserFileName))
+                    if (parserFileName != null)
                     {
                         grammarFiles.Add(Path.GetFileName(parserFileName));
                         grammarName = Path.GetFileNameWithoutExtension(parserFileName)
@@ -130,9 +130,8 @@ namespace AntlrGrammarEditor
                 ? Directory.GetFiles(examplesDir, "*.*", SearchOption.AllDirectories)
                 : new string[0];
 
-            var result = new Grammar
+            var result = new Grammar(grammarName)
             {
-                Name = grammarName,
                 Directory = fileOrDirectoryName,
                 CaseInsensitiveType = caseInsensitiveType,
                 Files = grammarFiles,
@@ -143,14 +142,7 @@ namespace AntlrGrammarEditor
             return result;
         }
 
-        public static Grammar CreateDefault()
-        {
-            var result = new Grammar
-            {
-                Name = "NewGrammar"
-            };
-            return result;
-        }
+        public static Grammar CreateDefault() => new("NewGrammar");
 
         public static Grammar CreateDefaultCombinedAndFill(string grammarText, string grammarName, string directory)
         {
@@ -169,13 +161,8 @@ namespace AntlrGrammarEditor
 
         public static Grammar CreateDefaultAndFill(GrammarType type, string lexerText, string parserText, string grammarName, string directory)
         {
-            var result = new Grammar
-            {
-                Name = grammarName,
-                Type = type,
-            };
+            var result = new Grammar(grammarName) {Type = type, Directory = directory,};
 
-            result.Directory = directory;
             InitFiles(result);
 
             foreach (string file in result.Files)

@@ -25,11 +25,11 @@ namespace DesktopAntlrGrammarEditor
         public WindowState WindowState { get; set; } = WindowState.Normal;
 
         // Antlr Grammar Editor FileName
-        public string GrammarFileOrDirectory { get; set; }
+        public string? GrammarFileOrDirectory { get; set; }
 
-        public string OpenedGrammarFile { get; set; }
+        public string? OpenedGrammarFile { get; set; }
 
-        public string OpenedTextFile { get; set; }
+        public string? OpenedTextFile { get; set; }
 
         public bool Autoprocessing { get; set; }
 

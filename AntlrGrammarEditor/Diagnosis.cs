@@ -5,47 +5,41 @@ namespace AntlrGrammarEditor
 {
     public class Diagnosis
     {
-        public TextSpan TextSpan { get; }
+        public TextSpan? TextSpan { get; }
 
         public string Message { get; }
 
-        public bool IsWarning { get; }
+        public DiagnosisType Type { get; }
 
         public WorkflowStage WorkflowStage { get; }
 
-        public Diagnosis(Exception ex, WorkflowStage stage)
-        {
-            TextSpan = TextSpan.Empty;
-            Message = ex.ToString();
-            WorkflowStage = stage;
-        }
-
-        public Diagnosis(string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
-            : this(1, 1, message, codeSource, stage, isWarning)
+        public Diagnosis(Exception ex, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
+            : this(ex.ToString(), stage, type)
         {
         }
 
-        public Diagnosis(int line, int column, string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
-            : this(new LineColumnTextSpan(line, column, codeSource).GetTextSpan(), message, stage, isWarning)
+        public Diagnosis(int line, int column, string message, CodeSource codeSource, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
+            : this(new LineColumnTextSpan(line, column, codeSource).GetTextSpan(), message, stage, type)
         {
-            Message = message;
-            WorkflowStage = stage;
         }
 
         public Diagnosis(int beginLine, int beginColumn, int endLine, int endColumn,
-            string message, CodeSource codeSource, WorkflowStage stage, bool isWarning = false)
-            : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, codeSource).GetTextSpan(), message, stage, isWarning)
+            string message, CodeSource codeSource, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
+            : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, codeSource).GetTextSpan(), message, stage, type)
         {
-            Message = message;
-            WorkflowStage = stage;
         }
 
-        public Diagnosis(TextSpan textSpan, string message, WorkflowStage stage, bool isWarning = false)
+        public Diagnosis(TextSpan textSpan, string message, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
+            : this(message, stage, type)
         {
             TextSpan = textSpan;
+        }
+
+        public Diagnosis(string message, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
+        {
             Message = message;
             WorkflowStage = stage;
-            IsWarning = isWarning;
+            Type = type;
         }
 
         public override bool Equals(object obj)
@@ -55,7 +49,7 @@ namespace AntlrGrammarEditor
                 return TextSpan.Equals(diagnosis.TextSpan) &&
                        Message == diagnosis.Message &&
                        WorkflowStage == diagnosis.WorkflowStage &&
-                       IsWarning == diagnosis.IsWarning;
+                       Type == diagnosis.Type;
             }
 
             return false;

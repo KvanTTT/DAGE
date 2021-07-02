@@ -10,9 +10,9 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public override WorkflowState PreviousState => ParserCompiledState;
 
-        public CodeSource Text { get; }
+        public CodeSource? Text { get; }
 
-        public string Root { get; set; }
+        public string? Root { get; set; }
 
         public ParserCompiledState ParserCompiledState { get; }
 
@@ -20,19 +20,17 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public TimeSpan ParserTime { get; set; }
 
-        public string Tokens { get; set; }
+        public string? Tokens { get; set; }
 
-        public string Tree { get; set; }
+        public string? Tree { get; set; }
 
-        public string RootOrDefault => string.IsNullOrEmpty(Root)
-            ? ParserCompiledState.ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault()
-            : Root;
+        public string RootOrDefault =>
+            Root ?? (ParserCompiledState.ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault() ?? "");
 
-        public TextParsedState(ParserCompiledState parserCompiledState, CodeSource text)
+        public TextParsedState(ParserCompiledState parserCompiledState, CodeSource? text)
         {
-            ParserCompiledState =
-                parserCompiledState ?? throw new ArgumentNullException(nameof(parserCompiledState));
-            Text = text ?? throw new ArgumentNullException(nameof(text));
+            ParserCompiledState = parserCompiledState;
+            Text = text;
         }
     }
 }

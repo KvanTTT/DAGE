@@ -13,13 +13,13 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public Runtime Runtime { get; }
 
-        public string PackageName { get; }
+        public string? PackageName { get; }
 
         public bool IncludeListener { get; }
 
         public bool IncludeVisitor { get; }
 
-        public ParserGeneratedState(GrammarCheckedState grammarCheckedState, string packageName, Runtime runtime, bool includeListener, bool includeVisitor)
+        public ParserGeneratedState(GrammarCheckedState grammarCheckedState, string? packageName, Runtime runtime, bool includeListener, bool includeVisitor)
         {
             GrammarCheckedState = grammarCheckedState ?? throw new ArgumentNullException(nameof(grammarCheckedState));
             PackageName = packageName;

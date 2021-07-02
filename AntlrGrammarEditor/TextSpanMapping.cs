@@ -2,13 +2,9 @@
 {
     public class TextSpanMapping
     {
-        public TextSpan SourceTextSpan { get; set; }
+        public TextSpan SourceTextSpan { get; }
 
-        public TextSpan DestTextSpan { get; set; }
-
-        public TextSpanMapping()
-        {
-        }
+        public TextSpan DestTextSpan { get; }
 
         public TextSpanMapping(TextSpan sourceTextSpan, TextSpan destinationTextSpan)
         {

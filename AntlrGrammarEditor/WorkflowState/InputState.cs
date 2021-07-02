@@ -7,7 +7,7 @@ namespace AntlrGrammarEditor.WorkflowState
     {
         public override WorkflowStage Stage => WorkflowStage.Input;
 
-        public override WorkflowState PreviousState => null;
+        public override WorkflowState? PreviousState => null;
 
         public Grammar Grammar { get; }
 

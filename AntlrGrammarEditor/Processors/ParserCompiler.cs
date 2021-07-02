@@ -33,32 +33,35 @@ namespace AntlrGrammarEditor.Processors
         private static readonly Regex ParserIncludeStartJavaScriptGoPhpDart = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
         private static readonly Regex ParserIncludeEndJavaScriptGoPhpDart = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
 
-        private static readonly Regex DartErrorMarker = new Regex(@"^([^:]+):(\d+):(\d+): ([^:]+): (.+)", RegexOptions.Compiled);
+        private static readonly Regex CSharpDiagnosisMarker = new (@"^([^(]+)\((\d+),(\d+)\): ?([^:]+): ?(.+)", RegexOptions.Compiled);
+        private static readonly Regex JavaDiagnosisMarker = new (@"^([^:]+):(\d+): ?([^:]+): ?(.+)", RegexOptions.Compiled);
+        private static readonly Regex PythonDiagnosisMarker = new (@"^\s*File ""([^""]+)"", line (\d+), in (.+)", RegexOptions.Compiled);
+        private static readonly Regex JavaScriptDiagnosisMarker = new (@"^([^:]+):(\d+)", RegexOptions.Compiled);
+        private static readonly Regex GoDiagnosisMarker = new (@"^([^:]+):(\d+): ?([^:]+): ?(.+)", RegexOptions.Compiled);
+        private static readonly Regex PhpDiagnosisMarker = new (@"^([^:]+):\s*(.+?) in ([^>]+) on line (\d+)", RegexOptions.Compiled);
+        private static readonly Regex DartDiagnosisMarker = new (@"^([^:]+):(\d+):(\d+): ?([^:]+): ?(.+)", RegexOptions.Compiled);
 
-        private Grammar _grammar;
-        private ParserCompiledState _result;
-        private List<string> _buffer;
-        private Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping;
-        private RuntimeInfo _currentRuntimeInfo;
-        private HashSet<string> _processedMessages;
+        private readonly Grammar _grammar;
+        private readonly ParserCompiledState _result;
+        private readonly List<string> _buffer = new();
+        private readonly Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping = new();
+        private readonly RuntimeInfo _currentRuntimeInfo;
 
-        public string RuntimeLibrary { get; set; }
+        public string? RuntimeLibrary { get; set; }
 
-        public ParserCompiler()
-        {
-        }
-
-        public ParserCompiledState Compile(ParserGeneratedState state,
-            CancellationToken cancellationToken = default)
+        public ParserCompiler(ParserGeneratedState state)
         {
             _grammar = state.GrammarCheckedState.InputState.Grammar;
+            _result = new ParserCompiledState(state);
+            _currentRuntimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(_result.ParserGeneratedState.Runtime);
+        }
+
+        public ParserCompiledState Compile(CancellationToken cancellationToken = default)
+        {
+            var state = _result.ParserGeneratedState;
             Runtime runtime = state.Runtime;
 
-            _result = new ParserCompiledState(state);
-
-            _currentRuntimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
-
-            Processor processor = null;
+            Processor? processor = null;
             try
             {
                 string runtimeSource = runtime.GetGeneralRuntimeName();
@@ -67,7 +70,7 @@ namespace AntlrGrammarEditor.Processors
                 string workingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName, _grammar.Name, runtime.ToString());
 
                 var generatedFiles = new List<string>();
-                _grammarCodeMapping = new Dictionary<string, List<TextSpanMapping>>();
+                _grammarCodeMapping.Clear();
 
                 string generatedGrammarName =
                     runtime != Runtime.Go ? _grammar.Name : _grammar.Name.ToLowerInvariant();
@@ -135,8 +138,7 @@ namespace AntlrGrammarEditor.Processors
 
                 PrepareParserCode(workingDirectory, runtimeDir);
 
-                _buffer = new List<string>();
-                _processedMessages = new HashSet<string>();
+                _buffer.Clear();
 
                 _result.Command = _currentRuntimeInfo.RuntimeToolName + " " + arguments;
                 processor = new Processor(_currentRuntimeInfo.RuntimeToolName, arguments, workingDirectory);
@@ -179,7 +181,7 @@ namespace AntlrGrammarEditor.Processors
         private void GetGeneratedFileNames(GrammarCheckedState grammarCheckedState, string generatedGrammarName, string workingDirectory,
             List<string> generatedFiles, bool lexer)
         {
-            string grammarNameExt;
+            string? grammarNameExt;
 
             if (_grammar.Type == GrammarType.Combined)
             {
@@ -205,7 +207,7 @@ namespace AntlrGrammarEditor.Processors
             }
             string generatedFile = Path.Combine(generatedFileDir, shortGeneratedFile);
             generatedFiles.Add(generatedFile);
-            CodeSource codeSource = new CodeSource(generatedFile, File.ReadAllText(generatedFile));
+            var codeSource = new CodeSource(generatedFile, File.ReadAllText(generatedFile));
             _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(grammarCheckedState.GrammarActionsTextSpan[grammarNameExt], codeSource, lexer);
         }
 
@@ -239,7 +241,7 @@ namespace AntlrGrammarEditor.Processors
             List<string> generatedFiles, bool visitor)
         {
             string postfix = visitor ? _currentRuntimeInfo.VisitorPostfix : _currentRuntimeInfo.ListenerPostfix;
-            string basePostfix = visitor ? _currentRuntimeInfo.BaseVisitorPostfix : _currentRuntimeInfo.BaseListenerPostfix;
+            string? basePostfix = visitor ? _currentRuntimeInfo.BaseVisitorPostfix : _currentRuntimeInfo.BaseListenerPostfix;
 
             generatedFiles.Add(Path.Combine(workingDirectory,
                 generatedGrammarName + postfix + "." + _currentRuntimeInfo.Extensions[0]));
@@ -483,7 +485,7 @@ namespace AntlrGrammarEditor.Processors
             Runtime runtime = _currentRuntimeInfo.Runtime;
 
             string code = File.ReadAllText(Path.Combine(runtimeDir, _currentRuntimeInfo.MainFile));
-            string packageName = _result.ParserGeneratedState.PackageName;
+            string? packageName = _result.ParserGeneratedState.PackageName;
 
             code = code.Replace(TemplateGrammarName, _grammar.Name);
 
@@ -636,7 +638,7 @@ namespace AntlrGrammarEditor.Processors
         }
 
         private string RemoveCodeOrClearMarkers(string code, Regex startMarker, Regex endMarker,
-            Func<bool> condition = null)
+            Func<bool>? condition = null)
         {
             if (condition?.Invoke() ?? _grammar.Type == GrammarType.Lexer)
             {
@@ -654,7 +656,6 @@ namespace AntlrGrammarEditor.Processors
 
             return code;
         }
-
 
         private string CreateHelperFile(string workingDirectory, StringBuilder stringBuilder)
         {
@@ -695,9 +696,7 @@ namespace AntlrGrammarEditor.Processors
                     var match = Helpers.JavaScriptWarningMarker.Match(e.Data);
                     if (match.Success)
                     {
-                        AddDiagnosis(new Diagnosis(e.Data.Substring(match.Length), CodeSource.Empty,
-                            WorkflowStage.ParserCompiled,
-                            true));
+                        AddDiagnosis(new Diagnosis(e.Data.Substring(match.Length), WorkflowStage.ParserCompiled, DiagnosisType.Warning));
                     }
                     else
                     {
@@ -734,114 +733,54 @@ namespace AntlrGrammarEditor.Processors
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
-                if (_processedMessages.Contains(e.Data))
-                {
-                    return;
-                }
-
-                _processedMessages.Add(e.Data);
-                Console.WriteLine(e.Data);
-
-                if (_currentRuntimeInfo.Runtime.IsCSharpRuntime())
-                {
-                    AddCSharpDiagnosis(e.Data);
-                }
+                AddCSharpDiagnosis(e.Data);
             }
         }
 
         private void AddCSharpDiagnosis(string data)
         {
-            if (data.Contains(": error CS"))
+            Diagnosis diagnosis;
+            var match = CSharpDiagnosisMarker.Match(data);
+            if (match.Success)
             {
-                var diagnosisString = Helpers.FixEncoding(data);
-                Diagnosis diagnosis;
-                CodeSource grammarSource = CodeSource.Empty;
-                try
-                {
-                    // Format:
-                    // Lexer.cs(106,11): error CS0103: The  name 'a' does not exist in the current context
-                    var parts = diagnosisString.Split(new [] { ':' }, 2);
-                    var firstPart = parts[0];
-                    int leftParenInd = firstPart.IndexOf('(');
-                    string codeFileName = firstPart.Remove(leftParenInd);
-                    string grammarFileName = GetGrammarFromCodeFileName(_currentRuntimeInfo, codeFileName);
-                    string lineColumnString = firstPart.Substring(leftParenInd);
-                    lineColumnString = lineColumnString.Substring(1, lineColumnString.Length - 2); // Remove parenthesis.
-                    var lineColumnParts = lineColumnString.Split(',');
-                    int line = int.Parse(lineColumnParts[0]);
-                    int column = int.Parse(lineColumnParts[1]);
-
-                    diagnosis = GenerateDiagnosis(data, codeFileName, line, column, parts[1]);
-                }
-                catch
-                {
-                    diagnosis = new Diagnosis(diagnosisString, grammarSource, WorkflowStage.ParserCompiled);
-                }
+                // Lexer.cs(106,11): error CS0103: The  name 'a' does not exist in the current context
+                var groups = match.Groups;
+                string codeFileName = Path.GetFileName(groups[1].Value);
+                int.TryParse(groups[2].Value, out int line);
+                int.TryParse(groups[3].Value, out int column);
+                string message = groups[5].Value;
+                diagnosis = GenerateDiagnosis(codeFileName, line, column, message, DiagnosisType.Error);
                 AddDiagnosis(diagnosis);
+            }
+            else
+            {
+                //diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
             }
         }
 
         private void AddJavaDiagnosis(string data)
         {
-            if (data.Count(c => c == ':') >= 2)
-            {
-                Diagnosis diagnosis;
-                try
-                {
-                    // Format:
-                    // Lexer.java:98: error: cannot find symbol
-                    string[] parts = data.Split(new [] { ':' }, 4);
-
-                    string rest = parts[3];
-                    if (rest.StartsWith(" [deprecation] ANTLRInputStream"))
-                    {
-                        return;
-                    }
-
-                    string codeFileName = parts[0];
-                    diagnosis = int.TryParse(parts[1], out int codeLine)
-                        ? GenerateDiagnosis(data, codeFileName, codeLine, 1, rest, parts[2].Trim() == "warning")
-                        : null;
-                }
-                catch
-                {
-                    diagnosis = null;
-                }
-
-                if (diagnosis == null)
-                {
-                    diagnosis = new Diagnosis(data, CodeSource.Empty, WorkflowStage.ParserCompiled);
-                }
-
-                AddDiagnosis(diagnosis);
-            }
-        }
-
-        private Diagnosis GenerateDiagnosis(string data, string codeFileName, int line, int column, string rest, bool isWarning = false)
-        {
             Diagnosis diagnosis;
-            TextSpan textSpan;
-
-            if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> textSpanMappings))
+            var match = JavaDiagnosisMarker.Match(data);
+            if (match.Success)
             {
-                string grammarFileName = GetGrammarFromCodeFileName(_currentRuntimeInfo, codeFileName);
-                textSpan = TextHelpers.GetSourceTextSpanForLine(textSpanMappings, line, grammarFileName);
-                diagnosis = new Diagnosis(textSpan, $"{grammarFileName}:{textSpan.GetLineColumn().BeginLine}:{rest}",
-                    WorkflowStage.ParserCompiled, isWarning);
+                // Lexer.java:98: error: cannot find symbol
+                var groups = match.Groups;
+                string message = groups[4].Value;
+                if (message.StartsWith("[deprecation] ANTLRInputStream"))
+                    return;
+
+                string codeFileName = Path.GetFileName(groups[1].Value);
+                int.TryParse(groups[2].Value, out int line);
+                var diagnosisType = groups[3].Value == "warning" ? DiagnosisType.Warning : DiagnosisType.Error;
+
+                diagnosis = GenerateDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, diagnosisType);
             }
             else
             {
-                Dictionary<string, CodeSource> grammarFilesData = _result.ParserGeneratedState.GrammarCheckedState.GrammarFilesData;
-                CodeSource codeSource =
-                    grammarFilesData.FirstOrDefault(file => file.Key.EndsWith(codeFileName, StringComparison.OrdinalIgnoreCase)).Value;
-
-                textSpan = codeSource != null
-                    ? new LineColumnTextSpan(line, column, codeSource).GetTextSpan()
-                    : TextSpan.Empty;
-                diagnosis = new Diagnosis(textSpan, data, WorkflowStage.ParserCompiled, isWarning);
+                diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
             }
-
-            return diagnosis;
+            AddDiagnosis(diagnosis);
         }
 
         private void AddPythonDiagnosis()
@@ -855,62 +794,24 @@ namespace AntlrGrammarEditor.Processors
             //    ^
             //IndentationError: unexpected indent
             string message = "";
-            string grammarFileName = "";
-            TextSpan diagnosisSpan = TextSpan.Empty;
+            string? codeFileName = null;
+            int line = -1;
             for (int i = 0; i < _buffer.Count; i++)
             {
-                if (_buffer[i].TrimStart().StartsWith("File"))
+                Match match;
+                if (codeFileName == null && (match = PythonDiagnosisMarker.Match(_buffer[i])).Success)
                 {
-                    if (grammarFileName != "")
-                    {
-                        continue;
-                    }
-
-                    string codeFileName = _buffer[i];
-                    codeFileName = codeFileName.Substring(codeFileName.IndexOf('"') + 1);
-                    codeFileName = codeFileName.Remove(codeFileName.IndexOf('"'));
-                    codeFileName = Path.GetFileName(codeFileName);
-
-                    if (_grammarCodeMapping.TryGetValue(codeFileName, out var mapping))
-                    {
-                        try
-                        {
-                            var lineStr = "\", line ";
-                            lineStr = _buffer[i].Substring(_buffer[i].IndexOf(lineStr, StringComparison.Ordinal) + lineStr.Length);
-                            int commaIndex = lineStr.IndexOf(',');
-                            if (commaIndex != -1)
-                            {
-                                lineStr = lineStr.Remove(commaIndex);
-                            }
-                            int codeLine = int.Parse(lineStr);
-                            grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Python2], codeFileName);
-                            diagnosisSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine, grammarFileName);
-                        }
-                        catch
-                        {
-                        }
-                    }
-                    else
-                    {
-                        grammarFileName = "";
-                    }
+                    var groups = match.Groups;
+                    codeFileName = Path.GetFileName(groups[1].Value);
+                    int.TryParse(groups[2].Value, out line);
                 }
                 else if (i == _buffer.Count - 1)
                 {
                     message = _buffer[i].Trim();
                 }
             }
-            string finalMessage = "";
-            if (grammarFileName != "")
-            {
-                finalMessage = grammarFileName + ":";
-            }
-            if (!diagnosisSpan.IsEmpty)
-            {
-                finalMessage += diagnosisSpan.GetLineColumn().BeginLine + ":";
-            }
-            finalMessage += message == "" ? "Unknown Error" : message;
-            AddDiagnosis(new Diagnosis(diagnosisSpan, finalMessage, WorkflowStage.ParserCompiled));
+
+            AddDiagnosis(GenerateDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error));
         }
 
         private void AddJavaScriptDiagnosis()
@@ -933,30 +834,15 @@ namespace AntlrGrammarEditor.Processors
 
             // (node:17616) ExperimentalWarning: The ESM module loader is experimental.
             string message = "";
-            string grammarFileName = "";
-            TextSpan diagnosisSpan = TextSpan.Empty;
-            string firstLine = _buffer[0];
-            int semicolonLastIndex = firstLine.LastIndexOf(':');
-            try
-            {
-                if (semicolonLastIndex != -1)
-                {
-                    string beforeLastPart = firstLine.Remove(semicolonLastIndex);
-                    string lastPart = firstLine.Substring(semicolonLastIndex + 1);
+            string? codeFileName = null;
+            int line = -1;
 
-                    string codeFileName = Path.GetFileName(beforeLastPart);
-                    if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> mapping) &&
-                        int.TryParse(lastPart, out int codeLine))
-                    {
-                        grammarFileName =
-                            GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.JavaScript], codeFileName);
-                        diagnosisSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine, grammarFileName);
-                    }
-                }
-            }
-            catch
+            var match = JavaScriptDiagnosisMarker.Match(_buffer[0]);
+            if (match.Success)
             {
-                // ignored
+                var groups = match.Groups;
+                codeFileName = Path.GetFileName(groups[1].Value);
+                int.TryParse(groups[2].Value, out line);
             }
 
             for (int i = 1; i < _buffer.Count; i++)
@@ -967,106 +853,112 @@ namespace AntlrGrammarEditor.Processors
                 }
             }
 
-            string finalMessage = "";
-            if (grammarFileName != "")
-            {
-                finalMessage = grammarFileName + ":";
-            }
-            if (!diagnosisSpan.IsEmpty)
-            {
-                finalMessage += diagnosisSpan.GetLineColumn().BeginLine + ":";
-            }
-            finalMessage += message == "" ? "Unknown Error" : message;
-            AddDiagnosis(new Diagnosis(diagnosisSpan, finalMessage, WorkflowStage.ParserCompiled));
+            AddDiagnosis(GenerateDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error));
         }
 
         private void AddGoDiagnosis(string data)
         {
-            if (data.Contains(": syntax error:"))
+            Diagnosis diagnosis;
+            var match = GoDiagnosisMarker.Match(data);
+            if (match.Success)
             {
-                // Format:
                 // .\newgrammar_parser.go:169: syntax error: unexpected semicolon or newline, expecting expression
-                string grammarFileName = "";
-                TextSpan diagnosisSpan = TextSpan.Empty;
-                string message = "";
-                var parts = data.Split(':');
-                try
-                {
-                    string codeFileName = parts[0].Substring(2);
-                    if (_grammarCodeMapping.TryGetValue(codeFileName, out var mapping))
-                    {
-                        int codeLine = int.Parse(parts[1]);
-                        grammarFileName = GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Go], codeFileName);
-                        diagnosisSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine, grammarFileName);
-                    }
-                    message = parts[3];
-                }
-                catch
-                {
-                }
-                string finalMessage = "";
-                if (grammarFileName != "")
-                {
-                    finalMessage = grammarFileName + ":";
-                }
-                if (!diagnosisSpan.IsEmpty)
-                {
-                    finalMessage += diagnosisSpan.GetLineColumn().BeginLine + ":";
-                }
-                finalMessage += message == "" ? "Unknown Error" : message;
-                AddDiagnosis(new Diagnosis(diagnosisSpan, finalMessage, WorkflowStage.ParserCompiled));
+                var groups = match.Groups;
+                string codeFileName = groups[1].Value.Substring(2);
+                int.TryParse(groups[2].Value, out int codeLine);
+                string message = groups[4].Value;
+                diagnosis = GenerateDiagnosis(codeFileName, codeLine, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error);
             }
             else
             {
-                AddDiagnosis(new Diagnosis(TextSpan.Empty, data, WorkflowStage.ParserCompiled));
+                diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
             }
+            AddDiagnosis(diagnosis);
         }
 
         private void AddPhpDiagnosis(string data)
         {
-            // PHP Parse error:  syntax error, unexpected ';' in <file_name.php> on line 145
-            var dataSpan = data.AsSpan();
-            int messageIndex = data.IndexOf(':') + 1;
-            const string inString = "in ";
-            int inIndex = data.IndexOf(inString, messageIndex, StringComparison.InvariantCulture);
-            string message = dataSpan.Slice(messageIndex, inIndex - messageIndex).Trim().ToString();
-
-            const string onLineString = " on line ";
-            int lastOnIndex = data.LastIndexOf(onLineString, StringComparison.InvariantCulture);
-            int line = int.Parse(dataSpan.Slice(lastOnIndex + onLineString.Length).ToString());
-
-            int fileNameIndex = inIndex + inString.Length;
-            string fileName = dataSpan.Slice(fileNameIndex, lastOnIndex - fileNameIndex).ToString();
-
-            var codeSource = new CodeSource(Path.GetFileNameWithoutExtension(fileName), File.ReadAllText(fileName)); // TODO: reuse existed files
-            AddDiagnosis(new Diagnosis(line, LineColumnTextSpan.StartColumn, message, codeSource, WorkflowStage.ParserCompiled));
+            Diagnosis diagnosis;
+            var match = PhpDiagnosisMarker.Match(data);
+            if (match.Success)
+            {
+                // PHP Parse error:  syntax error, unexpected ';' in <file_name.php> on line 145
+                var groups = match.Groups;
+                string codeFileName = Path.GetFileName(groups[3].Value);
+                int.TryParse(groups[4].Value, out int codeLine);
+                string message = groups[2].Value;
+                diagnosis = GenerateDiagnosis(codeFileName, codeLine, LineColumnTextSpan.StartColumn, message,
+                    DiagnosisType.Error);
+            }
+            else
+            {
+                diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
+            }
+            AddDiagnosis(diagnosis);
         }
 
         private void AddDartDiagnosis(string data)
         {
-            // TestParser.dart:64:9: Error: Expected an identifier, but got ';'.
-            var match = DartErrorMarker.Match(data);
+            Diagnosis diagnosis;
+            var match = DartDiagnosisMarker.Match(data);
             if (match.Success)
             {
+                // TestParser.dart:64:9: Error: Expected an identifier, but got ';'.
                 var groups = match.Groups;
-                var diagnosisSpan = TextSpan.Empty;
                 string codeFileName = Path.GetFileName(groups[1].Value);
-                if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> mapping) &&
-                    int.TryParse(groups[2].Value, out int codeLine))
-                {
-                    var grammarFileName =
-                        GetGrammarFromCodeFileName(RuntimeInfo.Runtimes[Runtime.Dart], codeFileName);
-                    diagnosisSpan = TextHelpers.GetSourceTextSpanForLine(mapping, codeLine, grammarFileName);
-                }
-
+                int.TryParse(groups[2].Value, out int line);
+                int.TryParse(groups[3].Value, out int column);
                 var message = groups[5].Value.Trim();
-                AddDiagnosis(new Diagnosis(diagnosisSpan, message, WorkflowStage.ParserCompiled, false));
+
+                diagnosis = GenerateDiagnosis(codeFileName, line, column, message, DiagnosisType.Error);
             }
+            else
+            {
+                diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
+            }
+            AddDiagnosis(diagnosis);
         }
 
-        private string GetGrammarFromCodeFileName(RuntimeInfo runtimeInfo, string codeFileName)
+        private Diagnosis GenerateDiagnosis(string? codeFileName, int line, int column, string message, DiagnosisType type)
         {
-            string result = _grammar.Files.FirstOrDefault(file => file.EndsWith(codeFileName));
+            if (codeFileName == null)
+            {
+                return new Diagnosis(message, WorkflowStage.ParserCompiled, type);
+            }
+
+            Diagnosis diagnosis;
+
+            if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> textSpanMappings))
+            {
+                string? grammarFileName = GetGrammarFromCodeFileName(_currentRuntimeInfo, codeFileName);
+                if (TryGetSourceTextSpanForLine(textSpanMappings, line, out TextSpan textSpan))
+                {
+                    return new Diagnosis(textSpan, $"{grammarFileName}:{textSpan.LineColumn.BeginLine}:{message}",
+                        WorkflowStage.ParserCompiled, type);
+                }
+
+                return new Diagnosis(message, WorkflowStage.ParserCompiled, type);
+            }
+            else
+            {
+                var grammarFilesData = _result.ParserGeneratedState.GrammarCheckedState.GrammarFilesData;
+                CodeSource? grammarSource =
+                    grammarFilesData.FirstOrDefault(file => file.Key.EndsWith(codeFileName, StringComparison.OrdinalIgnoreCase)).Value;
+
+                TextSpan? textSpan = grammarSource != null
+                    ? new LineColumnTextSpan(line, column, grammarSource).GetTextSpan()
+                    : null;
+                diagnosis = textSpan != null
+                    ? new Diagnosis(textSpan.Value, message, WorkflowStage.ParserCompiled, type)
+                    : new Diagnosis(message, WorkflowStage.ParserCompiled, type);
+            }
+
+            return diagnosis;
+        }
+
+        private string? GetGrammarFromCodeFileName(RuntimeInfo runtimeInfo, string codeFileName)
+        {
+            string? result = _grammar.Files.FirstOrDefault(file => file.EndsWith(codeFileName));
             if (result != null)
             {
                 return result;
@@ -1089,6 +981,30 @@ namespace AntlrGrammarEditor.Processors
             result = result + Grammar.AntlrDotExt;
 
             return _grammar.Files.FirstOrDefault(file => file.EndsWith(result));
+        }
+
+        private static bool TryGetSourceTextSpanForLine(List<TextSpanMapping> textSpanMappings, int destinationLine,
+            out TextSpan textSpan)
+        {
+            foreach (TextSpanMapping textSpanMapping in textSpanMappings)
+            {
+                LineColumnTextSpan destLineColumnTextSpan = textSpanMapping.DestTextSpan.LineColumn;
+                if (destinationLine >= destLineColumnTextSpan.BeginLine &&
+                    destinationLine <= destLineColumnTextSpan.EndLine)
+                {
+                    textSpan = textSpanMapping.SourceTextSpan;
+                    return true;
+                }
+            }
+
+            if (textSpanMappings.Count > 0)
+            {
+                textSpan = TextSpan.GetEmpty(textSpanMappings[0].SourceTextSpan.Source);
+                return true;
+            }
+
+            textSpan = default;
+            return false;
         }
 
         private void AddDiagnosis(Diagnosis diagnosis)

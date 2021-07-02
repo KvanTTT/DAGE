@@ -72,7 +72,7 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Separated;
 
-        public List<string> ExistingRules { get; }
+        private List<string> ExistingRules { get; }
 
         public RootOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent, List<string> existingRules)
             : base(codeSource, grammarType, diagnosisEvent)
@@ -128,7 +128,7 @@ namespace AntlrGrammarEditor.Processors
             ErrorAction = diagnosisEvent ?? throw new ArgumentNullException(nameof(diagnosisEvent));
         }
 
-        public bool Match(IToken token, out T value)
+        public bool Match(IToken token, out T? value)
         {
             var match = Regex.Match(token.Text);
             if (match.Success)
@@ -217,7 +217,7 @@ namespace AntlrGrammarEditor.Processors
             var lineColumn = codeSource.ToLineColumn(warningTextSpan);
             var error = new Diagnosis(warningTextSpan,
                 Helpers.FormatErrorMessage(codeSource, lineColumn.BeginLine, lineColumn.BeginColumn, message, true),
-                WorkflowStage.GrammarChecked, true);
+                WorkflowStage.GrammarChecked, DiagnosisType.Error);
             ErrorAction(error);
         }
     }

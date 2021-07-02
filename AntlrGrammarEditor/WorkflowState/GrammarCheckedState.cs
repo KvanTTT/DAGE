@@ -12,9 +12,9 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public InputState InputState { get; }
 
-        public Dictionary<string, CodeSource> GrammarFilesData { get; } = new Dictionary<string, CodeSource>();
+        public Dictionary<string, CodeSource> GrammarFilesData { get; } = new();
 
-        public Dictionary<string, List<CodeInsertion>> GrammarActionsTextSpan { get; } = new Dictionary<string, List<CodeInsertion>>();
+        public Dictionary<string, List<CodeInsertion>> GrammarActionsTextSpan { get; } = new();
 
         public CaseInsensitiveType CaseInsensitiveType { get; set; }
 
@@ -26,17 +26,17 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public bool? Visitor { get; set; }
 
-        public string Package { get; set; }
+        public string? Package { get; set; }
 
-        public string Root { get; set; }
+        public string? Root { get; set; }
 
         public PredictionMode? PredictionMode { get; set; }
 
-        public List<string> Rules { get; set; } = new List<string>();
+        public List<string> Rules { get; set; } = new();
 
-        public string LexerSuperClass { get; set; }
+        public string? LexerSuperClass { get; set; }
 
-        public string ParserSuperClass { get; set; }
+        public string? ParserSuperClass { get; set; }
 
         public GrammarCheckedState(InputState inputState)
         {

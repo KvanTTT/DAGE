@@ -11,8 +11,8 @@ namespace DesktopAntlrGrammarEditor
 
         public SelectPathViewModel(Window window, string message, string path = "")
         {
-            Message = message;
-            Path = path;
+            _message = message;
+            _path = path;
             OkCommand = ReactiveCommand.Create(() => window.Close(Path));
             CancelCommand = ReactiveCommand.Create(() => window.Close(null));
         }

@@ -8,8 +8,6 @@ namespace AntlrGrammarEditor
 
         public const int StartColumn = 1;
 
-        public static LineColumnTextSpan Zero => new LineColumnTextSpan(0, 0, 0, 0, CodeSource.Empty);
-
         public int BeginLine { get; }
 
         public int BeginColumn { get; }

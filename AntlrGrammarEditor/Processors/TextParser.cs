@@ -9,45 +9,54 @@ namespace AntlrGrammarEditor.Processors
 {
     public class TextParser : StageProcessor
     {
-        private TextParsedState _result;
+        private readonly TextParsedState _result;
 
-        public string TextFileName { get; }
+        public string? TextFileName { get; }
 
-        public string Root { get; set; }
+        public string? Root { get; }
 
         public bool OnlyTokenize { get; set; }
 
         public PredictionMode PredictionMode { get; set; }
 
-        public EventHandler<(TextParsedOutput, object)> TextParsedOutputEvent { get; set; }
+        public EventHandler<(TextParsedOutput, object)>? TextParsedOutputEvent { get; set; }
 
-        public string RuntimeLibrary { get; set; }
+        public string? RuntimeLibrary { get; set; }
 
-        public TextParser(string textFileName)
+        public TextParser(ParserCompiledState state, string? textFileName, string? root)
         {
             TextFileName = textFileName;
+            Root = root;
+            _result = new TextParsedState(state,
+                textFileName != null ? new CodeSource(textFileName, File.ReadAllText(textFileName)) : null)
+            {
+                Root = root
+            };
         }
 
-        public TextParsedState Parse(ParserCompiledState state, CancellationToken cancellationToken = default)
+        public TextParsedState Parse(CancellationToken cancellationToken = default)
         {
-            Processor processor = null;
+            if (_result.Text == null)
+            {
+                _result.AddDiagnosis(new Diagnosis("File to parse is not specified", WorkflowStage.TextParsed));
+                return _result;
+            }
+
+            var parserCompiledState = _result.ParserCompiledState;
+            Processor? processor = null;
             try
             {
-                _result = new TextParsedState(state, new CodeSource(TextFileName, File.ReadAllText(TextFileName)))
-                {
-                    Root = Root
-                };
-
-                Grammar grammar = state.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
-                Runtime runtime = state.ParserGeneratedState.Runtime;
+                Grammar grammar = parserCompiledState.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
+                Runtime runtime = parserCompiledState.ParserGeneratedState.Runtime;
 
                 var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
                 string runtimeDir = Path.Combine(ParserCompiler.RuntimesDirName, runtime.ToString());
                 string runtimeLibraryPath = RuntimeLibrary ?? Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
 
-                string toolName = "";
+                string toolName;
                 string args = "";
-                string workingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName, grammar.Name, runtime.ToString());
+                string workingDirectory =
+                    Path.Combine(ParserGenerator.HelperDirectoryName, grammar.Name, runtime.ToString());
 
                 switch (runtime)
                 {
@@ -74,7 +83,8 @@ namespace AntlrGrammarEditor.Processors
                         break;
                 }
 
-                args += $" \"{TextFileName}\" {_result.RootOrDefault} {OnlyTokenize.ToString().ToLowerInvariant()} {PredictionMode.ToString().ToLowerInvariant()}";
+                args +=
+                    $" \"{TextFileName}\" {_result.RootOrDefault} {OnlyTokenize.ToString().ToLowerInvariant()} {PredictionMode.ToString().ToLowerInvariant()}";
 
                 _result.Command = toolName + " " + args;
                 processor = new Processor(toolName, args, workingDirectory);
@@ -88,16 +98,7 @@ namespace AntlrGrammarEditor.Processors
             }
             catch (Exception ex)
             {
-                if (_result == null)
-                {
-                    _result = new TextParsedState(state, new CodeSource("", ""));
-                }
-
-                _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.TextParsed));
-                if (!(ex is OperationCanceledException))
-                {
-                    AddDiagnosis(new Diagnosis(ex, WorkflowStage.TextParsed));
-                }
+                AddDiagnosis(new Diagnosis(ex, WorkflowStage.TextParsed));
             }
             finally
             {
@@ -163,21 +164,23 @@ namespace AntlrGrammarEditor.Processors
                 Diagnosis diagnosis;
                 try
                 {
-                    var words = diagnosisString.Split(new[] { ' ' }, 3);
+                    var words = diagnosisString.Split(new[] {' '}, 3);
                     var parts = words[1].Split(':');
                     string diagnosisMessage = words[2];
                     int.TryParse(parts[0], out int beginLine);
                     int.TryParse(parts[1], out int beginColumn);
                     beginColumn += 1;
-                    int start = _result.Text.LineColumnToPosition(beginLine, beginColumn);
+                    var text = _result.Text!;
+                    int start = text.LineColumnToPosition(beginLine, beginColumn);
                     diagnosisString = $"{words[0]} {beginLine}:{beginColumn} {words[2]}";
-                    diagnosis = new Diagnosis(TextHelpers.ExtractTextSpan(start, diagnosisMessage, _result.Text),
+                    diagnosis = new Diagnosis(TextHelpers.ExtractTextSpan(start, diagnosisMessage, text),
                         diagnosisString, WorkflowStage.TextParsed);
                 }
                 catch
                 {
-                    diagnosis = new Diagnosis(diagnosisString, _result.Text, WorkflowStage.TextParsed);
+                    diagnosis = new Diagnosis(diagnosisString, WorkflowStage.TextParsed);
                 }
+
                 AddDiagnosis(diagnosis);
             }
         }
@@ -186,11 +189,11 @@ namespace AntlrGrammarEditor.Processors
         {
             if (!e.IsIgnoredMessage(_result.ParserCompiledState.ParserGeneratedState.Runtime))
             {
-                var strs = e.Data.Split(new [] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                var parts = e.Data.Split(new [] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
 
-                if (Enum.TryParse(strs[0], out TextParsedOutput outputState))
+                if (Enum.TryParse(parts[0], out TextParsedOutput outputState))
                 {
-                    var data = strs[1];
+                    var data = parts[1];
                     switch (outputState)
                     {
                         case TextParsedOutput.LexerTime:
@@ -213,7 +216,7 @@ namespace AntlrGrammarEditor.Processors
                 }
                 else
                 {
-                    AddDiagnosis(new Diagnosis(e.Data, CodeSource.Empty, WorkflowStage.TextParsed));
+                    AddDiagnosis(new Diagnosis(e.Data, WorkflowStage.TextParsed));
                 }
             }
         }

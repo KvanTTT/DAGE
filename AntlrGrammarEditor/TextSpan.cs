@@ -4,8 +4,6 @@ namespace AntlrGrammarEditor
 {
     public readonly struct TextSpan : IEquatable<TextSpan>, IComparable<TextSpan>
     {
-        public static TextSpan Empty => new TextSpan(0, 0, CodeSource.Empty);
-
         public int Start { get; }
 
         public int Length { get; }
@@ -13,6 +11,8 @@ namespace AntlrGrammarEditor
         public CodeSource Source { get; }
 
         public LineColumnTextSpan LineColumn => Source.ToLineColumn(this);
+
+        public static TextSpan GetEmpty(CodeSource source) => new TextSpan(0, 0, source);
 
         public TextSpan(int start, int length, CodeSource codeSource)
         {
@@ -35,13 +35,6 @@ namespace AntlrGrammarEditor
         public int End => Start + Length;
 
         public bool IsEmpty => Start == 0 && Length == 0;
-
-        public LineColumnTextSpan GetLineColumn()
-        {
-            Source.PositionToLineColumn(Start, out int startLine, out int startColumn);
-            Source.PositionToLineColumn(End, out int endLine, out int endColumn);
-            return new LineColumnTextSpan(startLine, startColumn, endLine, endColumn, Source);
-        }
 
         public static TextSpan FromBounds(int start, int end, CodeSource source)
         {

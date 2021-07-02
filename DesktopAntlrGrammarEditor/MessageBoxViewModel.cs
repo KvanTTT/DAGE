@@ -33,10 +33,10 @@ namespace DesktopAntlrGrammarEditor
 
         public bool YesNoButtonVisible => MessageBoxType == MessageBoxType.YesNo;
 
-        public ReactiveCommand<Unit, Unit> OkCommand { get; }
+        public ReactiveCommand<Unit, Unit>? OkCommand { get; }
 
-        public ReactiveCommand<Unit, Unit> YesCommand { get; }
+        public ReactiveCommand<Unit, Unit>? YesCommand { get; }
 
-        public ReactiveCommand<Unit, Unit> NoCommand { get; }
+        public ReactiveCommand<Unit, Unit>? NoCommand { get; }
     }
 }

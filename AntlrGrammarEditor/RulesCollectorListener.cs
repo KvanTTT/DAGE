@@ -9,21 +9,25 @@ namespace AntlrGrammarEditor
         private bool _question;
         private bool _lexerRule, _parserRule;
 
-        public List<string> Rules { get; } = new List<string>();
+        public List<string> Rules { get; } = new();
 
-        public List<CodeInsertion> CodeInsertions { get; } = new List<CodeInsertion>();
+        public List<CodeInsertion> CodeInsertions { get; } = new();
 
-        public string GrammarName { get; private set; }
+        public string? GrammarName { get; private set; }
 
-        public CodeSource GrammarSource { get; private set; }
+        public CodeSource GrammarSource { get; }
 
         public GrammarType GrammarType { get; private set; }
 
-        public string SuperClass { get; private set; }
+        public string? SuperClass { get; private set; }
 
-        public void CollectInfo(CodeSource grammarSource, ANTLRv4Parser.GrammarSpecContext context)
+        public GrammarInfoCollectorListener(CodeSource grammarSource)
         {
             GrammarSource = grammarSource;
+        }
+
+        public void CollectInfo(ANTLRv4Parser.GrammarSpecContext context)
+        {
             var walker = new ParseTreeWalker();
             walker.Walk(this, context);
         }
@@ -39,7 +43,7 @@ namespace AntlrGrammarEditor
 
         public override void EnterOption([NotNull] ANTLRv4Parser.OptionContext context)
         {
-            string optionName = context.identifier()?.GetText();
+            string? optionName = context.identifier()?.GetText();
 
             if (optionName == "superClass")
             {
@@ -146,14 +150,7 @@ namespace AntlrGrammarEditor
 
             if (_lexerRule || _parserRule)
             {
-                var codeInsertion = new CodeInsertion
-                {
-                    TextSpan = textSpan,
-                    Text = text,
-                    Lexer = _lexerRule,
-                    Predicate = _question
-                };
-                CodeInsertions.Add(codeInsertion);
+                CodeInsertions.Add(new CodeInsertion(textSpan, text, _lexerRule, _question));
             }
         }
     }

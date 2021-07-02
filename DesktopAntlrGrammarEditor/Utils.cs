@@ -14,13 +14,12 @@ namespace DesktopAntlrGrammarEditor
             string extension = Path.GetExtension(fileName).ToLowerInvariant();
             if (extension == ".g4")
             {
-                using (Stream stream = Assembly.GetExecutingAssembly()
-                    .GetManifestResourceStream("DesktopAntlrGrammarEditor.Antlr4.xshd"))
+                using Stream? stream = Assembly.GetExecutingAssembly()
+                    .GetManifestResourceStream("DesktopAntlrGrammarEditor.Antlr4.xshd");
+                if (stream != null)
                 {
-                    using (XmlTextReader reader = new XmlTextReader(stream))
-                    {
-                        textBox.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
-                    }
+                    using XmlTextReader reader = new XmlTextReader(stream);
+                    textBox.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
                 }
             }
             else

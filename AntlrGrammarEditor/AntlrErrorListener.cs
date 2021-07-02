@@ -6,16 +6,23 @@ namespace AntlrGrammarEditor
 {
     public class AntlrErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
     {
-        public event EventHandler<Diagnosis> ErrorEvent;
+        public event EventHandler<Diagnosis>? ErrorEvent;
 
-        public CodeSource CodeSource { get; set; }
+        public CodeSource CodeSource { get; }
 
-        public void SyntaxError(IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+        public AntlrErrorListener(CodeSource codeSource)
+        {
+            CodeSource = codeSource;
+        }
+
+        public void SyntaxError(IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine,
+            string msg, RecognitionException e)
         {
             int column = charPositionInLine + 1;
             var message = Helpers.FormatErrorMessage(CodeSource, line, column, msg);
             var start = CodeSource.LineColumnToPosition(line, column);
-            var parserError = new Diagnosis(TextHelpers.ExtractTextSpan(start, msg, CodeSource), message, WorkflowStage.GrammarChecked);
+            var parserError = new Diagnosis(TextHelpers.ExtractTextSpan(start, msg, CodeSource), message,
+                WorkflowStage.GrammarChecked);
             ErrorEvent?.Invoke(this, parserError);
         }
 
@@ -23,7 +30,7 @@ namespace AntlrGrammarEditor
         {
             var message = Helpers.FormatErrorMessage(CodeSource, line, charPositionInLine + 1, msg);
             var textSpan = TextSpan.FromBounds(offendingSymbol.StartIndex, offendingSymbol.StopIndex + 1, CodeSource);
-            var lexerError = new Diagnosis(textSpan, message, WorkflowStage.GrammarChecked);
+            var lexerError = new Diagnosis(textSpan, message, WorkflowStage.GrammarChecked, DiagnosisType.Error);
             ErrorEvent?.Invoke(this, lexerError);
         }
     }

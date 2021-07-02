@@ -1,5 +1,4 @@
 ﻿using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
 
 namespace AntlrGrammarEditor
 {
@@ -9,7 +8,7 @@ namespace AntlrGrammarEditor
         {
             var start = ruleContext.Start;
             if (start.Text == "<EOF>")
-                return TextSpan.Empty;
+                return TextSpan.GetEmpty(source);
 
             var stop = ruleContext.Stop;
             if (stop == null)
@@ -20,19 +19,9 @@ namespace AntlrGrammarEditor
                 }
             }
 
-            var result = new TextSpan(start.StartIndex, stop.StopIndex - start.StartIndex + 1, source);
-            return result;
-        }
-
-        public static TextSpan GetTextSpan(this ITerminalNode node, CodeSource source)
-        {
-            return GetTextSpan(node.Symbol, source);
-        }
-
-        public static TextSpan GetTextSpan(this IToken token, CodeSource source)
-        {
-            var result = new TextSpan(token.StartIndex, token.StopIndex - token.StartIndex + 1, source);
-            return result;
+            return stop != null
+                ? new TextSpan(start.StartIndex, stop.StopIndex - start.StartIndex + 1, source)
+                : TextSpan.GetEmpty(source);
         }
     }
 }

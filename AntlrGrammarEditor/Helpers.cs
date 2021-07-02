@@ -11,11 +11,11 @@ namespace AntlrGrammarEditor
     {
         private static bool _javaInitialized;
 
-        private static string _javaVersion;
+        private static string? _javaVersion;
 
-        public static string RuntimesPath { get; private set; }
+        public static string RuntimesPath { get; private set; } = "";
 
-        public static readonly Regex JavaScriptWarningMarker = new Regex(@"^\(node:\d+\) \w*?Warning: ", RegexOptions.Compiled);
+        public static readonly Regex JavaScriptWarningMarker = new (@"^\(node:\d+\) \w*?Warning: ", RegexOptions.Compiled);
 
         public const string JavaScriptIgnoreMessage =
             "(Use `node --trace-warnings ...` to show where the warning was created)";
@@ -25,12 +25,12 @@ namespace AntlrGrammarEditor
             GetRuntimesPath();
         }
 
-        static void GetRuntimesPath([CallerFilePath] string thisFilePath = null)
+        static void GetRuntimesPath([CallerFilePath] string? thisFilePath = null)
         {
-            RuntimesPath = Path.Combine(Path.GetDirectoryName(thisFilePath), "AntlrRuntimes");
+            RuntimesPath = Path.Combine(Path.GetDirectoryName(thisFilePath) ?? "", "AntlrRuntimes");
         }
 
-        public static string JavaVersion
+        public static string? JavaVersion
         {
             get
             {
@@ -66,7 +66,7 @@ namespace AntlrGrammarEditor
             var bytes = Encoding.Default.GetBytes(result);
             using (var stream = new MemoryStream(bytes))
             {
-                Ude.CharsetDetector charsetDetector = new Ude.CharsetDetector();
+                var charsetDetector = new Ude.CharsetDetector();
                 charsetDetector.Feed(stream);
                 charsetDetector.DataEnd();
                 if (charsetDetector.Charset != null)

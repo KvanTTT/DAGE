@@ -7,17 +7,17 @@ namespace AntlrGrammarEditor.WorkflowState
 {
     public abstract class WorkflowState
     {
-        private readonly List<Diagnosis> _diagnoses = new List<Diagnosis>();
+        private readonly List<Diagnosis> _diagnoses = new();
 
         public abstract WorkflowStage Stage { get; }
 
-        public abstract WorkflowState PreviousState { get; }
+        public abstract WorkflowState? PreviousState { get; }
 
-        public bool HasErrors => Diagnoses.Any(error => !error.IsWarning);
+        public bool HasErrors => _diagnoses.Any(error => error.Type == DiagnosisType.Error);
 
         public IReadOnlyList<Diagnosis> Diagnoses => _diagnoses;
 
-        public string Command { get; set; }
+        public string? Command { get; set; }
 
         public void AddDiagnosis(Diagnosis diagnosis)
         {

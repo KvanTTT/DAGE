@@ -8,31 +8,28 @@ namespace AntlrGrammarEditor.Processors
 {
     public class GrammarChecker : StageProcessor
     {
-        private GrammarCheckedState _result;
+        private readonly GrammarCheckedState _result;
 
-        public GrammarCheckedState Check(InputState inputState, CancellationToken cancellationToken = default)
+        public GrammarChecker(InputState inputState)
         {
-            var grammar = inputState.Grammar;
             _result = new GrammarCheckedState(inputState);
+        }
+
+        public GrammarCheckedState Check( CancellationToken cancellationToken = default)
+        {
+            var grammar = _result.InputState.Grammar;
             try
             {
-                var antlrErrorListener = new AntlrErrorListener();
-                antlrErrorListener.ErrorEvent += DiagnosisEvent;
-                antlrErrorListener.ErrorEvent += (sender, error) =>
-                {
-                    _result.AddDiagnosis(error);
-                };
-
                 foreach (string grammarFileName in grammar.Files)
                 {
-                    ProcessGrammarFile(grammar, grammarFileName, antlrErrorListener, cancellationToken);
+                    ProcessGrammarFile(grammar, grammarFileName, cancellationToken);
                 }
             }
             catch (Exception ex)
             {
-                _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.GrammarChecked));
                 if (!(ex is OperationCanceledException))
                 {
+                    _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.GrammarChecked));
                     DiagnosisEvent?.Invoke(this, new Diagnosis(ex, WorkflowStage.GrammarChecked));
                 }
             }
@@ -40,8 +37,7 @@ namespace AntlrGrammarEditor.Processors
             return _result;
         }
 
-        private void ProcessGrammarFile(Grammar grammar, string grammarFileName,
-            AntlrErrorListener antlrErrorListener, CancellationToken cancellationToken)
+        private void ProcessGrammarFile(Grammar grammar, string grammarFileName, CancellationToken cancellationToken)
         {
             string code = File.ReadAllText(Path.Combine(grammar.Directory, grammarFileName));
             var inputStream = new AntlrInputStream(code);
@@ -54,7 +50,12 @@ namespace AntlrGrammarEditor.Processors
                 return;
             }
 
-            antlrErrorListener.CodeSource = codeSource;
+            var antlrErrorListener = new AntlrErrorListener(codeSource);
+            antlrErrorListener.ErrorEvent += DiagnosisEvent;
+            antlrErrorListener.ErrorEvent += (sender, error) =>
+            {
+                _result.AddDiagnosis(error);
+            };
             var antlr4Lexer = new ANTLRv4Lexer(inputStream);
             antlr4Lexer.RemoveErrorListeners();
             antlr4Lexer.AddErrorListener(antlrErrorListener);
@@ -71,8 +72,8 @@ namespace AntlrGrammarEditor.Processors
 
             var tree = antlr4Parser.grammarSpec();
 
-            var grammarInfoCollectorListener = new GrammarInfoCollectorListener();
-            grammarInfoCollectorListener.CollectInfo(antlrErrorListener.CodeSource, tree);
+            var grammarInfoCollectorListener = new GrammarInfoCollectorListener(antlrErrorListener.CodeSource);
+            grammarInfoCollectorListener.CollectInfo(tree);
 
             var shortFileName = Path.GetFileNameWithoutExtension(grammarFileName);
             _result.GrammarActionsTextSpan[grammarFileName] = grammarInfoCollectorListener.CodeInsertions;
@@ -120,7 +121,7 @@ namespace AntlrGrammarEditor.Processors
                         continue;
                     }
 
-                    if (packageOptionMatcher.Match(token, out string package))
+                    if (packageOptionMatcher.Match(token, out string? package))
                     {
                         _result.Package = package;
                         continue;
@@ -138,7 +139,7 @@ namespace AntlrGrammarEditor.Processors
                         continue;
                     }
 
-                    if (rootOptionMatcher.Match(token, out string root))
+                    if (rootOptionMatcher.Match(token, out string? root))
                     {
                         _result.Root = root;
                         continue;

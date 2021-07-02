@@ -7,7 +7,7 @@ namespace AntlrGrammarEditor
 {
     public class RuntimeInfo
     {
-        public static readonly Dictionary<Runtime, RuntimeInfo> Runtimes = new Dictionary<Runtime, RuntimeInfo>()
+        public static readonly Dictionary<Runtime, RuntimeInfo> Runtimes = new()
         {
             [Runtime.CSharpOptimized] = new RuntimeInfo
             (
@@ -55,11 +55,11 @@ namespace AntlrGrammarEditor
                 extensions: new[] { "py" },
                 mainFile: "main.py",
                 antlrInputStream: "InputStream",
-                baseListenerPostfix: null,
-                baseVisitorPostfix: null,
                 interpreted: true,
                 runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python2",
-                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-2 " : "") + "--version"
+                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-2 " : "") + "--version",
+                baseListenerPostfix: null,
+                baseVisitorPostfix: null
             ),
             [Runtime.Python3] = new RuntimeInfo
             (
@@ -70,11 +70,11 @@ namespace AntlrGrammarEditor
                 extensions: new[] { "py" },
                 mainFile: "main.py",
                 antlrInputStream: "InputStream",
-                baseListenerPostfix: null,
-                baseVisitorPostfix: null,
                 interpreted: true,
                 runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python3",
-                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-3 " : "") + "--version"
+                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-3 " : "") + "--version",
+                baseListenerPostfix: null,
+                baseVisitorPostfix: null
             ),
             [Runtime.JavaScript] = new RuntimeInfo
             (
@@ -85,11 +85,11 @@ namespace AntlrGrammarEditor
                 extensions: new[] { "js" },
                 mainFile: "main.js",
                 antlrInputStream: "antlr4.InputStream",
-                baseListenerPostfix: null,
-                baseVisitorPostfix: null,
                 interpreted: true,
                 runtimeToolName: "node",
-                versionArg: "-v"
+                versionArg: "-v",
+                baseListenerPostfix: null,
+                baseVisitorPostfix: null
             ),
             [Runtime.CPlusPlus] = new RuntimeInfo
             (
@@ -101,7 +101,9 @@ namespace AntlrGrammarEditor
                 mainFile: "",
                 antlrInputStream: "",
                 runtimeToolName: "",
-                versionArg: ""
+                versionArg: "",
+                baseListenerPostfix: null,
+                baseVisitorPostfix: null
             ),
             [Runtime.Go] = new RuntimeInfo
             (
@@ -167,17 +169,17 @@ namespace AntlrGrammarEditor
         public string[] Extensions { get; }
         public string MainFile { get; }
         public string AntlrInputStream { get; }
-        public bool Interpreted { get; } = false;
+        public bool Interpreted { get; }
         public string RuntimeToolName { get; }
         public string LexerPostfix { get; }
         public string ParserPostfix { get; }
-        public string BaseListenerPostfix { get; }
+        public string? BaseListenerPostfix { get; }
         public string ListenerPostfix { get; }
-        public string BaseVisitorPostfix { get; }
+        public string? BaseVisitorPostfix { get; }
         public string VisitorPostfix { get; }
         public string VersionArg { get; }
         public bool Initialized { get; private set; }
-        public string Version { get; private set; }
+        public string? Version { get; private set; }
 
         public static RuntimeInfo InitOrGetRuntimeInfo(Runtime runtime)
         {
@@ -220,26 +222,26 @@ namespace AntlrGrammarEditor
             string runtimeToolName, string versionArg, bool interpreted = false,
             string jarGenerator = "antlr-4.9.2-complete.jar",
             string lexerPostfix = "Lexer", string parserPostfix = "Parser",
-            string baseListenerPostfix = "BaseListener", string listenerPostfix = "Listener",
-            string baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor")
+            string? baseListenerPostfix = "BaseListener", string listenerPostfix = "Listener",
+            string? baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor")
         {
             Runtime = runtime;
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            JarGenerator = jarGenerator ?? throw new ArgumentNullException(nameof(jarGenerator));
-            DLanguage = dLanguage ?? throw new ArgumentNullException(nameof(dLanguage));
-            RuntimeLibrary = runtimeLibrary ?? throw new ArgumentNullException(nameof(runtimeLibrary));
-            Extensions = extensions ?? throw new ArgumentNullException(nameof(extensions));
-            MainFile = mainFile ?? throw new ArgumentNullException(nameof(mainFile));
-            AntlrInputStream = antlrInputStream ?? throw new ArgumentNullException(nameof(antlrInputStream));
+            Name = name;
+            JarGenerator = jarGenerator;
+            DLanguage = dLanguage;
+            RuntimeLibrary = runtimeLibrary;
+            Extensions = extensions;
+            MainFile = mainFile;
+            AntlrInputStream = antlrInputStream;
             Interpreted = interpreted;
-            RuntimeToolName = runtimeToolName ?? throw new ArgumentNullException(nameof(runtimeToolName));
-            LexerPostfix = lexerPostfix ?? throw new ArgumentNullException(nameof(lexerPostfix));
-            ParserPostfix = parserPostfix ?? throw new ArgumentNullException(nameof(parserPostfix));
+            RuntimeToolName = runtimeToolName;
+            LexerPostfix = lexerPostfix;
+            ParserPostfix = parserPostfix;
             BaseListenerPostfix = baseListenerPostfix;
-            ListenerPostfix = listenerPostfix ?? throw new ArgumentNullException(nameof(listenerPostfix));
+            ListenerPostfix = listenerPostfix;
             BaseVisitorPostfix = baseVisitorPostfix;
-            VisitorPostfix = visitorPostfix ?? throw new ArgumentNullException(nameof(visitorPostfix));
-            VersionArg = versionArg ?? throw new ArgumentNullException(nameof(versionArg));
+            VisitorPostfix = visitorPostfix;
+            VersionArg = versionArg;
         }
 
         public override string ToString()

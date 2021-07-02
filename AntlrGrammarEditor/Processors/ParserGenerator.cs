@@ -10,38 +10,39 @@ namespace AntlrGrammarEditor.Processors
     {
         public const string HelperDirectoryName = "DageHelperDirectory";
 
-        private CodeSource _currentGrammarSource;
-        private ParserGeneratedState _result;
+        private CodeSource? _currentGrammarSource;
+        private readonly ParserGeneratedState _result;
 
         public Runtime Runtime { get; }
 
-        public string PackageName { get; set; }
+        public string? PackageName { get; }
 
-        public bool GenerateListener { get; set; } = true;
+        public bool GenerateListener { get; }
 
-        public bool GenerateVisitor { get; set; } = true;
+        public bool GenerateVisitor { get; }
 
-        public string GeneratorTool { get; set; }
+        public string? GeneratorTool { get; set; }
 
-        public ParserGenerator(Runtime runtime)
+        public ParserGenerator(GrammarCheckedState state, Runtime runtime, string? packageName, bool generateListener, bool generateVisitor)
         {
+            PackageName = packageName;
+            GenerateListener = generateListener;
+            GenerateVisitor = generateVisitor;
+            _result = new ParserGeneratedState(state, packageName, runtime, generateListener, generateVisitor);
             Runtime = runtime;
         }
 
-        public ParserGeneratedState Generate(GrammarCheckedState state, CancellationToken cancellationToken = default)
+        public ParserGeneratedState Generate(CancellationToken cancellationToken = default)
         {
-            Grammar grammar = state.InputState.Grammar;
-
-            _result = new ParserGeneratedState(state, PackageName, Runtime, GenerateListener, GenerateVisitor);
-
-            Generate(grammar, state, cancellationToken);
-
+            var grammarCheckedState = _result.GrammarCheckedState;
+            Grammar grammar = grammarCheckedState.InputState.Grammar;
+            Generate(grammar, grammarCheckedState, cancellationToken);
             return _result;
         }
 
         private void Generate(Grammar grammar, GrammarCheckedState state, CancellationToken cancellationToken)
         {
-            Processor processor = null;
+            Processor? processor = null;
 
             try
             {
@@ -113,9 +114,9 @@ namespace AntlrGrammarEditor.Processors
             }
             catch (Exception ex)
             {
-                _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.ParserGenerated));
                 if (!(ex is OperationCanceledException))
                 {
+                    _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.ParserGenerated));
                     DiagnosisEvent?.Invoke(this, new Diagnosis(ex, WorkflowStage.ParserGenerated));
                 }
             }
@@ -149,9 +150,10 @@ namespace AntlrGrammarEditor.Processors
                 }
 
                 bool isWarning = parts.Length > 0 && parts[0].StartsWith("warning");
-                Diagnosis diagnosis = new Diagnosis(line, column, e.Data, _currentGrammarSource, WorkflowStage.ParserGenerated, isWarning);
-                DiagnosisEvent?.Invoke(this, diagnosis);
+                var diagnosis = new Diagnosis(line, column, e.Data, _currentGrammarSource!, WorkflowStage.ParserGenerated,
+                    isWarning ? DiagnosisType.Warning : DiagnosisType.Error);
                 _result.AddDiagnosis(diagnosis);
+                DiagnosisEvent?.Invoke(this, diagnosis);
             }
         }
 

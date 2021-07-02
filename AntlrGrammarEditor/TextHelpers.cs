@@ -84,88 +84,29 @@ namespace AntlrGrammarEditor
             foreach (CodeInsertion s in sortedSource)
             {
                 destInd = destinationSource.Text.IgnoreWhitespaceIndexOf(s.Text, destInd);
-                result.Add(new TextSpanMapping
-                {
-                    SourceTextSpan = s.TextSpan,
-                    DestTextSpan = new TextSpan(destInd, s.Text.Length, destinationSource)
-                });
+                result.Add(new TextSpanMapping(s.TextSpan, new TextSpan(destInd, s.Text.Length, destinationSource)));
                 destInd += s.Text.Length;
             }
 
             return result;
         }
 
-        private static int SelectIndexWithBoundaryNewlines(string destination, int destInd, string source)
-        {
-            do
-            {
-                int ind = FirstNotWhitespaceCharIndexLeft(destination, destInd - 1);
-                if (ind <= 0)
-                {
-                    ind = 0;
-                }
-                if (ind == 0 || destination[ind] == '\r' || destination[ind] == '\n')
-                {
-                    break;
-                }
-                else
-                {
-                    destInd = destination.IgnoreWhitespaceIndexOf(source, destInd + source.Length);
-                }
-            }
-            while (true);
-
-            do
-            {
-                int ind = FirstNotWhitespaceCharIndexRight(destination, destInd + source.Length);
-                if (ind == destination.Length - 1 || destination[ind] == '\r' || destination[ind] == '\n')
-                {
-                    break;
-                }
-                else
-                {
-                    destInd = destination.IgnoreWhitespaceIndexOf(source, destInd + source.Length);
-                }
-            }
-            while (true);
-            return destInd;
-        }
-
-        public static TextSpan GetSourceTextSpanForLine(List<TextSpanMapping> textSpanMappings, int destinationLine, string sourceFileName)
-        {
-            foreach (TextSpanMapping textSpanMapping in textSpanMappings)
-            {
-                LineColumnTextSpan destLineColumnTextSpan = textSpanMapping.DestTextSpan.GetLineColumn();
-                if (destinationLine >= destLineColumnTextSpan.BeginLine &&
-                    destinationLine <= destLineColumnTextSpan.EndLine)
-                {
-                    return textSpanMapping.SourceTextSpan;
-                }
-            }
-
-            if (textSpanMappings.Count > 0)
-            {
-                return new TextSpan(0, 0, textSpanMappings[0].SourceTextSpan.Source);
-            }
-
-            return TextSpan.Empty;
-        }
-
-        public static TextSpan GetSourceTextSpanForLineColumn(List<TextSpanMapping> mapping, int destLine, int destColumn)
+        public static TextSpan? GetSourceTextSpanForLineColumn(List<TextSpanMapping> mapping, int destLine, int destColumn)
         {
             foreach (var m in mapping)
             {
-                LineColumnTextSpan destLineColumnTextSpan = m.DestTextSpan.GetLineColumn();
+                LineColumnTextSpan destLineColumnTextSpan = m.DestTextSpan.LineColumn;
                 if (destLine >= destLineColumnTextSpan.BeginLine &&
                     destLine <= destLineColumnTextSpan.EndLine)
                 {
                     return m.SourceTextSpan;
                 }
             }
-            return TextSpan.Empty;
+
+            return null;
         }
 
-        public static int IgnoreWhitespaceIndexOf(this string source, string value, int startIndex)
+        private static int IgnoreWhitespaceIndexOf(this string source, string value, int startIndex)
         {
             int sourceIndex = startIndex;
             var trimmedValue = value.Trim();

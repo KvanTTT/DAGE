@@ -39,12 +39,12 @@ namespace DesktopAntlrGrammarEditor
         private readonly ListBox _textErrorsListBox;
         private bool _autoprocessing;
         private WorkflowStage _endStage = WorkflowStage.TextParsed;
-        private CodeSource _grammarCode = CodeSource.Empty;
-        private CodeSource _text = CodeSource.Empty;
+        private CodeSource? _grammarCode;
+        private CodeSource? _text;
         private LineColumnTextSpan _grammarLineColumn;
         private LineColumnTextSpan _textLineColumn;
 
-        private Grammar Grammar => _workflow?.Grammar;
+        private Grammar Grammar => _workflow.Grammar;
 
         public MainWindowViewModel(Window window)
         {
@@ -74,14 +74,15 @@ namespace DesktopAntlrGrammarEditor
                 _window.Position = new PixelPoint(_settings.Left, _settings.Top);
             }
 
-            Grammar grammar = null;
+            Grammar? grammar;
 
             bool openDefaultGrammar = false;
-            string packageName = null;
-            string root = null;
+            string? packageName = null;
+            string? root = null;
             if (string.IsNullOrEmpty(_settings.GrammarFileOrDirectory))
             {
                 openDefaultGrammar = true;
+                grammar = GrammarFactory.CreateDefault();
             }
             else
             {
@@ -95,12 +96,12 @@ namespace DesktopAntlrGrammarEditor
 
                     _settings.OpenedGrammarFile = "";
                     openDefaultGrammar = true;
+                    grammar = GrammarFactory.CreateDefault();
                 }
             }
 
             if (openDefaultGrammar)
             {
-                grammar = GrammarFactory.CreateDefault();
                 GrammarFactory.FillGrammarFiles(grammar, Settings.Directory, false);
                 _settings.GrammarFileOrDirectory = grammar.Directory;
                 _settings.Save();
@@ -152,12 +153,175 @@ namespace DesktopAntlrGrammarEditor
             SetupWindowSubscriptions();
             SetupWorkflowSubscriptions();
             SetupTextBoxSubscriptions();
-            SetupCommandSubscriptions();
+
+            NewGrammarCommand = ReactiveCommand.CreateFromTask(async () =>
+            {
+                var newGrammarWindow = new NewGrammarWindow();
+                Grammar localGrammar = await newGrammarWindow.ShowDialog<Grammar>(_window);
+                if (localGrammar != null)
+                {
+                    OpenGrammar(localGrammar, null, null);
+                }
+                _window.Activate();
+            });
+
+            OpenGrammarCommand = ReactiveCommand.CreateFromTask(async () =>
+            {
+                var openGrammarDialog = new OpenFolderDialog
+                {
+                    Title = "Enter grammar directory name"
+                };
+
+                string folderName = "";
+                try
+                {
+                    folderName = await openGrammarDialog.ShowAsync(_window);
+
+                    if (!string.IsNullOrEmpty(folderName))
+                    {
+                        var localGrammar = GrammarFactory.Open(folderName, out string? localPackageName, out string? localRoot);
+                        OpenGrammar(localGrammar, localPackageName, localRoot);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await ShowOpenFileErrorMessage(folderName, ex.Message);
+                }
+            });
+
+            ProcessCommand = ReactiveCommand.Create(() =>
+            {
+                bool changed = false;
+
+                if (_grammarFileState == FileState.Changed)
+                {
+                    RollbackGrammarIfRequired();
+
+                    File.WriteAllText(GetFullGrammarFileName(_openedGrammarFile), _grammarTextBox.Text);
+                    _grammarFileState = FileState.Saved;
+                    changed = true;
+                }
+
+                if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile?.FullFileName))
+                {
+                    File.WriteAllText(_openedTextFile.FullFileName, _textTextBox.Text);
+                    _workflow.TextFileName = _openedTextFile.FullFileName;
+                    _textFileState = FileState.Saved;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    _settings.Save();
+                }
+
+                Process();
+            });
+
+            NewTextFile = ReactiveCommand.CreateFromTask(async () =>
+            {
+                var filters = new List<FileDialogFilter>();
+                if (!string.IsNullOrEmpty(Grammar.FileExtension))
+                {
+                    filters.Add(new FileDialogFilter
+                    {
+                        Name = $"{Grammar.Name} parsing file",
+                        Extensions = new List<string> { Grammar.FileExtension }
+                    });
+                }
+
+                filters.Add(new FileDialogFilter
+                {
+                    Name = "All files",
+                    Extensions = new List<string> { "*" }
+                });
+
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Title = "Enter file name",
+                    DefaultExtension = Grammar.FileExtension,
+                    Filters = filters,
+                    Directory = Grammar.Directory,
+                    InitialFileName = Path.GetFileName(GrammarFactory.GenerateTextFileName(Grammar))
+                };
+
+                string fileName = await saveFileDialog.ShowAsync(_window);
+                if (fileName != null)
+                {
+                    File.WriteAllText(fileName, "");
+                    var newFile = new FileName(fileName);
+                    if (!TextFiles.Contains(newFile))
+                    {
+                        TextFiles.Add(newFile);
+                        Grammar.TextFiles.Add(newFile.FullFileName);
+                        OpenedTextFile = TextFiles.Last();
+                    }
+                }
+            });
+
+            OpenTextFile = ReactiveCommand.CreateFromTask(async () =>
+            {
+                var openFileDialog = new OpenFileDialog
+                {
+                    AllowMultiple = true
+                };
+                var fileNames = await openFileDialog.ShowAsync(_window);
+                if (fileNames != null)
+                {
+                    bool atLeastOneFileHasBeenAdded = false;
+                    foreach (var fileName in fileNames)
+                    {
+                        var openedFile = new FileName(fileName);
+                        if (!TextFiles.Contains(openedFile))
+                        {
+                            atLeastOneFileHasBeenAdded = true;
+                            TextFiles.Add(openedFile);
+                            Grammar.TextFiles.Add(openedFile.FullFileName);
+                        }
+                    }
+                    if (atLeastOneFileHasBeenAdded)
+                    {
+                        OpenedTextFile = TextFiles.Last();
+                    }
+                }
+            });
+
+            RemoveTextFile = ReactiveCommand.CreateFromTask(async () =>
+            {
+                var openedTextFile = OpenedTextFile;
+
+                if (openedTextFile != null)
+                {
+                    string shortFileName = openedTextFile.ShortFileName;
+                    string fullFileName = openedTextFile.FullFileName;
+                    Grammar.TextFiles.Remove(fullFileName);
+                    var index = TextFiles.IndexOf(openedTextFile);
+                    TextFiles.Remove(openedTextFile);
+                    index = Math.Min(index, TextFiles.Count - 1);
+                    if (await MessageBox.ShowDialog(_window, $"Do you want to delete file {shortFileName}?", "",
+                        MessageBoxType.YesNo))
+                    {
+                        try
+                        {
+                            File.Delete(fullFileName);
+                        }
+                        catch (Exception ex)
+                        {
+                            await ShowOpenFileErrorMessage(fullFileName, ex.Message);
+                        }
+                    }
+
+                    if (index >= 0)
+                    {
+                        OpenedTextFile = TextFiles[index];
+                    }
+                }
+            });
 
             AutoProcessing = _settings.Autoprocessing;
         }
 
-        public string OpenedGrammarFile
+        public string? OpenedGrammarFile
         {
             get => _openedGrammarFile;
             set
@@ -198,7 +362,7 @@ namespace DesktopAntlrGrammarEditor
 
         public ObservableCollection<string> GrammarFiles => new ObservableCollection<string>(_workflow.Grammar.Files);
 
-        public string Root
+        public string? Root
         {
             get => _workflow.Root;
             set
@@ -218,7 +382,7 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public string PackageName
+        public string? PackageName
         {
             get => _workflow.PackageName;
             set
@@ -271,7 +435,8 @@ namespace DesktopAntlrGrammarEditor
 
                     InitGrammarAndCompiledFiles();
 
-                    if (!GrammarFiles.Contains(OpenedGrammarFile))
+                    var openedGrammarFile = OpenedGrammarFile;
+                    if (openedGrammarFile == null || !GrammarFiles.Contains(openedGrammarFile))
                     {
                         OpenedGrammarFile = GrammarFiles.First();
                     }
@@ -286,7 +451,7 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public RuntimeInfo DetectedRuntime => _runtimeInfoWrappers[_workflow.DetectedRuntime].RuntimeInfo;
+        public RuntimeInfo? DetectedRuntime => _runtimeInfoWrappers[_workflow.DetectedRuntime].RuntimeInfo;
 
         private RuntimeInfoWrapper GetAutoOrSelectedRuntime() =>
             _workflow.Runtime.HasValue
@@ -314,7 +479,7 @@ namespace DesktopAntlrGrammarEditor
             AntlrGrammarEditor.Processors.PredictionMode.FullLL
         };
 
-        public FileName OpenedTextFile
+        public FileName? OpenedTextFile
         {
             get => _openedTextFile;
             set
@@ -474,17 +639,17 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public ReactiveCommand<Unit, Unit> NewGrammarCommand { get; private set; }
+        public ReactiveCommand<Unit, Unit> NewGrammarCommand { get; }
 
-        public ReactiveCommand<Unit, Unit> OpenGrammarCommand { get; private set; }
+        public ReactiveCommand<Unit, Unit> OpenGrammarCommand { get; }
 
-        public ReactiveCommand<Unit, Unit> ProcessCommand { get; private set; }
+        public ReactiveCommand<Unit, Unit> ProcessCommand { get; }
 
-        public ReactiveCommand<Unit, Unit> NewTextFile { get; private set; }
+        public ReactiveCommand<Unit, Unit> NewTextFile { get; }
 
-        public ReactiveCommand<Unit, Unit> OpenTextFile { get; private set; }
+        public ReactiveCommand<Unit, Unit> OpenTextFile { get; }
 
-        public ReactiveCommand<Unit, Unit> RemoveTextFile { get; private set; }
+        public ReactiveCommand<Unit, Unit> RemoveTextFile { get; }
 
         public bool AutoProcessing
         {
@@ -645,13 +810,20 @@ namespace DesktopAntlrGrammarEditor
             textBoxObservable
                 .Throttle(TimeSpan.FromMilliseconds(200))
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(x => _text = new CodeSource(_openedTextFile.ShortFileName, _text.Text));
+                .Subscribe(x => _text = new CodeSource(_openedTextFile.ShortFileName, _text?.Text ?? ""));
 
             Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(100), RxApp.MainThreadScheduler)
                 .Subscribe(_ =>
                 {
-                    GrammarCursorPosition = GetSelectionLineColumn(_grammarTextBox, _grammarCode);
-                    TextCursorPosition = GetSelectionLineColumn(_textTextBox, _text);
+                    if (_grammarCode != null)
+                    {
+                        GrammarCursorPosition = GetSelectionLineColumn(_grammarTextBox, _grammarCode);
+                    }
+
+                    if (_text != null)
+                    {
+                        TextCursorPosition = GetSelectionLineColumn(_textTextBox, _text);
+                    }
                 });
 
             grammarTextBoxObservable
@@ -677,7 +849,7 @@ namespace DesktopAntlrGrammarEditor
                 {
                     if (_textFileState == FileState.Changed)
                     {
-                        _workflow.TextFileName = OpenedTextFile.FullFileName;
+                        _workflow.TextFileName = OpenedTextFile?.FullFileName;
                         _workflow.RollbackToStage(WorkflowStage.ParserCompiled);
 
                         if (AutoProcessing)
@@ -689,176 +861,16 @@ namespace DesktopAntlrGrammarEditor
                 });
         }
 
-        private void SetupCommandSubscriptions()
-        {
-            NewGrammarCommand = ReactiveCommand.CreateFromTask(async () =>
-            {
-                var newGrammarWindow = new NewGrammarWindow();
-                Grammar grammar = await newGrammarWindow.ShowDialog<Grammar>(_window);
-                if (grammar != null)
-                {
-                    OpenGrammar(grammar, null, null);
-                }
-                _window.Activate();
-            });
-
-            OpenGrammarCommand = ReactiveCommand.CreateFromTask(async () =>
-            {
-                var openGrammarDialog = new OpenFolderDialog
-                {
-                    Title = "Enter grammar directory name"
-                };
-
-                string folderName = null;
-                try
-                {
-                    folderName = await openGrammarDialog.ShowAsync(_window);
-
-                    if (!string.IsNullOrEmpty(folderName))
-                    {
-                        var grammar = GrammarFactory.Open(folderName, out string packageName, out string root);
-                        OpenGrammar(grammar, packageName, root);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    await ShowOpenFileErrorMessage(folderName, ex.Message);
-                }
-            });
-
-            ProcessCommand = ReactiveCommand.Create(() =>
-            {
-                bool changed = false;
-
-                if (_grammarFileState == FileState.Changed)
-                {
-                    RollbackGrammarIfRequired();
-
-                    File.WriteAllText(GetFullGrammarFileName(_openedGrammarFile), _grammarTextBox.Text);
-                    _grammarFileState = FileState.Saved;
-                    changed = true;
-                }
-
-                if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile?.FullFileName))
-                {
-                    File.WriteAllText(_openedTextFile.FullFileName, _textTextBox.Text);
-                    _workflow.TextFileName = _openedTextFile.FullFileName;
-                    _textFileState = FileState.Saved;
-                    changed = true;
-                }
-
-                if (changed)
-                {
-                    _settings.Save();
-                }
-
-                Process();
-            });
-
-            NewTextFile = ReactiveCommand.CreateFromTask(async () =>
-            {
-                var filters = new List<FileDialogFilter>();
-                if (!string.IsNullOrEmpty(Grammar.FileExtension))
-                {
-                    filters.Add(new FileDialogFilter
-                    {
-                        Name = $"{Grammar.Name} parsing file",
-                        Extensions = new List<string>() { Grammar.FileExtension }
-                    });
-                }
-
-                filters.Add(new FileDialogFilter
-                {
-                    Name = "All files",
-                    Extensions = new List<string> { "*" }
-                });
-
-                var saveFileDialog = new SaveFileDialog
-                {
-                    Title = "Enter file name",
-                    DefaultExtension = Grammar.FileExtension,
-                    Filters = filters,
-                    Directory = Grammar.Directory,
-                    InitialFileName = Path.GetFileName(GrammarFactory.GenerateTextFileName(Grammar))
-                };
-
-                string fileName = await saveFileDialog.ShowAsync(_window);
-                if (fileName != null)
-                {
-                    File.WriteAllText(fileName, "");
-                    var newFile = new FileName(fileName);
-                    if (!TextFiles.Contains(newFile))
-                    {
-                        TextFiles.Add(newFile);
-                        Grammar.TextFiles.Add(newFile.FullFileName);
-                        OpenedTextFile = TextFiles.Last();
-                    }
-                }
-            });
-
-            OpenTextFile = ReactiveCommand.CreateFromTask(async () =>
-            {
-                var openFileDialog = new OpenFileDialog
-                {
-                    AllowMultiple = true
-                };
-                var fileNames = await openFileDialog.ShowAsync(_window);
-                if (fileNames != null)
-                {
-                    bool atLeastOneFileHasBeenAdded = false;
-                    foreach (var fileName in fileNames)
-                    {
-                        var openedFile = new FileName(fileName);
-                        if (!TextFiles.Contains(openedFile))
-                        {
-                            atLeastOneFileHasBeenAdded = true;
-                            TextFiles.Add(openedFile);
-                            Grammar.TextFiles.Add(openedFile.FullFileName);
-                        }
-                    }
-                    if (atLeastOneFileHasBeenAdded)
-                    {
-                        OpenedTextFile = TextFiles.Last();
-                    }
-                }
-            });
-
-            RemoveTextFile = ReactiveCommand.CreateFromTask(async () =>
-            {
-                string shortFileName = OpenedTextFile.ShortFileName;
-                string fullFileName = OpenedTextFile.FullFileName;
-                Grammar.TextFiles.Remove(OpenedTextFile.FullFileName);
-                var index = TextFiles.IndexOf(OpenedTextFile);
-                TextFiles.Remove(OpenedTextFile);
-                index = Math.Min(index, TextFiles.Count - 1);
-                if (await MessageBox.ShowDialog(_window, $"Do you want to delete file {shortFileName}?", "", MessageBoxType.YesNo))
-                {
-                    try
-                    {
-                        File.Delete(fullFileName);
-                    }
-                    catch (Exception ex)
-                    {
-                        await ShowOpenFileErrorMessage(fullFileName, ex.Message);
-                    }
-                }
-                if (index >= 0)
-                {
-                    OpenedTextFile = TextFiles[index];
-                }
-            });
-        }
-
         private void RollbackGrammarIfRequired()
         {
             WorkflowStage switchStage =
-                Path.GetExtension(OpenedGrammarFile).Equals(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase)
+                (Path.GetExtension(OpenedGrammarFile) ?? "").Equals(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase)
                    ? WorkflowStage.Input
                    : WorkflowStage.ParserGenerated;
             _workflow.RollbackToStage(switchStage);
         }
 
-        private void OpenGrammar(Grammar grammar, string packageName, string root)
+        private void OpenGrammar(Grammar grammar, string? packageName, string? root)
         {
             _workflow.Grammar = grammar;
             _settings.GrammarFileOrDirectory = grammar.Directory;
@@ -875,7 +887,7 @@ namespace DesktopAntlrGrammarEditor
             this.RaisePropertyChanged(nameof(IsParserExists));
         }
 
-        private void Workflow_ClearErrorsEvent(object sender, WorkflowStage e)
+        private void Workflow_ClearErrorsEvent(object? sender, WorkflowStage e)
         {
             ObservableCollection<object> errorsList = GrammarErrors;
             bool grammarErrors = false;
@@ -933,15 +945,25 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private void ErrorsListBox_DoubleTapped(object sender, Avalonia.Interactivity.RoutedEventArgs e)
+        private void ErrorsListBox_DoubleTapped(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
+            if (sender == null)
+                return;
+
             ListBox listBox = (ListBox)sender;
             listBox.Focus();
 
             if (listBox.SelectedItem is Diagnosis diagnosis)
             {
                 TextEditor textBox = ReferenceEquals(listBox, _grammarErrorsListBox) ? _grammarTextBox : _textTextBox;
-                string diagnosisFileName = diagnosis.TextSpan.Source.Name;
+                var textSpan = diagnosis.TextSpan;
+                if (textSpan == null)
+                {
+                    return;
+                }
+
+                var textSpanValue = textSpan.Value;
+                string diagnosisFileName = textSpanValue.Source.Name;
                 if (string.IsNullOrEmpty(diagnosisFileName))
                 {
                     return;
@@ -953,21 +975,21 @@ namespace DesktopAntlrGrammarEditor
                 }
 
                 TextSpan selectTextSpan;
-                if (diagnosis.TextSpan.Length != 0)
+                if (textSpan.Value.Length != 0)
                 {
-                    selectTextSpan = diagnosis.TextSpan;
+                    selectTextSpan = textSpanValue;
                 }
                 else
                 {
-                    int beginIndex = diagnosis.TextSpan.Start;
-                    if (diagnosis.TextSpan.End >= textBox.Text.Length)
+                    int beginIndex = textSpanValue.Start;
+                    if (textSpanValue.End >= textBox.Text.Length)
                     {
                         beginIndex = textBox.Text.Length - 1;
                         if (beginIndex < 0)
                             beginIndex = 0;
                     }
 
-                    selectTextSpan = new TextSpan(beginIndex, 1, diagnosis.TextSpan.Source);
+                    selectTextSpan = new TextSpan(beginIndex, 1, textSpanValue.Source);
                 }
 
                 int length = textBox.Text.Length;
@@ -1022,7 +1044,7 @@ namespace DesktopAntlrGrammarEditor
 
             foreach (string fileName in grammarAndCompiliedFiles)
             {
-                string runtimeFile = runtimeGrammarAndCompiledFiles
+                string? runtimeFile = runtimeGrammarAndCompiledFiles
                     .FirstOrDefault(f => Path.GetFileName(f) == fileName);
 
                 string addedFile;
@@ -1094,7 +1116,7 @@ namespace DesktopAntlrGrammarEditor
                 return;
             }
 
-            RuntimeInfo runtimeInfo = SelectedRuntime.RuntimeInfo != null
+            RuntimeInfo? runtimeInfo = SelectedRuntime.RuntimeInfo != null
                 ? RuntimeInfo.InitOrGetRuntimeInfo(SelectedRuntime.RuntimeInfo.Runtime)
                 : null;
 
@@ -1134,7 +1156,7 @@ namespace DesktopAntlrGrammarEditor
                     Rules.Add(rule);
                 }
 
-                if (!Rules.Contains(Root))
+                if (Root == null || !Rules.Contains(Root))
                 {
                     Root = Rules[0];
                 }

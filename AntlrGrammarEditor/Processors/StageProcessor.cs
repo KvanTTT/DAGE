@@ -4,6 +4,6 @@ namespace AntlrGrammarEditor.Processors
 {
     public abstract class StageProcessor
     {
-        public EventHandler<Diagnosis> DiagnosisEvent;
+        public EventHandler<Diagnosis>? DiagnosisEvent;
     }
 }

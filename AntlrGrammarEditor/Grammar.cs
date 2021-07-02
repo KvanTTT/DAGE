@@ -30,10 +30,15 @@ namespace AntlrGrammarEditor
 
         public CaseInsensitiveType CaseInsensitiveType { get; set; }
 
-        public List<string> Files { get; set; } = new List<string>();
+        public List<string> Files { get; set; } = new();
 
-        public List<string> TextFiles { get; set; } = new List<string>();
+        public List<string> TextFiles { get; set; } = new();
 
         public string Directory { get; set; } = "";
+
+        public Grammar(string name)
+        {
+            Name = name;
+        }
     }
 }

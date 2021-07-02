@@ -8,28 +8,28 @@ namespace AntlrGrammarEditor
     public class Processor : IDisposable
     {
         private int _eventInvokeCounter;
-        private Process _process;
+        private Process? _process;
 
         public string ToolName { get; }
 
         public string Arguments { get; set; } = "";
 
-        public string WorkingDirectory { get; set; }
+        public string? WorkingDirectory { get; set; }
 
         public int Timeout { get; set; } = 0;
 
         public int CheckTimeout { get; set; } = 200;
 
-        public event EventHandler<DataReceivedEventArgs> ErrorDataReceived;
+        public event EventHandler<DataReceivedEventArgs>? ErrorDataReceived;
 
-        public event EventHandler<DataReceivedEventArgs> OutputDataReceived;
+        public event EventHandler<DataReceivedEventArgs>? OutputDataReceived;
 
         public CancellationToken CancellationToken { get; set; }
 
         public Processor(string toolName, string arguments = "", string workingDirectory = "", int timeout = 0)
         {
-            ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
-            Arguments = arguments ?? throw new ArgumentNullException(nameof(arguments));
+            ToolName = toolName;
+            Arguments = arguments;
             WorkingDirectory = workingDirectory;
             Timeout = timeout;
         }

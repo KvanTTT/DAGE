@@ -5,9 +5,7 @@ namespace AntlrGrammarEditor
 {
     public class CodeSource : IEquatable<CodeSource>
     {
-        public static readonly CodeSource Empty = new CodeSource("", "");
-
-        private int[] _lineIndexes;
+        private readonly int[] _lineIndexes;
 
         public string Name { get; }
         public string Text { get; }
@@ -17,7 +15,23 @@ namespace AntlrGrammarEditor
             Name = name;
             Text = text;
 
-            InitLineIndexes();
+            var lineIndexesBuffer = new List<int>(text.Length / 25) { 0 };
+            int textIndex = 0;
+            while (textIndex < text.Length)
+            {
+                char c = text[textIndex];
+                if (c == '\r' || c == '\n' || c == '\u2028' || c == '\u2029')
+                {
+                    if (c == '\r' && textIndex + 1 < text.Length && text[textIndex + 1] == '\n')
+                    {
+                        textIndex++;
+                    }
+                    lineIndexesBuffer.Add(textIndex + 1);
+                }
+                textIndex++;
+            }
+
+            _lineIndexes = lineIndexesBuffer.ToArray();
         }
 
         public LineColumnTextSpan ToLineColumn(TextSpan textSpan)
@@ -42,57 +56,8 @@ namespace AntlrGrammarEditor
             line += LineColumnTextSpan.StartLine;
         }
 
-        public TextSpan GetTextSpanAtLine(int line)
-        {
-            line = line - LineColumnTextSpan.StartLine;
-
-            if (line < 0 || line >= _lineIndexes.Length)
-            {
-                throw new IndexOutOfRangeException(nameof(line));
-            }
-
-            int endInd;
-            if (line + 1 < _lineIndexes.Length)
-            {
-                endInd = _lineIndexes[line + 1] - 1;
-                if (endInd - 1 > 0 && Text[endInd - 1] == '\r')
-                {
-                    endInd--;
-                }
-            }
-            else
-            {
-                endInd = Text.Length;
-            }
-
-            return new TextSpan(_lineIndexes[line], endInd - _lineIndexes[line], this);
-        }
-
         public bool Equals(CodeSource other) => Name.Equals(other.Name);
 
         public override string ToString() => Name;
-
-        private void InitLineIndexes()
-        {
-            string text = Text;
-
-            var lineIndexesBuffer = new List<int>(text.Length / 25) { 0 };
-            int textIndex = 0;
-            while (textIndex < text.Length)
-            {
-                char c = text[textIndex];
-                if (c == '\r' || c == '\n' || c == '\u2028' || c == '\u2029')
-                {
-                    if (c == '\r' && textIndex + 1 < text.Length && text[textIndex + 1] == '\n')
-                    {
-                        textIndex++;
-                    }
-                    lineIndexesBuffer.Add(textIndex + 1);
-                }
-                textIndex++;
-            }
-
-            _lineIndexes = lineIndexesBuffer.ToArray();
-        }
     }
 }

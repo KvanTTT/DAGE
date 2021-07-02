@@ -2,13 +2,21 @@
 {
     public class CodeInsertion
     {
-        public TextSpan TextSpan { get; set; }
+        public TextSpan TextSpan { get; }
 
-        public string Text { get; set; }
+        public string Text { get; }
 
-        public bool Lexer { get; set; }
+        public bool Lexer { get; }
 
-        public bool Predicate { get; set; }
+        public bool Predicate { get; }
+
+        public CodeInsertion(TextSpan textSpan, string text, bool lexer, bool predicate)
+        {
+            TextSpan = textSpan;
+            Text = text;
+            Lexer = lexer;
+            Predicate = predicate;
+        }
 
         public override string ToString()
         {
