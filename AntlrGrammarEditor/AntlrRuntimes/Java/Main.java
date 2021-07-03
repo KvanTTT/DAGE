@@ -2,7 +2,7 @@
 import org.antlr.v4.runtime.atn.PredictionMode;
 import java.lang.reflect.Method;
 import java.util.List;
-/*$PackageName$*/
+/*$PackageName*/import __PackageName__.*;/*PackageName$*/
 
 public class Main {
     public static void main(String[] args) {

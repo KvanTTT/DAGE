@@ -12,7 +12,7 @@ import (
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 
-	/*$PackageName$*/
+	/*$PackageName*/"./__PackageName__"/*PackageName$*/
 )
 
 

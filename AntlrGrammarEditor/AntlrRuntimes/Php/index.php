@@ -3,13 +3,14 @@
 require_once '__RuntimesPath__';
 require_once '__TemplateGrammarName__Lexer.php';
 /*$ParserInclude*/require_once '__TemplateGrammarName__Parser.php';/*ParserInclude$*/
-/*$AntlrCaseInsensitive$*/
+/*$AntlrCaseInsensitive*/require_once 'AntlrCaseInsensitiveInputStream.php';/*AntlrCaseInsensitive$*/
 
 use Antlr\Antlr4\Runtime\CommonTokenStream;
 use Antlr\Antlr4\Runtime\InputStream;
 use Antlr\Antlr4\Runtime\Error\Listeners\ConsoleErrorListener;
 use Antlr\Antlr4\Runtime\Atn\PredictionMode as PredictionMode;
-/*$PackageName$*/
+/*$PackageName*/use __PackageName__\__TemplateGrammarName__Lexer;/*PackageName$*/
+/*$PackageNameParser*/use __PackageName__\__TemplateGrammarName__Parser;/*PackageNameParser$*/
 
 $fileName = "../../Text";
 

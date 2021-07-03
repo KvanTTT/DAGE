@@ -15,6 +15,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         private const string CompilerHelperFileName = "AntlrCompileTest";
         private const string TemplateGrammarName = "__TemplateGrammarName__";
         private const string RuntimesPath = "__RuntimesPath__";
+        private const string PackageName = "__PackageName__";
         public const string RuntimesDirName = "AntlrRuntimes";
 
         protected const string FileMark = "file";
@@ -22,12 +23,11 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         protected const string ColumnMark = "column";
         protected const string TypeMark = "type";
 
-        private readonly SingleMark _packageNameMark;
-        private readonly SingleMark _partMark;
+        private readonly OpenCloseMark _packageNameMark;
         private readonly OpenCloseMark _parserPartMark;
         private readonly OpenCloseMark _lexerIncludeMark;
         private readonly OpenCloseMark _parserIncludeMark;
-        private readonly SingleMark _caseInsensitiveMark;
+        private readonly OpenCloseMark _caseInsensitiveMark;
 
         private readonly string _generatedGrammarName;
         private readonly Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping = new();
@@ -58,12 +58,11 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             _generatedGrammarName =
                 runtime != Runtime.Go ? Grammar.Name : Grammar.Name.ToLowerInvariant();
 
-            _packageNameMark = new SingleMark("PackageName", CurrentRuntimeInfo);
-            _partMark = new SingleMark("Part", CurrentRuntimeInfo);
+            _packageNameMark = new OpenCloseMark("PackageName", CurrentRuntimeInfo);
             _parserPartMark = new OpenCloseMark("ParserPart", CurrentRuntimeInfo);
             _lexerIncludeMark = new OpenCloseMark("LexerInclude", CurrentRuntimeInfo);
             _parserIncludeMark = new OpenCloseMark("ParserInclude", CurrentRuntimeInfo);
-            _caseInsensitiveMark = new SingleMark("AntlrCaseInsensitive", CurrentRuntimeInfo);
+            _caseInsensitiveMark = new OpenCloseMark("AntlrCaseInsensitive", CurrentRuntimeInfo);
         }
 
         public ParserCompiledState Compile(CancellationToken cancellationToken = default)
@@ -222,42 +221,26 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
             code = code.Replace(TemplateGrammarName, Grammar.Name);
 
-            string newPackageValue = "";
-
             bool isPackageNameEmpty = string.IsNullOrWhiteSpace(packageName);
+            bool removePackageNameCode = isPackageNameEmpty;
 
             if (!isPackageNameEmpty)
             {
-                if (runtime.IsCSharpRuntime())
+                code = code.Replace(PackageName, packageName);
+
+                if (runtime == Runtime.Dart)
                 {
-                    newPackageValue = "using " + packageName + ";";
-                }
-                else if (runtime == Runtime.Java)
-                {
-                    newPackageValue = "import " + packageName + ".*;";
-                }
-                else if (runtime == Runtime.Go)
-                {
-                    newPackageValue = "\"./" + packageName + "\"";
-                }
-                else if (runtime == Runtime.Php)
-                {
-                    newPackageValue = $"use {packageName}\\{Grammar.Name}Lexer;";
-                    if (Grammar.Type != GrammarType.Lexer)
-                    {
-                        newPackageValue += $"{Environment.NewLine}use {packageName}\\{Grammar.Name}Parser;";
-                    }
-                }
-                else if (runtime == Runtime.Dart)
-                {
-                    if (Grammar.Type == GrammarType.Lexer)
-                    {
-                        newPackageValue = "library " + packageName + ";";
-                    }
+                    removePackageNameCode = Grammar.Type != GrammarType.Lexer;
                 }
             }
 
-            code = code.Replace(_packageNameMark.ToString(), newPackageValue);
+            if (runtime == Runtime.Php)
+            {
+                code = RemoveCodeWithinMarkOrRemoveMark(code,
+                    new OpenCloseMark("PackageNameParser", CurrentRuntimeInfo),
+                    isPackageNameEmpty || Grammar.Type == GrammarType.Lexer);
+            }
+            code = RemoveCodeWithinMarkOrRemoveMark(code, _packageNameMark, removePackageNameCode);
 
             if (runtime == Runtime.Go)
             {
@@ -270,15 +253,14 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             }
             else if (runtime == Runtime.Dart)
             {
-                code = code.Replace(_partMark.ToString(), Grammar.Type == GrammarType.Lexer && !isPackageNameEmpty
+                code = code.Replace(new SingleMark("Part", CurrentRuntimeInfo).ToString(),
+                    Grammar.Type == GrammarType.Lexer && !isPackageNameEmpty
                     ? $"part '{Grammar.Name}Lexer.dart';" : "");
             }
 
-            string caseInsensitiveBlockMarker = _caseInsensitiveMark.ToString();
-
             if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
-                string antlrInputStream = RuntimeInfo.InitOrGetRuntimeInfo(runtime).AntlrInputStream;
+                string antlrInputStream = CurrentRuntimeInfo.AntlrInputStream;
                 string caseInsensitiveStream = "AntlrCaseInsensitiveInputStream";
 
                 if (runtime == Runtime.Java)
@@ -311,29 +293,10 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                     m => $"{caseInsensitiveStream}({m.Groups[1].Value}, {isLowerBool})");
 
                 if (runtime.IsPythonRuntime())
-                {
-                    code = code.Replace("from antlr4.InputStream import InputStream", "")
-                        .Replace(caseInsensitiveBlockMarker,
-                            "from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream");
-                }
-                else if (runtime == Runtime.JavaScript)
-                {
-                    code = code.Replace(caseInsensitiveBlockMarker,
-                        "import AntlrCaseInsensitiveInputStream from './AntlrCaseInsensitiveInputStream.js';");
-                }
-                else if (runtime == Runtime.Php)
-                {
-                    code = code.Replace(caseInsensitiveBlockMarker, "require_once 'AntlrCaseInsensitiveInputStream.php';");
-                }
-                else if (runtime == Runtime.Dart)
-                {
-                    code = code.Replace(caseInsensitiveBlockMarker, "import 'AntlrCaseInsensitiveInputStream.dart';");
-                }
+                    code = code.Replace("from antlr4.InputStream import InputStream", "");
             }
-            else
-            {
-                code = code.Replace(caseInsensitiveBlockMarker, "");
-            }
+
+            code = RemoveCodeWithinMarkOrRemoveMark(code, _caseInsensitiveMark, Grammar.CaseInsensitiveType == CaseInsensitiveType.None);
 
             if (runtime.IsPythonRuntime())
             {
@@ -344,27 +307,27 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             }
             else if (runtime == Runtime.Dart)
             {
-                code = RemoveCodeOrClearMarkers(code, _lexerIncludeMark, () => !isPackageNameEmpty);
+                code = RemoveCodeWithinMarkOrRemoveMark(code, _lexerIncludeMark, !isPackageNameEmpty);
             }
 
-            code = RemoveCodeOrClearMarkers(code, _parserIncludeMark, () => Grammar.Type == GrammarType.Lexer);
-            code = RemoveCodeOrClearMarkers(code, _parserPartMark, () => Grammar.Type == GrammarType.Lexer);
+            code = RemoveCodeWithinMarkOrRemoveMark(code, _parserIncludeMark, Grammar.Type == GrammarType.Lexer);
+            code = RemoveCodeWithinMarkOrRemoveMark(code, _parserPartMark, Grammar.Type == GrammarType.Lexer);
 
             File.WriteAllText(templateFile, code);
         }
 
-        private string RemoveCodeOrClearMarkers(string code, OpenCloseMark mark, Func<bool> condition)
+        private string RemoveCodeWithinMarkOrRemoveMark(string code, OpenCloseMark mark, bool removeCode)
         {
             var openMark = mark.OpenMark;
             var closeMark = mark.CloseMark;
 
-            if (condition.Invoke())
+            if (removeCode)
             {
                 int parserStartIndex = code.IndexOf(openMark, StringComparison.Ordinal);
                 if (parserStartIndex == -1)
                     return code;
 
-                int parserEndIndex = code.IndexOf(closeMark, StringComparison.Ordinal) + closeMark.Length;
+                int parserEndIndex = code.IndexOf(closeMark, parserStartIndex, StringComparison.Ordinal) + closeMark.Length;
                 if (parserEndIndex == -1)
                     return code;
 

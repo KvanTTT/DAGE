@@ -5,7 +5,7 @@ from antlr4.ListTokenSource import ListTokenSource
 from antlr4.atn.PredictionMode import PredictionMode
 from __TemplateGrammarName__Lexer import __TemplateGrammarName__Lexer
 '''$ParserInclude'''from __TemplateGrammarName__Parser import __TemplateGrammarName__Parser'''ParserInclude$'''
-'''$AntlrCaseInsensitive$'''
+'''$AntlrCaseInsensitive'''from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream'''AntlrCaseInsensitive$'''
 
 def main(argv):
     fileName = '../../Text'

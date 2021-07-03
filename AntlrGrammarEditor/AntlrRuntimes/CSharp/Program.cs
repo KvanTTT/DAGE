@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.IO;
-/*$PackageName$*/
+/*$PackageName*/using __PackageName__;/*PackageName$*/
 #if CSharpOptimized
 using Antlr4.Runtime.Misc;
 #endif
