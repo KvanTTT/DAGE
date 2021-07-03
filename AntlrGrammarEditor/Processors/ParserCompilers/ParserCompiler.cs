@@ -14,35 +14,27 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
     {
         private const string CompilerHelperFileName = "AntlrCompileTest";
         private const string TemplateGrammarName = "__TemplateGrammarName__";
-        private const string CaseInsensitiveBlock = "AntlrCaseInsensitive";
         private const string RuntimesPath = "__RuntimesPath__";
-
         public const string RuntimesDirName = "AntlrRuntimes";
-
-        private const string PackageNamePart = "/*$PackageName$*/";
-        private const string PartDart = @"/*$Part$*/";
-        private const string ParserPartStart = @"/*$ParserPart*/";
-        private const string ParserPartEnd = @"/*ParserPart$*/";
-        private const string ParserPartStartPython = @"'''$ParserPart'''";
-        private const string ParserPartEndPython = @"'''ParserPart$'''";
-        private const string ParserIncludeStartPython = @"'''$ParserInclude'''";
-        private const string ParserIncludeEndPython = @"'''ParserInclude$'''";
-        private const string LexerIncludeStartDart = @"/*$LexerInclude*/";
-        private const string LexerIncludeEndDart = @"/*LexerInclude$*/";
-        private const string ParserIncludeStartJavaScriptGoPhpDart = @"/*$ParserInclude*/";
-        private const string ParserIncludeEndJavaScriptGoPhpDart = @"/*ParserInclude$*/";
 
         protected const string FileMark = "file";
         protected const string LineMark = "line";
         protected const string ColumnMark = "column";
         protected const string TypeMark = "type";
 
-        protected readonly Grammar Grammar;
-        protected readonly RuntimeInfo CurrentRuntimeInfo;
-        protected readonly ParserCompiledState Result;
+        private readonly SingleMark _packageNameMark;
+        private readonly SingleMark _partMark;
+        private readonly OpenCloseMark _parserPartMark;
+        private readonly OpenCloseMark _lexerIncludeMark;
+        private readonly OpenCloseMark _parserIncludeMark;
+        private readonly SingleMark _caseInsensitiveMark;
 
         private readonly string _generatedGrammarName;
         private readonly Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping = new();
+
+        protected readonly Grammar Grammar;
+        protected readonly RuntimeInfo CurrentRuntimeInfo;
+        protected readonly ParserCompiledState Result;
         protected readonly string RuntimeDir;
         protected readonly string WorkingDirectory;
         protected readonly string RuntimeLibraryPath;
@@ -65,6 +57,13 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             WorkingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName, Grammar.Name, runtime.ToString());
             _generatedGrammarName =
                 runtime != Runtime.Go ? Grammar.Name : Grammar.Name.ToLowerInvariant();
+
+            _packageNameMark = new SingleMark("PackageName", CurrentRuntimeInfo);
+            _partMark = new SingleMark("Part", CurrentRuntimeInfo);
+            _parserPartMark = new OpenCloseMark("ParserPart", CurrentRuntimeInfo);
+            _lexerIncludeMark = new OpenCloseMark("LexerInclude", CurrentRuntimeInfo);
+            _parserIncludeMark = new OpenCloseMark("ParserInclude", CurrentRuntimeInfo);
+            _caseInsensitiveMark = new SingleMark("AntlrCaseInsensitive", CurrentRuntimeInfo);
         }
 
         public ParserCompiledState Compile(CancellationToken cancellationToken = default)
@@ -77,25 +76,18 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 _grammarCodeMapping.Clear();
 
                 if (Grammar.Type != GrammarType.Lexer)
-                {
                     GetGeneratedFileNames(false);
-                }
 
                 GetGeneratedFileNames(true);
-
                 CopyCompiledSources();
 
                 if (Grammar.Type != GrammarType.Lexer)
                 {
                     if (state.IncludeListener)
-                    {
                         GetGeneratedListenerOrVisitorFiles(false);
-                    }
 
                     if (state.IncludeVisitor)
-                    {
                         GetGeneratedListenerOrVisitorFiles(true);
-                    }
                 }
 
                 string arguments = PrepareFilesAndGetArguments();
@@ -265,11 +257,12 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 }
             }
 
-            code = code.Replace(PackageNamePart, newPackageValue);
+            code = code.Replace(_packageNameMark.ToString(), newPackageValue);
 
             if (runtime == Runtime.Go)
             {
-                code = code.Replace("/*$PackageName2$*/", isPackageNameEmpty ? "" : packageName + ".");
+                var packageName2Mark = new SingleMark("PackageName2", CurrentRuntimeInfo);
+                code = code.Replace(packageName2Mark.ToString(), isPackageNameEmpty ? "" : packageName + ".");
             }
             else if (runtime == Runtime.Php)
             {
@@ -277,11 +270,11 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             }
             else if (runtime == Runtime.Dart)
             {
-                code = code.Replace(PartDart, Grammar.Type == GrammarType.Lexer && !isPackageNameEmpty
+                code = code.Replace(_partMark.ToString(), Grammar.Type == GrammarType.Lexer && !isPackageNameEmpty
                     ? $"part '{Grammar.Name}Lexer.dart';" : "");
             }
 
-            string caseInsensitiveBlockMarker = GenerateCaseInsensitiveBlockMarker();
+            string caseInsensitiveBlockMarker = _caseInsensitiveMark.ToString();
 
             if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
@@ -342,65 +335,48 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 code = code.Replace(caseInsensitiveBlockMarker, "");
             }
 
-            string parserPartStart, parserPartEnd;
-
             if (runtime.IsPythonRuntime())
             {
                 string newValue = runtime == Runtime.Python2
-                    ? "print \"Tree \" + tree.toStringTree(recog=parser);"
-                    : "print(\"Tree \", tree.toStringTree(recog=parser));";
-                code = code.Replace("'''PrintTree'''", newValue);
-
-                parserPartStart = ParserPartStartPython;
-                parserPartEnd = ParserPartEndPython;
-
-                code = RemoveCodeOrClearMarkers(code, ParserIncludeStartPython, ParserIncludeEndPython);
+                    ? "print \"Tree \" + tree.toStringTree(recog=parser)"
+                    : "print(\"Tree \", tree.toStringTree(recog=parser))";
+                code = code.Replace("'''$PrintTree$'''", newValue);
             }
-            else
+            else if (runtime == Runtime.Dart)
             {
-                parserPartStart = ParserPartStart;
-                parserPartEnd = ParserPartEnd;
-
-                if (runtime == Runtime.JavaScript || runtime == Runtime.Go || runtime == Runtime.Php || runtime == Runtime.Dart)
-                {
-                    code = RemoveCodeOrClearMarkers(code, ParserIncludeStartJavaScriptGoPhpDart, ParserIncludeEndJavaScriptGoPhpDart);
-                }
-
-                if (runtime == Runtime.Dart)
-                {
-                    code = RemoveCodeOrClearMarkers(code, LexerIncludeStartDart, LexerIncludeEndDart,
-                        () => !isPackageNameEmpty);
-                }
+                code = RemoveCodeOrClearMarkers(code, _lexerIncludeMark, () => !isPackageNameEmpty);
             }
 
-            code = RemoveCodeOrClearMarkers(code, parserPartStart, parserPartEnd);
+            code = RemoveCodeOrClearMarkers(code, _parserIncludeMark, () => Grammar.Type == GrammarType.Lexer);
+            code = RemoveCodeOrClearMarkers(code, _parserPartMark, () => Grammar.Type == GrammarType.Lexer);
 
             File.WriteAllText(templateFile, code);
         }
 
-        private string RemoveCodeOrClearMarkers(string code, string startMarker, string endMarker,
-            Func<bool>? condition = null)
+        private string RemoveCodeOrClearMarkers(string code, OpenCloseMark mark, Func<bool> condition)
         {
-            if (condition?.Invoke() ?? Grammar.Type == GrammarType.Lexer)
+            var openMark = mark.OpenMark;
+            var closeMark = mark.CloseMark;
+
+            if (condition.Invoke())
             {
-                int parserStartIndex = code.IndexOf(startMarker, StringComparison.Ordinal);
-                int parserEndIndex = code.IndexOf(endMarker, StringComparison.Ordinal) + endMarker.Length;
+                int parserStartIndex = code.IndexOf(openMark, StringComparison.Ordinal);
+                if (parserStartIndex == -1)
+                    return code;
+
+                int parserEndIndex = code.IndexOf(closeMark, StringComparison.Ordinal) + closeMark.Length;
+                if (parserEndIndex == -1)
+                    return code;
 
                 code = code.Remove(parserStartIndex) + code.Substring(parserEndIndex);
             }
             else
             {
-                code = code.Replace(startMarker, "");
-                code = code.Replace(endMarker, "");
+                code = code.Replace(openMark, "").Replace(closeMark, "");
             }
 
             return code;
         }
-
-        private string GenerateCaseInsensitiveBlockMarker() =>
-            CurrentRuntimeInfo.Runtime.IsPythonRuntime()
-                ? $"'''{CaseInsensitiveBlock}'''"
-                : $"/*{CaseInsensitiveBlock}*/";
 
         private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {

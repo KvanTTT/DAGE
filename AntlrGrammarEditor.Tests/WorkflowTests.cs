@@ -258,7 +258,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             var state = workflow.Process();
             Assert.IsInstanceOf<TextParsedState>(state, state.DiagnosisMessage);
             TextParsedState textParsedState = (TextParsedState)state;
-            var textSource = textParsedState.Text;
+            var textSource = textParsedState.Text!;
             CollectionAssert.AreEquivalent(
                 new [] {
                     new Diagnosis(1, 1, 1, 2, "line 1:1 token recognition error at: '#'", textSource, WorkflowStage.TextParsed),

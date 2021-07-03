@@ -5,7 +5,7 @@ import 'package:antlr4/antlr4.dart';
 
 /*$LexerInclude*/import '__TemplateGrammarName__Lexer.dart';/*LexerInclude$*/
 /*$ParserInclude*/import '__TemplateGrammarName__Parser.dart';/*ParserInclude$*/
-/*AntlrCaseInsensitive*/
+/*$AntlrCaseInsensitive$*/
 
 /*$Part$*/
 

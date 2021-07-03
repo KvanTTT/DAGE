@@ -59,7 +59,9 @@ namespace AntlrGrammarEditor
                 runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python2",
                 versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-2 " : "") + "--version",
                 baseListenerPostfix: null,
-                baseVisitorPostfix: null
+                baseVisitorPostfix: null,
+                startCommentToken: "'''",
+                endCommentToken: "'''"
             ),
             [Runtime.Python3] = new RuntimeInfo
             (
@@ -74,7 +76,9 @@ namespace AntlrGrammarEditor
                 runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python3",
                 versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-3 " : "") + "--version",
                 baseListenerPostfix: null,
-                baseVisitorPostfix: null
+                baseVisitorPostfix: null,
+                startCommentToken: "'''",
+                endCommentToken: "'''"
             ),
             [Runtime.JavaScript] = new RuntimeInfo
             (
@@ -181,6 +185,10 @@ namespace AntlrGrammarEditor
         public bool Initialized { get; private set; }
         public string? Version { get; private set; }
 
+        public string StartCommentToken { get; }
+
+        public string EndCommentToken { get; }
+
         public static RuntimeInfo InitOrGetRuntimeInfo(Runtime runtime)
         {
             RuntimeInfo runtimeInfo = Runtimes[runtime];
@@ -223,7 +231,8 @@ namespace AntlrGrammarEditor
             string jarGenerator = "antlr-4.9.2-complete.jar",
             string lexerPostfix = "Lexer", string parserPostfix = "Parser",
             string? baseListenerPostfix = "BaseListener", string listenerPostfix = "Listener",
-            string? baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor")
+            string? baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor",
+            string startCommentToken = "/*", string endCommentToken = "*/")
         {
             Runtime = runtime;
             Name = name;
@@ -242,6 +251,8 @@ namespace AntlrGrammarEditor
             BaseVisitorPostfix = baseVisitorPostfix;
             VisitorPostfix = visitorPostfix;
             VersionArg = versionArg;
+            StartCommentToken = startCommentToken;
+            EndCommentToken = endCommentToken;
         }
 
         public override string ToString()

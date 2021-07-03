@@ -5,7 +5,7 @@ from antlr4.ListTokenSource import ListTokenSource
 from antlr4.atn.PredictionMode import PredictionMode
 from __TemplateGrammarName__Lexer import __TemplateGrammarName__Lexer
 '''$ParserInclude'''from __TemplateGrammarName__Parser import __TemplateGrammarName__Parser'''ParserInclude$'''
-'''AntlrCaseInsensitive'''
+'''$AntlrCaseInsensitive$'''
 
 def main(argv):
     fileName = '../../Text'
@@ -34,7 +34,7 @@ def main(argv):
     parser._interp.predictionMode = PredictionMode.SLL if mode == "sll" else PredictionMode.LL if mode == "ll" else PredictionMode.LL_EXACT_AMBIG_DETECTION
     ruleName = __TemplateGrammarName__Parser.ruleNames[0] if rootRule is None else rootRule
     tree = getattr(parser, ruleName)()
-    '''PrintTree'''
+    '''$PrintTree$'''
 '''ParserPart$'''
 
 if __name__ == '__main__':
