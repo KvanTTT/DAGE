@@ -33,13 +33,61 @@ namespace AntlrGrammarEditor.Processors
         private static readonly Regex ParserIncludeStartJavaScriptGoPhpDart = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
         private static readonly Regex ParserIncludeEndJavaScriptGoPhpDart = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
 
-        private static readonly Regex CSharpDiagnosisMarker = new (@"^([^(]+)\((\d+),(\d+)\): ?([^:]+): ?(.+)", RegexOptions.Compiled);
-        private static readonly Regex JavaDiagnosisMarker = new (@"^([^:]+):(\d+): ?([^:]+): ?(.+)", RegexOptions.Compiled);
-        private static readonly Regex PythonDiagnosisMarker = new (@"^\s*File ""([^""]+)"", line (\d+), in (.+)", RegexOptions.Compiled);
-        private static readonly Regex JavaScriptDiagnosisMarker = new (@"^([^:]+):(\d+)", RegexOptions.Compiled);
-        private static readonly Regex GoDiagnosisMarker = new (@"^([^:]+):(\d+): ?([^:]+): ?(.+)", RegexOptions.Compiled);
-        private static readonly Regex PhpDiagnosisMarker = new (@"^([^:]+):\s*(.+?) in ([^>]+) on line (\d+)", RegexOptions.Compiled);
-        private static readonly Regex DartDiagnosisMarker = new (@"^([^:]+):(\d+):(\d+): ?([^:]+): ?(.+)", RegexOptions.Compiled);
+        private const string FileMark = "file";
+        private const string LineMark = "line";
+        private const string ColumnMark = "column";
+        private const string TypeMark = "type";
+        private const string MessageMark = "message";
+
+        // Lexer.cs(106,11): error CS0103: The  name 'a' does not exist in the current context
+        private static readonly Regex CSharpDiagnosisMarker =
+            new ($@"^(?<{FileMark}>[^(]+)\((?<{LineMark}>\d+),(?<{ColumnMark}>\d+)\): ?(?<{TypeMark}>[^:]+): ?(?<{MessageMark}>.+)", RegexOptions.Compiled);
+
+        // Lexer.java:98: error: cannot find symbol
+        private static readonly Regex JavaDiagnosisMarker =
+            new ($@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+): ?(?<{TypeMark}>[^:]+): ?(?<{MessageMark}>.+)", RegexOptions.Compiled);
+
+        //Traceback(most recent call last):
+        //  File "AntlrPythonCompileTest.py", line 1, in < module >
+        //    from NewGrammarLexer import NewGrammarLexer
+        //  File "Absolute\Path\To\LexerOrParser.py", line 23
+        //    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
+        //    ^
+        //IndentationError: unexpected indent
+        private static readonly Regex PythonDiagnosisMarker =
+            new ($@"^\s*File ""(?<{FileMark}>[^""]+)"", line (?<{LineMark}>\d+), in (.+)", RegexOptions.Compiled);
+
+        //Absolute\Path\To\LexerOrParser.js:68
+        //                break;
+        //                ^^^^^
+        //
+        //SyntaxError: Unexpected token break
+        //    at exports.runInThisContext (vm.js:53:16)
+        //    at Module._compile (module.js:373:25)
+        //    at Object.Module._extensions..js (module.js:416:10)
+        //    at Module.load (module.js:343:32)
+        //    at Function.Module._load (module.js:300:12)
+        //    at Module.require (module.js:353:17)
+        //    at require (internal/module.js:12:17)
+        //    at Object.<anonymous> (Absolute\Path\To\AntlrJavaScriptTest.js:1:85)
+        //    at Module._compile (module.js:409:26)
+        //    at Object.Module._extensions..js (module.js:416:10)
+
+        // (node:17616) ExperimentalWarning: The ESM module loader is experimental.
+        private static readonly Regex JavaScriptDiagnosisMarker =
+            new ($@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+)", RegexOptions.Compiled);
+
+        // .\newgrammar_parser.go:169: syntax error: unexpected semicolon or newline, expecting expression
+        private static readonly Regex GoDiagnosisMarker =
+            new ($@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+): ?(?<{TypeMark}>[^:]+): ?(?<{MessageMark}>.+)", RegexOptions.Compiled);
+
+        // PHP Parse error:  syntax error, unexpected ';' in <file_name.php> on line 145
+        private static readonly Regex PhpDiagnosisMarker =
+            new ($@"^([^:]+):\s*(?<{MessageMark}>.+?) in (?<{FileMark}>[^>]+) on line (?<{LineMark}>\d+)", RegexOptions.Compiled);
+
+        // TestParser.dart:64:9: Error: Expected an identifier, but got ';'.
+        private static readonly Regex DartDiagnosisMarker =
+            new ($@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+):(?<{ColumnMark}>\d+): ?(?<{TypeMark}>[^:]+): ?(?<{MessageMark}>.+)", RegexOptions.Compiled);
 
         private readonly Grammar _grammar;
         private readonly ParserCompiledState _result;
@@ -743,12 +791,11 @@ namespace AntlrGrammarEditor.Processors
             var match = CSharpDiagnosisMarker.Match(data);
             if (match.Success)
             {
-                // Lexer.cs(106,11): error CS0103: The  name 'a' does not exist in the current context
                 var groups = match.Groups;
-                string codeFileName = Path.GetFileName(groups[1].Value);
-                int.TryParse(groups[2].Value, out int line);
-                int.TryParse(groups[3].Value, out int column);
-                string message = groups[5].Value;
+                string codeFileName = Path.GetFileName(groups[FileMark].Value);
+                int.TryParse(groups[LineMark].Value, out int line);
+                int.TryParse(groups[ColumnMark].Value, out int column);
+                string message = groups[MessageMark].Value;
                 diagnosis = GenerateDiagnosis(codeFileName, line, column, message, DiagnosisType.Error);
                 AddDiagnosis(diagnosis);
             }
@@ -764,15 +811,14 @@ namespace AntlrGrammarEditor.Processors
             var match = JavaDiagnosisMarker.Match(data);
             if (match.Success)
             {
-                // Lexer.java:98: error: cannot find symbol
                 var groups = match.Groups;
-                string message = groups[4].Value;
+                string message = groups[MessageMark].Value;
                 if (message.StartsWith("[deprecation] ANTLRInputStream"))
                     return;
 
-                string codeFileName = Path.GetFileName(groups[1].Value);
-                int.TryParse(groups[2].Value, out int line);
-                var diagnosisType = groups[3].Value == "warning" ? DiagnosisType.Warning : DiagnosisType.Error;
+                string codeFileName = Path.GetFileName(groups[FileMark].Value);
+                int.TryParse(groups[LineMark].Value, out int line);
+                var diagnosisType = groups[TypeMark].Value == "warning" ? DiagnosisType.Warning : DiagnosisType.Error;
 
                 diagnosis = GenerateDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, diagnosisType);
             }
@@ -785,14 +831,6 @@ namespace AntlrGrammarEditor.Processors
 
         private void AddPythonDiagnosis()
         {
-            //Format:
-            //Traceback(most recent call last):
-            //  File "AntlrPythonCompileTest.py", line 1, in < module >
-            //    from NewGrammarLexer import NewGrammarLexer
-            //  File "Absolute\Path\To\LexerOrParser.py", line 23
-            //    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
-            //    ^
-            //IndentationError: unexpected indent
             string message = "";
             string? codeFileName = null;
             int line = -1;
@@ -802,8 +840,8 @@ namespace AntlrGrammarEditor.Processors
                 if (codeFileName == null && (match = PythonDiagnosisMarker.Match(_buffer[i])).Success)
                 {
                     var groups = match.Groups;
-                    codeFileName = Path.GetFileName(groups[1].Value);
-                    int.TryParse(groups[2].Value, out line);
+                    codeFileName = Path.GetFileName(groups[FileMark].Value);
+                    int.TryParse(groups[LineMark].Value, out line);
                 }
                 else if (i == _buffer.Count - 1)
                 {
@@ -816,23 +854,6 @@ namespace AntlrGrammarEditor.Processors
 
         private void AddJavaScriptDiagnosis()
         {
-            //Absolute\Path\To\LexerOrParser.js:68
-            //                break;
-            //                ^^^^^
-            //
-            //SyntaxError: Unexpected token break
-            //    at exports.runInThisContext (vm.js:53:16)
-            //    at Module._compile (module.js:373:25)
-            //    at Object.Module._extensions..js (module.js:416:10)
-            //    at Module.load (module.js:343:32)
-            //    at Function.Module._load (module.js:300:12)
-            //    at Module.require (module.js:353:17)
-            //    at require (internal/module.js:12:17)
-            //    at Object.<anonymous> (Absolute\Path\To\AntlrJavaScriptTest.js:1:85)
-            //    at Module._compile (module.js:409:26)
-            //    at Object.Module._extensions..js (module.js:416:10)
-
-            // (node:17616) ExperimentalWarning: The ESM module loader is experimental.
             string message = "";
             string? codeFileName = null;
             int line = -1;
@@ -841,8 +862,8 @@ namespace AntlrGrammarEditor.Processors
             if (match.Success)
             {
                 var groups = match.Groups;
-                codeFileName = Path.GetFileName(groups[1].Value);
-                int.TryParse(groups[2].Value, out line);
+                codeFileName = Path.GetFileName(groups[FileMark].Value);
+                int.TryParse(groups[LineMark].Value, out line);
             }
 
             for (int i = 1; i < _buffer.Count; i++)
@@ -862,11 +883,10 @@ namespace AntlrGrammarEditor.Processors
             var match = GoDiagnosisMarker.Match(data);
             if (match.Success)
             {
-                // .\newgrammar_parser.go:169: syntax error: unexpected semicolon or newline, expecting expression
                 var groups = match.Groups;
-                string codeFileName = groups[1].Value.Substring(2);
-                int.TryParse(groups[2].Value, out int codeLine);
-                string message = groups[4].Value;
+                string codeFileName = groups[FileMark].Value.Substring(2);
+                int.TryParse(groups[LineMark].Value, out int codeLine);
+                string message = groups[MessageMark].Value;
                 diagnosis = GenerateDiagnosis(codeFileName, codeLine, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error);
             }
             else
@@ -882,11 +902,10 @@ namespace AntlrGrammarEditor.Processors
             var match = PhpDiagnosisMarker.Match(data);
             if (match.Success)
             {
-                // PHP Parse error:  syntax error, unexpected ';' in <file_name.php> on line 145
                 var groups = match.Groups;
-                string codeFileName = Path.GetFileName(groups[3].Value);
-                int.TryParse(groups[4].Value, out int codeLine);
-                string message = groups[2].Value;
+                string codeFileName = Path.GetFileName(groups[FileMark].Value);
+                int.TryParse(groups[LineMark].Value, out int codeLine);
+                string message = groups[MessageMark].Value;
                 diagnosis = GenerateDiagnosis(codeFileName, codeLine, LineColumnTextSpan.StartColumn, message,
                     DiagnosisType.Error);
             }
@@ -903,12 +922,11 @@ namespace AntlrGrammarEditor.Processors
             var match = DartDiagnosisMarker.Match(data);
             if (match.Success)
             {
-                // TestParser.dart:64:9: Error: Expected an identifier, but got ';'.
                 var groups = match.Groups;
-                string codeFileName = Path.GetFileName(groups[1].Value);
-                int.TryParse(groups[2].Value, out int line);
-                int.TryParse(groups[3].Value, out int column);
-                var message = groups[5].Value.Trim();
+                string codeFileName = Path.GetFileName(groups[FileMark].Value);
+                int.TryParse(groups[LineMark].Value, out int line);
+                int.TryParse(groups[ColumnMark].Value, out int column);
+                var message = groups[MessageMark].Value.Trim();
 
                 diagnosis = GenerateDiagnosis(codeFileName, line, column, message, DiagnosisType.Error);
             }
