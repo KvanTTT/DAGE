@@ -55,7 +55,7 @@ namespace AntlrGrammarEditor.Processors
         //    ^
         //IndentationError: unexpected indent
         private static readonly Regex PythonDiagnosisMarker =
-            new ($@"^\s*File ""(?<{FileMark}>[^""]+)"", line (?<{LineMark}>\d+), in (.+)", RegexOptions.Compiled);
+            new ($@"^\s*File ""(?<{FileMark}>[^""]+)"", line (?<{LineMark}>\d+)(, in (.+))?", RegexOptions.Compiled);
 
         //Absolute\Path\To\LexerOrParser.js:68
         //                break;
@@ -74,8 +74,10 @@ namespace AntlrGrammarEditor.Processors
         //    at Object.Module._extensions..js (module.js:416:10)
 
         // (node:17616) ExperimentalWarning: The ESM module loader is experimental.
+
+        // file:///C:/Users/User/Documents/My-Projects/DAGE/AntlrGrammarEditor.Tests/bin/Debug/netcoreapp3.1/DageHelperDirectory/Test/JavaScript/TestParser.js:58
         private static readonly Regex JavaScriptDiagnosisMarker =
-            new ($@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+)", RegexOptions.Compiled);
+            new ($@"^(?<file>.+):(?<line>\d+)", RegexOptions.Compiled);
 
         // .\newgrammar_parser.go:169: syntax error: unexpected semicolon or newline, expecting expression
         private static readonly Regex GoDiagnosisMarker =
@@ -787,7 +789,6 @@ namespace AntlrGrammarEditor.Processors
 
         private void AddCSharpDiagnosis(string data)
         {
-            Diagnosis diagnosis;
             var match = CSharpDiagnosisMarker.Match(data);
             if (match.Success)
             {
@@ -796,18 +797,13 @@ namespace AntlrGrammarEditor.Processors
                 int.TryParse(groups[LineMark].Value, out int line);
                 int.TryParse(groups[ColumnMark].Value, out int column);
                 string message = groups[MessageMark].Value;
-                diagnosis = GenerateDiagnosis(codeFileName, line, column, message, DiagnosisType.Error);
+                var diagnosis = GenerateDiagnosis(codeFileName, line, column, message, DiagnosisType.Error);
                 AddDiagnosis(diagnosis);
-            }
-            else
-            {
-                //diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
             }
         }
 
         private void AddJavaDiagnosis(string data)
         {
-            Diagnosis diagnosis;
             var match = JavaDiagnosisMarker.Match(data);
             if (match.Success)
             {
@@ -820,13 +816,9 @@ namespace AntlrGrammarEditor.Processors
                 int.TryParse(groups[LineMark].Value, out int line);
                 var diagnosisType = groups[TypeMark].Value == "warning" ? DiagnosisType.Warning : DiagnosisType.Error;
 
-                diagnosis = GenerateDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, diagnosisType);
+                var diagnosis = GenerateDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, diagnosisType);
+                AddDiagnosis(diagnosis);
             }
-            else
-            {
-                diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
-            }
-            AddDiagnosis(diagnosis);
         }
 
         private void AddPythonDiagnosis()
@@ -837,7 +829,7 @@ namespace AntlrGrammarEditor.Processors
             for (int i = 0; i < _buffer.Count; i++)
             {
                 Match match;
-                if (codeFileName == null && (match = PythonDiagnosisMarker.Match(_buffer[i])).Success)
+                if ((match = PythonDiagnosisMarker.Match(_buffer[i])).Success)
                 {
                     var groups = match.Groups;
                     codeFileName = Path.GetFileName(groups[FileMark].Value);
@@ -879,7 +871,6 @@ namespace AntlrGrammarEditor.Processors
 
         private void AddGoDiagnosis(string data)
         {
-            Diagnosis diagnosis;
             var match = GoDiagnosisMarker.Match(data);
             if (match.Success)
             {
@@ -887,18 +878,13 @@ namespace AntlrGrammarEditor.Processors
                 string codeFileName = groups[FileMark].Value.Substring(2);
                 int.TryParse(groups[LineMark].Value, out int codeLine);
                 string message = groups[MessageMark].Value;
-                diagnosis = GenerateDiagnosis(codeFileName, codeLine, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error);
+                var diagnosis = GenerateDiagnosis(codeFileName, codeLine, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error);
+                AddDiagnosis(diagnosis);
             }
-            else
-            {
-                diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
-            }
-            AddDiagnosis(diagnosis);
         }
 
         private void AddPhpDiagnosis(string data)
         {
-            Diagnosis diagnosis;
             var match = PhpDiagnosisMarker.Match(data);
             if (match.Success)
             {
@@ -906,19 +892,14 @@ namespace AntlrGrammarEditor.Processors
                 string codeFileName = Path.GetFileName(groups[FileMark].Value);
                 int.TryParse(groups[LineMark].Value, out int codeLine);
                 string message = groups[MessageMark].Value;
-                diagnosis = GenerateDiagnosis(codeFileName, codeLine, LineColumnTextSpan.StartColumn, message,
+                var diagnosis = GenerateDiagnosis(codeFileName, codeLine, LineColumnTextSpan.StartColumn, message,
                     DiagnosisType.Error);
+                AddDiagnosis(diagnosis);
             }
-            else
-            {
-                diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
-            }
-            AddDiagnosis(diagnosis);
         }
 
         private void AddDartDiagnosis(string data)
         {
-            Diagnosis diagnosis;
             var match = DartDiagnosisMarker.Match(data);
             if (match.Success)
             {
@@ -928,13 +909,9 @@ namespace AntlrGrammarEditor.Processors
                 int.TryParse(groups[ColumnMark].Value, out int column);
                 var message = groups[MessageMark].Value.Trim();
 
-                diagnosis = GenerateDiagnosis(codeFileName, line, column, message, DiagnosisType.Error);
+                var diagnosis = GenerateDiagnosis(codeFileName, line, column, message, DiagnosisType.Error);
+                AddDiagnosis(diagnosis);
             }
-            else
-            {
-                diagnosis = new Diagnosis(data, WorkflowStage.ParserCompiled, DiagnosisType.Info);
-            }
-            AddDiagnosis(diagnosis);
         }
 
         private Diagnosis GenerateDiagnosis(string? codeFileName, int line, int column, string message, DiagnosisType type)

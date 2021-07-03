@@ -191,7 +191,11 @@ start: DIGIT+;
             Assert.IsInstanceOf<ParserCompiledState>(state, state.DiagnosisMessage);
             var parserCompiledState = (ParserCompiledState)state;
             Assert.GreaterOrEqual(parserCompiledState.Diagnoses.Count, 1);
-            //Assert.AreEqual(runtime == Runtime.Go ? 1 : 2, parserGeneratedState.Errors[0].TextSpan.GetLineColumn().BeginLine);
+            var firstDiagnosis = parserCompiledState.Diagnoses[0];
+            Assert.AreEqual(WorkflowStage.ParserCompiled, firstDiagnosis.WorkflowStage);
+            Assert.AreEqual(DiagnosisType.Error, firstDiagnosis.Type);
+            var textSpan = firstDiagnosis.TextSpan;
+            Assert.AreEqual(2, textSpan?.LineColumn.BeginLine);
         }
 
         [TestCase(Runtime.CSharpOptimized)]
