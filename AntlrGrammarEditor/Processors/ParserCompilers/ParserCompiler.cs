@@ -21,16 +21,16 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         private const string PackageNamePart = "/*$PackageName$*/";
         private const string PartDart = @"/*$Part$*/";
-        private static readonly Regex ParserPartStart = new Regex(@"/\*\$ParserPart\*/", RegexOptions.Compiled);
-        private static readonly Regex ParserPartEnd = new Regex(@"/\*ParserPart\$\*/", RegexOptions.Compiled);
-        private static readonly Regex ParserPartStartPython = new Regex(@"'''\$ParserPart'''", RegexOptions.Compiled);
-        private static readonly Regex ParserPartEndPython = new Regex(@"'''ParserPart\$'''", RegexOptions.Compiled);
-        private static readonly Regex ParserIncludeStartPython = new Regex(@"'''\$ParserInclude'''", RegexOptions.Compiled);
-        private static readonly Regex ParserIncludeEndPython = new Regex(@"'''ParserInclude\$'''", RegexOptions.Compiled);
-        private static readonly Regex LexerIncludeStartDart = new Regex(@"/\*\$LexerInclude\*/", RegexOptions.Compiled);
-        private static readonly Regex LexerIncludeEndDart = new Regex(@"/\*LexerInclude\$\*/", RegexOptions.Compiled);
-        private static readonly Regex ParserIncludeStartJavaScriptGoPhpDart = new Regex(@"/\*\$ParserInclude\*/", RegexOptions.Compiled);
-        private static readonly Regex ParserIncludeEndJavaScriptGoPhpDart = new Regex(@"/\*ParserInclude\$\*/", RegexOptions.Compiled);
+        private const string ParserPartStart = @"/*$ParserPart*/";
+        private const string ParserPartEnd = @"/*ParserPart$*/";
+        private const string ParserPartStartPython = @"'''$ParserPart'''";
+        private const string ParserPartEndPython = @"'''ParserPart$'''";
+        private const string ParserIncludeStartPython = @"'''$ParserInclude'''";
+        private const string ParserIncludeEndPython = @"'''ParserInclude$'''";
+        private const string LexerIncludeStartDart = @"/*$LexerInclude*/";
+        private const string LexerIncludeEndDart = @"/*LexerInclude$*/";
+        private const string ParserIncludeStartJavaScriptGoPhpDart = @"/*$ParserInclude*/";
+        private const string ParserIncludeEndJavaScriptGoPhpDart = @"/*ParserInclude$*/";
 
         protected const string FileMark = "file";
         protected const string LineMark = "line";
@@ -70,7 +70,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         public ParserCompiledState Compile(CancellationToken cancellationToken = default)
         {
             var state = Result.ParserGeneratedState;
-            Runtime runtime = state.Runtime;
 
             Processor? processor = null;
             try
@@ -102,7 +101,10 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 string arguments = PrepareFilesAndGetArguments();
                 PrepareParserCode();
 
-                Buffer.Clear();
+                lock (Buffer)
+                {
+                    Buffer.Clear();
+                }
 
                 Result.Command = CurrentRuntimeInfo.RuntimeToolName + " " + arguments;
                 processor = new Processor(CurrentRuntimeInfo.RuntimeToolName, arguments, WorkingDirectory);
@@ -340,7 +342,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 code = code.Replace(caseInsensitiveBlockMarker, "");
             }
 
-            Regex parserPartStart, parserPartEnd;
+            string parserPartStart, parserPartEnd;
 
             if (runtime.IsPythonRuntime())
             {
@@ -376,21 +378,20 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             File.WriteAllText(templateFile, code);
         }
 
-        private string RemoveCodeOrClearMarkers(string code, Regex startMarker, Regex endMarker,
+        private string RemoveCodeOrClearMarkers(string code, string startMarker, string endMarker,
             Func<bool>? condition = null)
         {
             if (condition?.Invoke() ?? Grammar.Type == GrammarType.Lexer)
             {
-                int parserStartIndex = startMarker.Match(code).Index;
-                Match parserEndMatch = endMarker.Match(code);
-                int parserEndIndex = parserEndMatch.Index + parserEndMatch.Length;
+                int parserStartIndex = code.IndexOf(startMarker, StringComparison.Ordinal);
+                int parserEndIndex = code.IndexOf(endMarker, StringComparison.Ordinal) + endMarker.Length;
 
                 code = code.Remove(parserStartIndex) + code.Substring(parserEndIndex);
             }
             else
             {
-                code = startMarker.Replace(code, m => "");
-                code = endMarker.Replace(code, m => "");
+                code = code.Replace(startMarker, "");
+                code = code.Replace(endMarker, "");
             }
 
             return code;
