@@ -15,7 +15,10 @@ namespace AntlrGrammarEditor
 
         public static string RuntimesPath { get; private set; } = "";
 
-        public static readonly Regex JavaScriptWarningMarker = new (@"^\(node:\d+\) \w*?Warning: ", RegexOptions.Compiled);
+        public const string MessageMark = "message";
+
+        public static readonly Regex JavaScriptWarningMarker =
+            new ($@"^\(node:\d+\) \w*?Warning: (?<{MessageMark}>.+)", RegexOptions.Compiled);
 
         public const string JavaScriptIgnoreMessage =
             "(Use `node --trace-warnings ...` to show where the warning was created)";

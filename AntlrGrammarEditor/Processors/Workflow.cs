@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AntlrGrammarEditor.Processors.ParserCompilers;
 using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Processors
@@ -242,11 +243,8 @@ namespace AntlrGrammarEditor.Processors
                     break;
 
                 case ParserGeneratedState parserGeneratedState:
-                    var parserCompiler = new ParserCompiler(parserGeneratedState)
-                    {
-                        DiagnosisEvent = DiagnosisEvent,
-                        RuntimeLibrary = RuntimeLibrary
-                    };
+                    var parserCompiler =
+                        ParserCompilerFactory.Create(parserGeneratedState, RuntimeLibrary, DiagnosisEvent);
                     _currentState = parserCompiler.Compile(_cancellationTokenSource?.Token ?? default);
                     break;
 
