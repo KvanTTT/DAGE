@@ -623,9 +623,7 @@ namespace DesktopAntlrGrammarEditor
                 int end = textBox.SelectionStart + textBox.SelectionLength;
                 if (start > end)
                 {
-                    int t = start;
-                    start = end;
-                    end = t;
+                    (start, end) = (end, start);
                 }
 
                 source.PositionToLineColumn(start, out int startLine, out int startColumn);

@@ -2,8 +2,13 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="clr-namespace:DesktopAntlrGrammarEditor"
     x:Class="DesktopAntlrGrammarEditor.MainWindow"
     MinWidth="640" Width="1366" MinHeight="480" Height="768" Title="Dage" >
+  <Design.DataContext>
+    <vm:MainWindowViewModel/>
+  </Design.DataContext>
+
   <Window.Styles>
     <Style Selector="TextBlock">
       <Setter Property="VerticalAlignment" Value="Center"/>

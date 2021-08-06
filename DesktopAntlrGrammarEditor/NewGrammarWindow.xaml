@@ -1,7 +1,12 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:DesktopAntlrGrammarEditor"
         x:Class="DesktopAntlrGrammarEditor.NewGrammarWindow"
         Title="New Grammar" SizeToContent="WidthAndHeight" >
+  <Design.DataContext>
+    <vm:NewGrammarWindowViewModel/>
+  </Design.DataContext>
+
   <Window.Styles>
     <Style Selector="TextBlock">
       <Setter Property="VerticalAlignment" Value="Center"/>
