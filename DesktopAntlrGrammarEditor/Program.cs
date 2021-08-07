@@ -1,5 +1,4 @@
 ﻿using Avalonia;
-using Avalonia.Logging.Serilog;
 using Avalonia.ReactiveUI;
 
 namespace DesktopAntlrGrammarEditor
@@ -12,6 +11,6 @@ namespace DesktopAntlrGrammarEditor
             => AppBuilder.Configure<App>()
                 .UsePlatformDetect()
                 .UseReactiveUI()
-                .LogToDebug();
+                .LogToTrace();
     }
 }

@@ -236,11 +236,11 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
             if (runtime == Runtime.Php)
             {
-                code = RemoveCodeWithinMarkOrRemoveMark(code,
+                RemoveCodeWithinMarkOrRemoveMark(ref code,
                     new OpenCloseMark("PackageNameParser", CurrentRuntimeInfo),
                     isPackageNameEmpty || Grammar.Type == GrammarType.Lexer);
             }
-            code = RemoveCodeWithinMarkOrRemoveMark(code, _packageNameMark, removePackageNameCode);
+            RemoveCodeWithinMarkOrRemoveMark(ref code, _packageNameMark, removePackageNameCode);
 
             if (runtime == Runtime.Go)
             {
@@ -296,7 +296,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                     code = code.Replace("from antlr4.InputStream import InputStream", "");
             }
 
-            code = RemoveCodeWithinMarkOrRemoveMark(code, _caseInsensitiveMark, Grammar.CaseInsensitiveType == CaseInsensitiveType.None);
+            RemoveCodeWithinMarkOrRemoveMark(ref code, _caseInsensitiveMark, Grammar.CaseInsensitiveType == CaseInsensitiveType.None);
 
             if (runtime.IsPythonRuntime())
             {
@@ -307,38 +307,45 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             }
             else if (runtime == Runtime.Dart)
             {
-                code = RemoveCodeWithinMarkOrRemoveMark(code, _lexerIncludeMark, !isPackageNameEmpty);
+                RemoveCodeWithinMarkOrRemoveMark(ref code, _lexerIncludeMark, !isPackageNameEmpty);
             }
 
-            code = RemoveCodeWithinMarkOrRemoveMark(code, _parserIncludeMark, Grammar.Type == GrammarType.Lexer);
-            code = RemoveCodeWithinMarkOrRemoveMark(code, _parserPartMark, Grammar.Type == GrammarType.Lexer);
+            RemoveCodeWithinMarkOrRemoveMark(ref code, _parserIncludeMark, Grammar.Type == GrammarType.Lexer);
+            RemoveCodeWithinMarkOrRemoveMark(ref code, _parserPartMark, Grammar.Type == GrammarType.Lexer);
 
             File.WriteAllText(templateFile, code);
         }
 
-        private string RemoveCodeWithinMarkOrRemoveMark(string code, OpenCloseMark mark, bool removeCode)
+        private void RemoveCodeWithinMarkOrRemoveMark(ref string code, OpenCloseMark mark, bool removeCode)
         {
             var openMark = mark.OpenMark;
             var closeMark = mark.CloseMark;
 
+            int parserStartIndex = code.IndexOf(openMark, StringComparison.Ordinal);
+            if (parserStartIndex == -1)
+                return;
+
+            int parserEndIndex = code.IndexOf(closeMark, parserStartIndex, StringComparison.Ordinal);
+            if (parserEndIndex == -1)
+                throw new FormatException($"Close mark not found for {openMark}");
+
+            var firstPart = code.Remove(parserStartIndex);
             if (removeCode)
             {
-                int parserStartIndex = code.IndexOf(openMark, StringComparison.Ordinal);
-                if (parserStartIndex == -1)
-                    return code;
-
-                int parserEndIndex = code.IndexOf(closeMark, parserStartIndex, StringComparison.Ordinal) + closeMark.Length;
-                if (parserEndIndex == -1)
-                    return code;
-
-                code = code.Remove(parserStartIndex) + code.Substring(parserEndIndex);
+                parserEndIndex += closeMark.Length;
+                var lastChar = code.ElementAtOrDefault(parserEndIndex);
+                if (lastChar == '\r' || lastChar == '\n')
+                    parserEndIndex++;
+                if (code.ElementAtOrDefault(parserEndIndex) == '\n')
+                    parserEndIndex++;
+                code = firstPart + code.Substring(parserEndIndex);
             }
             else
             {
-                code = code.Replace(openMark, "").Replace(closeMark, "");
+                int parserStartIndexEnd = parserStartIndex + openMark.Length;
+                var middlePart = code.Substring(parserStartIndexEnd, parserEndIndex - parserStartIndexEnd);
+                code = firstPart + middlePart + code.Substring(parserEndIndex + closeMark.Length);
             }
-
-            return code;
         }
 
         private void ParserCompilation_ErrorDataReceived(object sender, DataReceivedEventArgs e)

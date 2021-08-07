@@ -1,5 +1,4 @@
-﻿using Avalonia;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using System.Threading.Tasks;
 
@@ -10,9 +9,6 @@ namespace DesktopAntlrGrammarEditor
         public MessageBox()
         {
             InitializeComponent();
-#if DEBUG
-            this.AttachDevTools();
-#endif
         }
 
         public static async Task<bool> ShowDialog(Window window, string message, string title = "", MessageBoxType messageBoxType = MessageBoxType.Ok)
@@ -23,7 +19,7 @@ namespace DesktopAntlrGrammarEditor
 
         public MessageBox(string message, string title = "", MessageBoxType messageBoxType = MessageBoxType.Ok)
         {
-            this.InitializeComponent();
+            InitializeComponent();
             DataContext = new MessageBoxViewModel(this, message, title, messageBoxType);
             Activate();
         }
