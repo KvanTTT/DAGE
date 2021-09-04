@@ -8,6 +8,18 @@ using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Tests
 {
+    public enum SupportedRuntime
+    {
+        CSharpOptimized = Runtime.CSharpOptimized,
+        CSharpStandard = Runtime.CSharpStandard,
+        Java = Runtime.Java,
+        Python = Runtime.Python,
+        JavaScript = Runtime.JavaScript,
+        Go = Runtime.Go,
+        Php = Runtime.Php,
+        Dart = Runtime.Dart
+    }
+
     [TestFixture]
     public class WorkflowTests
     {
@@ -175,15 +187,8 @@ WS:     [ \r\n\t]+ -> skip;";
                 parserGeneratedState.Diagnoses);
         }
 
-        [TestCase(Runtime.CSharpOptimized)]
-        [TestCase(Runtime.CSharpStandard)]
-        [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python)]
-        [TestCase(Runtime.JavaScript)]
-        [TestCase(Runtime.Go)]
-        [TestCase(Runtime.Php)]
-        [TestCase(Runtime.Dart)]
-        public void ParserCompiledStageErrors(Runtime runtime)
+        [Test]
+        public void ParserCompiledStageErrors([Values] SupportedRuntime runtime)
         {
             var grammarText =
 @"grammar Test;
@@ -193,8 +198,7 @@ DIGIT:  [0-9]+;
 WS:     [ \r\n\t]+ -> skip;";
 
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "Test", ".");
-            var workflow = new Workflow(grammar);
-            workflow.Runtime = runtime;
+            var workflow = new Workflow(grammar) { Runtime = (Runtime)runtime };
 
             var state = workflow.Process();
             Assert.IsInstanceOf<ParserCompiledState>(state, state.DiagnosisMessage);
@@ -207,15 +211,8 @@ WS:     [ \r\n\t]+ -> skip;";
             Assert.AreEqual(2, textSpan?.LineColumn.BeginLine);
         }
 
-        [TestCase(Runtime.CSharpOptimized)]
-        [TestCase(Runtime.CSharpStandard)]
-        [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python)]
-        [TestCase(Runtime.JavaScript)]
-        [TestCase(Runtime.Go)]
-        [TestCase(Runtime.Php)]
-        [TestCase(Runtime.Dart)]
-        public void TextParsedStageErrors(Runtime runtime)
+        [Test]
+        public void TextParsedStageErrors([Values] SupportedRuntime runtime)
         {
             var grammarText =
 $@"grammar {TestGrammarName};
@@ -262,7 +259,7 @@ error id1 id2 ;   // extraneous input 'id2' expecting ';'
 aa  dd            // no viable alternative at input 'aa  dd'
 error 123 456 ;   // mismatched input '123' expecting Id");
 
-            var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName};
+            var workflow = new Workflow(grammar) {Runtime = (Runtime)runtime, TextFileName = TestTextName};
 
             var state = workflow.Process();
             Assert.IsInstanceOf<TextParsedState>(state, state.DiagnosisMessage);
@@ -282,16 +279,10 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             //Assert.AreEqual("(root (missingToken error (( <missing '))'> ;) (extraneousToken error id1 id2 ;) (noViableAlternative aa dd) (mismatchedInput error 123 456 ;) EOF)", textParsedState.Tree);
         }
 
-        [TestCase(Runtime.CSharpOptimized)]
-        [TestCase(Runtime.CSharpStandard)]
-        [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python)]
-        [TestCase(Runtime.JavaScript)]
-        [TestCase(Runtime.Go)]
-        [TestCase(Runtime.Php)]
-        [TestCase(Runtime.Dart)]
-        public void CaseInsensitive(Runtime runtime)
+        [Test]
+        public void CaseInsensitive([Values] SupportedRuntime supportedRuntime)
         {
+            var runtime = (Runtime)supportedRuntime;
             CheckCaseInsensitiveWorkflow(runtime, true);
             CheckCaseInsensitiveWorkflow(runtime, false);
         }
@@ -340,15 +331,8 @@ T:  ['' ]+;";
             Assert.IsTrue(textParsedState.ParserCompiledState.ParserGeneratedState.Diagnoses[0].Type == DiagnosisType.Warning);
         }
 
-        [TestCase(Runtime.CSharpOptimized)]
-        [TestCase(Runtime.CSharpStandard)]
-        [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python)]
-        [TestCase(Runtime.JavaScript)]
-        [TestCase(Runtime.Go)]
-        [TestCase(Runtime.Php)]
-        [TestCase(Runtime.Dart)]
-        public void CheckListenersAndVisitors(Runtime runtime)
+        [Test]
+        public void CheckListenersAndVisitors([Values] SupportedRuntime runtime)
         {
             var grammarText =
 $@"grammar {TestGrammarName};
@@ -362,7 +346,7 @@ T: [a-z]+;";
                 GenerateListener = true,
                 GenerateVisitor = true
             };
-            workflow.Runtime = runtime;
+            workflow.Runtime = (Runtime)runtime;
             workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
@@ -374,15 +358,8 @@ T: [a-z]+;";
             Assert.IsTrue(allFiles.Any(file => file.Contains("visitor", StringComparison.OrdinalIgnoreCase)));
         }
 
-        [TestCase(Runtime.CSharpOptimized)]
-        [TestCase(Runtime.CSharpStandard)]
-        [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python)]
-        [TestCase(Runtime.JavaScript)]
-        [TestCase(Runtime.Go)]
-        [TestCase(Runtime.Php)]
-        [TestCase(Runtime.Dart)]
-        public void CheckCustomRoot(Runtime runtime)
+        [Test]
+        public void CheckCustomRoot([Values] SupportedRuntime runtime)
         {
             var grammarText =
 @$"grammar {TestGrammarName};
@@ -390,7 +367,7 @@ root1: 'V1';
 root2: 'V2';";
 
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName, Root = null};
+            var workflow = new Workflow(grammar) {Runtime = (Runtime)runtime, TextFileName = TestTextName, Root = null};
 
             File.WriteAllText(TestTextName, "V1");
             var state = workflow.Process();
@@ -406,16 +383,10 @@ root2: 'V2';";
             Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
         }
 
-        [TestCase(Runtime.CSharpOptimized)]
-        [TestCase(Runtime.CSharpStandard)]
-        [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python)]
-        [TestCase(Runtime.JavaScript)]
-        [TestCase(Runtime.Go)]
-        [TestCase(Runtime.Php)]
-        [TestCase(Runtime.Dart)]
-        public void CheckPackageName(Runtime runtime)
+        [Test]
+        public void CheckPackageName([Values] SupportedRuntime supportedRuntime)
         {
+            var runtime = (Runtime)supportedRuntime;
             CheckPackageName(runtime, false);
             CheckPackageName(runtime, true);
         }
@@ -458,15 +429,8 @@ TOKEN:  'a';";
             Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
         }
 
-        [TestCase(Runtime.CSharpOptimized)]
-        [TestCase(Runtime.CSharpStandard)]
-        [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python)]
-        [TestCase(Runtime.JavaScript)]
-        [TestCase(Runtime.Go)]
-        [TestCase(Runtime.Php)]
-        [TestCase(Runtime.Dart)]
-        public void CheckPredictionMode(Runtime runtime)
+        [Test]
+        public void CheckPredictionMode([Values] SupportedRuntime runtime)
         {
             var grammarText =
 $@"grammar {TestGrammarName};
@@ -494,7 +458,7 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
 ";
 
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName};
+            var workflow = new Workflow(grammar) {Runtime = (Runtime)runtime, TextFileName = TestTextName};
             File.WriteAllText(TestTextName, @"static a.b");
 
             workflow.PredictionMode = PredictionMode.LL;
@@ -506,15 +470,8 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
             Assert.IsTrue((sllState as TextParsedState)?.HasErrors == true, sllState.DiagnosisMessage);
         }
 
-        [TestCase(Runtime.CSharpOptimized)]
-        [TestCase(Runtime.CSharpStandard)]
-        [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python)]
-        [TestCase(Runtime.JavaScript)]
-        [TestCase(Runtime.Go)]
-        [TestCase(Runtime.Php)]
-        [TestCase(Runtime.Dart)]
-        public void CheckLexerOnlyGrammar(Runtime runtime)
+        [Test]
+        public void CheckLexerOnlyGrammar([Values] SupportedRuntime runtime)
         {
             var grammarText =
 $"lexer grammar {TestGrammarName}Lexer;" +
@@ -525,7 +482,7 @@ $"lexer grammar {TestGrammarName}Lexer;" +
             var grammar = GrammarFactory.CreateDefaultLexerAndFill(grammarText, TestGrammarName, ".");
             File.WriteAllText(TestTextName, "T1 1234");
 
-            var workflow = new Workflow(grammar) {Runtime = runtime, TextFileName = TestTextName};
+            var workflow = new Workflow(grammar) {Runtime = (Runtime)runtime, TextFileName = TestTextName};
 
             var state = workflow.Process();
             Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
@@ -611,15 +568,8 @@ TOKEN: 'token';";
             }
         }
 
-        [TestCase(Runtime.CSharpOptimized)]
-        [TestCase(Runtime.CSharpStandard)]
-        [TestCase(Runtime.Java)]
-        [TestCase(Runtime.Python)]
-        [TestCase(Runtime.JavaScript)]
-        [TestCase(Runtime.Go)]
-        [TestCase(Runtime.Php)]
-        [TestCase(Runtime.Dart)]
-        public void GrammarGeneratedCodeCorrectMapping(Runtime runtime)
+        [Test]
+        public void GrammarGeneratedCodeCorrectMapping([Values] SupportedRuntime supportedRuntime)
         {
             var grammarText =
 @"grammar test;
@@ -633,8 +583,11 @@ TOKEN: {b====0}? [a-z]+ {b+++;};
 DIGIT: {b====0}? [0-9]+ {b+++;};";
 
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "test", ".");
-            var workflow = new Workflow(grammar);
-            workflow.Runtime = runtime;
+            var runtime = (Runtime)supportedRuntime;
+            var workflow = new Workflow(grammar)
+            {
+                Runtime = runtime
+            };
 
             var state = workflow.Process();
             Assert.IsInstanceOf<ParserCompiledState>(state, state.DiagnosisMessage);
