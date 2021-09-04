@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using AntlrGrammarEditor.Processors.ParserCompilers;
+using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Processors
@@ -29,7 +30,7 @@ namespace AntlrGrammarEditor.Processors
             TextFileName = textFileName;
             Root = root;
             _result = new TextParsedState(state,
-                textFileName != null ? new CodeSource(textFileName, File.ReadAllText(textFileName)) : null)
+                textFileName != null ? new Source(textFileName, File.ReadAllText(textFileName)) : null)
             {
                 Root = root
             };

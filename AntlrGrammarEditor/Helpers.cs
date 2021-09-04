@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor
 {
@@ -15,6 +16,10 @@ namespace AntlrGrammarEditor
 
         public static string RuntimesPath { get; private set; } = "";
 
+        public const string FileMark = "file";
+        public const string LineMark = "line";
+        public const string ColumnMark = "column";
+        public const string TypeMark = "type";
         public const string MessageMark = "message";
 
         public static readonly Regex JavaScriptWarningMarker =
@@ -128,9 +133,9 @@ namespace AntlrGrammarEditor
             return runtime == Runtime.Python2 || runtime == Runtime.Python3;
         }
 
-        public static string FormatErrorMessage(CodeSource codeSource, int line, int charPositionInLine, string msg, bool isWarning = false)
+        public static string FormatErrorMessage(Source source, int line, int charPositionInLine, string msg, bool isWarning = false)
         {
-            return $"{(isWarning ? "Warning" : "Error")}: {Path.GetFileName(codeSource.Name)}:{line}:{charPositionInLine}: {msg}";
+            return $"{(isWarning ? "Warning" : "Error")}: {Path.GetFileName(source.Name)}:{line}:{charPositionInLine}: {msg}";
         }
     }
 }

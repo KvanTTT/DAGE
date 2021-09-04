@@ -1,4 +1,5 @@
 ﻿using System;
+using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor
 {
@@ -16,14 +17,14 @@ namespace AntlrGrammarEditor
 
         public int EndColumn { get; }
 
-        public CodeSource Source { get; }
+        public Source Source { get; }
 
-        public LineColumnTextSpan(int line, int column, CodeSource source)
+        public LineColumnTextSpan(int line, int column, Source source)
             : this(line, column, line, column, source)
         {
         }
 
-        public LineColumnTextSpan(int startLine, int startColumn, int endLine, int endColumn, CodeSource source)
+        public LineColumnTextSpan(int startLine, int startColumn, int endLine, int endColumn, Source source)
         {
             BeginLine = startLine;
             BeginColumn = startColumn;

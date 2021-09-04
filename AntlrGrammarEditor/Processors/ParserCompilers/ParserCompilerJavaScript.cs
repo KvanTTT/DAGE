@@ -2,6 +2,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using AntlrGrammarEditor.WorkflowState;
+using static AntlrGrammarEditor.Helpers;
 
 namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
@@ -30,8 +31,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         // (node:17616) ExperimentalWarning: The ESM module loader is experimental.
 
         // file:///C:/Users/User/Documents/My-Projects/DAGE/AntlrGrammarEditor.Tests/bin/Debug/netcoreapp3.1/DageHelperDirectory/Test/JavaScript/TestParser.js:58
-        protected override Regex ParserCompilerMessageRegex { get; } =
-            new($@"^(?<file>.+):(?<line>\d+)", RegexOptions.Compiled);
+        protected override Regex ParserCompilerMessageRegex { get; } = new($@"^(?<file>.+):(?<line>\d+)", RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()
         {
@@ -95,7 +95,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 }
             }
 
-            AddDiagnosis(MapGeneratedToSourceAndCreateDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error));
+            AddDiagnosis(CreateMappedGrammarDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error));
         }
     }
 }

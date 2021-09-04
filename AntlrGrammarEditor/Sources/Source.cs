@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.Sources
 {
-    public class CodeSource : IEquatable<CodeSource>
+    public class Source : IEquatable<Source>
     {
         private readonly int[] _lineIndexes;
 
         public string Name { get; }
         public string Text { get; }
 
-        public CodeSource(string name, string text)
+        public Source(string name, string text)
         {
             Name = name;
             Text = text;
@@ -56,7 +56,7 @@ namespace AntlrGrammarEditor
             line += LineColumnTextSpan.StartLine;
         }
 
-        public bool Equals(CodeSource other) => Name.Equals(other.Name);
+        public bool Equals(Source other) => Name.Equals(other.Name);
 
         public override string ToString() => Name;
     }

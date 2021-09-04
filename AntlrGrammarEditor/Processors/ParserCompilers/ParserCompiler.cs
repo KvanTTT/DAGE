@@ -6,7 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using AntlrGrammarEditor.Fragments;
+using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
+using static AntlrGrammarEditor.Helpers;
 
 namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
@@ -18,10 +21,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         private const string PackageName = "__PackageName__";
         public const string RuntimesDirName = "AntlrRuntimes";
 
-        protected const string FileMark = "file";
-        protected const string LineMark = "line";
-        protected const string ColumnMark = "column";
-        protected const string TypeMark = "type";
+        private static readonly Regex FragmentMarkRegexBegin;
+        private static readonly Regex FragmentMarkRegexEnd;
 
         private readonly OpenCloseMark _packageNameMark;
         private readonly OpenCloseMark _parserPartMark;
@@ -30,7 +31,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         private readonly OpenCloseMark _caseInsensitiveMark;
 
         private readonly string _generatedGrammarName;
-        private readonly Dictionary<string, List<TextSpanMapping>> _grammarCodeMapping = new();
+        private readonly Dictionary<string, FragmentFinder> _fragmentFinders = new ();
 
         protected readonly Grammar Grammar;
         protected readonly RuntimeInfo CurrentRuntimeInfo;
@@ -44,6 +45,24 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         public string? RuntimeLibrary { get; set; }
 
         protected abstract Regex ParserCompilerMessageRegex { get; }
+
+        static ParserCompiler()
+        {
+            var mark = new OpenCloseMark(ParserGenerator.FragmentMarkWord, RuntimeInfo.Runtimes[Runtime.Java],
+                ParserGenerator.FragmentMarkSuffix);
+            var digitRegex = @"\d";
+            int digitsCount = ParserGenerator.FragmentMarkDigitsCount;
+            var digitsRegex = new StringBuilder(digitRegex.Length * digitsCount).Insert(0, digitRegex, digitsCount).ToString();
+            var digitsGroup = $"({digitsRegex})";
+            var fragmentRegexStringBegin = Regex.Escape($"{mark.StartCommentToken}{mark.Suffix}{mark.Name}") +
+                                           digitsGroup +
+                                           Regex.Escape(mark.EndCommentToken);
+            var fragmentRegexStringEnd = Regex.Escape($"{mark.StartCommentToken}{mark.Name}") +
+                                         digitsGroup +
+                                         Regex.Escape($"{mark.Suffix}{mark.EndCommentToken}");
+            FragmentMarkRegexBegin = new Regex(fragmentRegexStringBegin, RegexOptions.Compiled);
+            FragmentMarkRegexEnd = new Regex(fragmentRegexStringEnd, RegexOptions.Compiled);
+        }
 
         protected ParserCompiler(ParserGeneratedState state)
         {
@@ -72,8 +91,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             Processor? processor = null;
             try
             {
-                _grammarCodeMapping.Clear();
-
                 if (Grammar.Type != GrammarType.Lexer)
                     GetGeneratedFileNames(false);
 
@@ -88,6 +105,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                     if (state.IncludeVisitor)
                         GetGeneratedListenerOrVisitorFiles(true);
                 }
+
+                PreprocessGeneratedFiles();
 
                 string arguments = PrepareFilesAndGetArguments();
                 PrepareParserCode();
@@ -140,20 +159,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         private void GetGeneratedFileNames(bool lexer)
         {
-            string? grammarNameExt;
-
-            if (Grammar.Type == GrammarType.Combined)
-            {
-                grammarNameExt = Grammar.Files.FirstOrDefault(file => Path.GetExtension(file)
-                    .Equals(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase));
-            }
-            else
-            {
-                string postfix = lexer ? Grammar.LexerPostfix : Grammar.ParserPostfix;
-                grammarNameExt = Grammar.Files.FirstOrDefault(file => file.Contains(postfix)
-                    && Path.GetExtension(file).Equals(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase));
-            }
-
             string shortGeneratedFile = _generatedGrammarName +
                                         (lexer ? CurrentRuntimeInfo.LexerPostfix : CurrentRuntimeInfo.ParserPostfix) +
                                         "." + CurrentRuntimeInfo.Extensions[0];
@@ -166,9 +171,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             }
             string generatedFile = Path.Combine(generatedFileDir, shortGeneratedFile);
             GeneratedFiles.Add(generatedFile);
-            var codeSource = new CodeSource(generatedFile, File.ReadAllText(generatedFile));
-            var grammarCheckedState = Result.ParserGeneratedState.GrammarCheckedState;
-            _grammarCodeMapping[shortGeneratedFile] = TextHelpers.Map(grammarCheckedState.GrammarActionsTextSpan[grammarNameExt], codeSource, lexer);
         }
 
         private void CopyCompiledSources()
@@ -208,6 +210,65 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             {
                 GeneratedFiles.Add(Path.Combine(WorkingDirectory,
                     _generatedGrammarName + basePostfix + "." + CurrentRuntimeInfo.Extensions[0]));
+            }
+        }
+
+        private void PreprocessGeneratedFiles()
+        {
+            foreach (string generatedFile in GeneratedFiles)
+            {
+                var generatedRawMappedFragments = new List<RawMappedFragment>();
+
+                var text = File.ReadAllText(generatedFile);
+                var textSpan = text.AsSpan();
+                StringBuilder? newTextBuilder = null;
+                var grammarMappedFragments = Result.ParserGeneratedState.MappedFragments;
+
+                var index = 0;
+                var beginMatch = FragmentMarkRegexBegin.Match(text, index);
+                while (beginMatch.Success)
+                {
+                    newTextBuilder ??= new StringBuilder(text.Length);
+
+                    if (!int.TryParse(beginMatch.Groups[1].Value, out var fragmentNumber))
+                        throw new FormatException("Incorrect fragment number");
+
+                    newTextBuilder.Append(textSpan.Slice(index, beginMatch.Index - index));
+                    var fragmentIndex = newTextBuilder.Length;
+                    index = beginMatch.Index + beginMatch.Length;
+
+                    var endMatch = FragmentMarkRegexEnd.Match(text, index);
+
+                    if (!endMatch.Success)
+                        throw new FormatException("Every mark should have both begin and end part");
+
+                    newTextBuilder.Append(textSpan.Slice(index, endMatch.Index - index));
+                    index = endMatch.Index + endMatch.Length;
+
+                    if (fragmentNumber < 0 || fragmentNumber >= grammarMappedFragments.Count)
+                        throw new FormatException($"Fragment number {fragmentIndex} does not map to grammar fragment");
+
+                    generatedRawMappedFragments.Add(new RawMappedFragment(fragmentIndex,
+                    newTextBuilder.Length - fragmentIndex, grammarMappedFragments[fragmentNumber]));
+
+                    beginMatch = FragmentMarkRegexBegin.Match(text, index);
+                }
+
+                if (newTextBuilder != null)
+                {
+                    // Grammar contains actions and predicates
+                    newTextBuilder.Append(textSpan.Slice(index));
+                    var newText = newTextBuilder.ToString();
+                    File.WriteAllText(generatedFile, newText);
+                    var source = new Source(generatedFile, newText);
+
+                    var generatedMappedFragments = new List<MappedFragment>(generatedRawMappedFragments.Count);
+                    foreach (var rawMappedFragment in generatedRawMappedFragments)
+                        generatedMappedFragments.Add(rawMappedFragment.ToMappedFragment(source));
+
+                    _fragmentFinders.Add(Path.GetFileName(generatedFile),
+                        new FragmentFinder(source, generatedMappedFragments));
+                }
             }
         }
 
@@ -370,7 +431,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 int.TryParse(groups[LineMark].Value, out int line);
                 if (!int.TryParse(groups[ColumnMark].Value, out int column))
                     column = LineColumnTextSpan.StartColumn;
-                string message = groups[Helpers.MessageMark].Value;
+                string message = groups[MessageMark].Value;
                 var diagnosisType = groups[TypeMark].Value.Contains("warning", StringComparison.OrdinalIgnoreCase)
                     ? DiagnosisType.Warning
                     : DiagnosisType.Error;
@@ -378,9 +439,39 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 if (CurrentRuntimeInfo.Runtime == Runtime.Java && message.StartsWith("[deprecation] ANTLRInputStream"))
                     return;
 
-                var diagnosis = MapGeneratedToSourceAndCreateDiagnosis(codeFileName, line, column, message, diagnosisType);
+                var diagnosis = CreateMappedGrammarDiagnosis(codeFileName, line, column, message, diagnosisType);
                 AddDiagnosis(diagnosis);
             }
+        }
+
+        protected Diagnosis CreateMappedGrammarDiagnosis(string? codeFileName, int line, int column,
+            string message, DiagnosisType type)
+        {
+            if (codeFileName == null)
+                return new Diagnosis(message, WorkflowStage.ParserCompiled, type);
+
+            TextSpan textSpan;
+
+            if (_fragmentFinders.TryGetValue(codeFileName, out FragmentFinder fragmentFinder))
+            {
+                var foundFragmentInGenerated = fragmentFinder.Find(line, column);
+                var fragmentInMarkedGrammar = foundFragmentInGenerated.Fragment.OriginalFragment;
+                var fragmentInOriginalGrammar = ((MappedFragment)fragmentInMarkedGrammar).OriginalFragment;
+                textSpan = fragmentInOriginalGrammar.TextSpan;
+                return new Diagnosis(textSpan,
+                    $"{textSpan.Source.Name}:{textSpan.LineColumn.BeginLine}:{message}",
+                    WorkflowStage.ParserCompiled, type);
+            }
+
+            var grammarFilesData = Result.ParserGeneratedState.GrammarCheckedState.GrammarInfos;
+            Source grammarSource =
+                grammarFilesData
+                    .FirstOrDefault(file => file.Key.EndsWith(codeFileName, StringComparison.OrdinalIgnoreCase))
+                    .Value
+                    .Source;
+
+            textSpan = new LineColumnTextSpan(line, column, grammarSource).GetTextSpan();
+            return new Diagnosis(textSpan, message, WorkflowStage.ParserCompiled, type);
         }
 
         protected void AddToBuffer(string data)
@@ -395,94 +486,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         {
             DiagnosisEvent?.Invoke(this, diagnosis);
             Result.AddDiagnosis(diagnosis);
-        }
-
-        protected Diagnosis MapGeneratedToSourceAndCreateDiagnosis(string? codeFileName, int line, int column, string message, DiagnosisType type)
-        {
-            if (codeFileName == null)
-            {
-                return new Diagnosis(message, WorkflowStage.ParserCompiled, type);
-            }
-
-            Diagnosis diagnosis;
-
-            if (_grammarCodeMapping.TryGetValue(codeFileName, out List<TextSpanMapping> textSpanMappings))
-            {
-                string? grammarFileName = GetGrammarFromCodeFileName(CurrentRuntimeInfo, codeFileName);
-                if (TryGetSourceTextSpanForLine(textSpanMappings, line, out TextSpan textSpan))
-                {
-                    return new Diagnosis(textSpan, $"{grammarFileName}:{textSpan.LineColumn.BeginLine}:{message}",
-                        WorkflowStage.ParserCompiled, type);
-                }
-
-                return new Diagnosis(message, WorkflowStage.ParserCompiled, type);
-            }
-            else
-            {
-                var grammarFilesData = Result.ParserGeneratedState.GrammarCheckedState.GrammarFilesData;
-                CodeSource? grammarSource =
-                    grammarFilesData.FirstOrDefault(file => file.Key.EndsWith(codeFileName, StringComparison.OrdinalIgnoreCase)).Value;
-
-                TextSpan? textSpan = grammarSource != null
-                    ? new LineColumnTextSpan(line, column, grammarSource).GetTextSpan()
-                    : null;
-                diagnosis = textSpan != null
-                    ? new Diagnosis(textSpan.Value, message, WorkflowStage.ParserCompiled, type)
-                    : new Diagnosis(message, WorkflowStage.ParserCompiled, type);
-            }
-
-            return diagnosis;
-        }
-
-        private string? GetGrammarFromCodeFileName(RuntimeInfo runtimeInfo, string codeFileName)
-        {
-            string? result = Grammar.Files.FirstOrDefault(file => file.EndsWith(codeFileName));
-            if (result != null)
-            {
-                return result;
-            }
-
-            result = Path.GetFileNameWithoutExtension(codeFileName);
-
-            if (Grammar.Type == GrammarType.Combined)
-            {
-                if (result.EndsWith(runtimeInfo.LexerPostfix))
-                {
-                    result = result.Remove(result.Length - runtimeInfo.LexerPostfix.Length);
-                }
-                else if (result.EndsWith(runtimeInfo.ParserPostfix))
-                {
-                    result = result.Remove(result.Length - runtimeInfo.ParserPostfix.Length);
-                }
-            }
-
-            result = result + Grammar.AntlrDotExt;
-
-            return Grammar.Files.FirstOrDefault(file => file.EndsWith(result));
-        }
-
-        private static bool TryGetSourceTextSpanForLine(List<TextSpanMapping> textSpanMappings, int destinationLine,
-            out TextSpan textSpan)
-        {
-            foreach (TextSpanMapping textSpanMapping in textSpanMappings)
-            {
-                LineColumnTextSpan destLineColumnTextSpan = textSpanMapping.DestTextSpan.LineColumn;
-                if (destinationLine >= destLineColumnTextSpan.BeginLine &&
-                    destinationLine <= destLineColumnTextSpan.EndLine)
-                {
-                    textSpan = textSpanMapping.SourceTextSpan;
-                    return true;
-                }
-            }
-
-            if (textSpanMappings.Count > 0)
-            {
-                textSpan = TextSpan.GetEmpty(textSpanMappings[0].SourceTextSpan.Source);
-                return true;
-            }
-
-            textSpan = default;
-            return false;
         }
     }
 }

@@ -2,12 +2,14 @@
 using System;
 using System.IO;
 using System.Threading;
+using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Processors
 {
     public class GrammarChecker : StageProcessor
     {
+        private int _currentFragmentNumber;
         private readonly GrammarCheckedState _result;
 
         public GrammarChecker(InputState inputState)
@@ -15,7 +17,7 @@ namespace AntlrGrammarEditor.Processors
             _result = new GrammarCheckedState(inputState);
         }
 
-        public GrammarCheckedState Check( CancellationToken cancellationToken = default)
+        public GrammarCheckedState Check(CancellationToken cancellationToken = default)
         {
             var grammar = _result.InputState.Grammar;
             try
@@ -39,10 +41,9 @@ namespace AntlrGrammarEditor.Processors
 
         private void ProcessGrammarFile(Grammar grammar, string grammarFileName, CancellationToken cancellationToken)
         {
-            string code = File.ReadAllText(Path.Combine(grammar.Directory, grammarFileName));
-            var inputStream = new AntlrInputStream(code);
-            var codeSource = new CodeSource(grammarFileName, inputStream.ToString());
-            _result.GrammarFilesData.Add(grammarFileName, codeSource);
+            string grammarCode = File.ReadAllText(Path.Combine(grammar.Directory, grammarFileName));
+            var inputStream = new AntlrInputStream(grammarCode);
+            var grammarCodeSource = new Source(grammarFileName, grammarCode);
 
             string extension = Path.GetExtension(grammarFileName);
             if (extension != Grammar.AntlrDotExt)
@@ -50,7 +51,7 @@ namespace AntlrGrammarEditor.Processors
                 return;
             }
 
-            var antlrErrorListener = new AntlrErrorListener(codeSource);
+            var antlrErrorListener = new AntlrErrorListener(grammarCodeSource);
             antlrErrorListener.ErrorEvent += DiagnosisEvent;
             antlrErrorListener.ErrorEvent += (sender, error) =>
             {
@@ -72,11 +73,12 @@ namespace AntlrGrammarEditor.Processors
 
             var tree = antlr4Parser.grammarSpec();
 
-            var grammarInfoCollectorListener = new GrammarInfoCollectorListener(antlrErrorListener.CodeSource);
+            var grammarInfoCollectorListener = new GrammarInfoCollectorListener(antlrErrorListener.Source, _currentFragmentNumber);
             grammarInfoCollectorListener.CollectInfo(tree);
+            _currentFragmentNumber = grammarInfoCollectorListener.CurrentFragmentNumber;
 
-            var shortFileName = Path.GetFileNameWithoutExtension(grammarFileName);
-            _result.GrammarActionsTextSpan[grammarFileName] = grammarInfoCollectorListener.CodeInsertions;
+            _result.GrammarInfos.Add(grammarFileName,
+                new GrammarInfo(grammarCodeSource, grammarInfoCollectorListener.Fragments));
 
             var grammarType = grammarInfoCollectorListener.GrammarType;
 
@@ -97,13 +99,13 @@ namespace AntlrGrammarEditor.Processors
                 _result.AddDiagnosis(diagnosis);
             }
 
-            var caseInsensitiveTypeOptionMatcher = new CaseInsensitiveTypeOptionMatcher(codeSource, grammarType, DiagnosisAction);
-            var runtimeOptionMatcher = new RuntimeOptionMatcher(codeSource, grammarType, DiagnosisAction);
-            var visitorOptionMatcher = new VisitorOptionMatcher(codeSource, grammarType, DiagnosisAction);
-            var listenerOptionMatcher = new ListenerOptionMatcher(codeSource, grammarType, DiagnosisAction);
-            var packageOptionMatcher = new PackageOptionMatcher(codeSource, grammarType, DiagnosisAction);
-            var rootOptionMatcher = new RootOptionMatcher(codeSource, grammarType, DiagnosisAction, _result.Rules);
-            var predictionOptionMatcher = new PredictionModeOptionMatcher(codeSource, grammarType, DiagnosisAction);
+            var caseInsensitiveTypeOptionMatcher = new CaseInsensitiveTypeOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
+            var runtimeOptionMatcher = new RuntimeOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
+            var visitorOptionMatcher = new VisitorOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
+            var listenerOptionMatcher = new ListenerOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
+            var packageOptionMatcher = new PackageOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
+            var rootOptionMatcher = new RootOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction, _result.Rules);
+            var predictionOptionMatcher = new PredictionModeOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
 
             foreach (IToken token in tokens)
             {

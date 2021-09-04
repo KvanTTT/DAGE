@@ -16,6 +16,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
 namespace DesktopAntlrGrammarEditor
@@ -39,8 +40,8 @@ namespace DesktopAntlrGrammarEditor
         private readonly ListBox _textErrorsListBox;
         private bool _autoprocessing;
         private WorkflowStage _endStage = WorkflowStage.TextParsed;
-        private CodeSource? _grammarCode;
-        private CodeSource? _text;
+        private Source? _grammarCode;
+        private Source? _text;
         private LineColumnTextSpan _grammarLineColumn;
         private LineColumnTextSpan _textLineColumn;
 
@@ -348,7 +349,7 @@ namespace DesktopAntlrGrammarEditor
                         _settings.Save();
 
                         _grammarTextBox.SetupHightlighting(value);
-                        _grammarCode = new CodeSource(_openedGrammarFile, _grammarTextBox.Text);
+                        _grammarCode = new Source(_openedGrammarFile, _grammarTextBox.Text);
 
                         this.RaisePropertyChanged();
                     }
@@ -515,7 +516,7 @@ namespace DesktopAntlrGrammarEditor
                     _settings.OpenedTextFile = value.FullFileName;
                     _settings.Save();
 
-                    _text = new CodeSource(_openedTextFile.ShortFileName, _textTextBox.Text);
+                    _text = new Source(_openedTextFile.ShortFileName, _textTextBox.Text);
                     ClearParseResult();
 
                     this.RaisePropertyChanged();
@@ -615,7 +616,7 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private LineColumnTextSpan GetSelectionLineColumn(TextEditor textBox, CodeSource source)
+        private LineColumnTextSpan GetSelectionLineColumn(TextEditor textBox, Source source)
         {
             try
             {
@@ -803,12 +804,12 @@ namespace DesktopAntlrGrammarEditor
             grammarTextBoxObservable
                 .Throttle(TimeSpan.FromMilliseconds(200))
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(x => _grammarCode = new CodeSource(_openedGrammarFile, _grammarTextBox.Text));
+                .Subscribe(x => _grammarCode = new Source(_openedGrammarFile, _grammarTextBox.Text));
 
             textBoxObservable
                 .Throttle(TimeSpan.FromMilliseconds(200))
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(x => _text = new CodeSource(_openedTextFile.ShortFileName, _text?.Text ?? ""));
+                .Subscribe(x => _text = new Source(_openedTextFile.ShortFileName, _text?.Text ?? ""));
 
             Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(100), RxApp.MainThreadScheduler)
                 .Subscribe(_ =>

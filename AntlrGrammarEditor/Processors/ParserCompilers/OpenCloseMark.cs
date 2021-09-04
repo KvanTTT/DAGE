@@ -2,8 +2,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class OpenCloseMark : Mark
     {
-        public OpenCloseMark(string name, RuntimeInfo runtimeInfo)
-            : base(name, runtimeInfo)
+        public OpenCloseMark(string name, RuntimeInfo runtimeInfo, string suffix = "$")
+            : base(name, runtimeInfo, suffix)
         {
         }
 

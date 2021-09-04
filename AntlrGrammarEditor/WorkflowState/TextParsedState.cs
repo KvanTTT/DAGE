@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor.WorkflowState
 {
@@ -10,7 +11,7 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public override WorkflowState PreviousState => ParserCompiledState;
 
-        public CodeSource? Text { get; }
+        public Source? Text { get; }
 
         public string? Root { get; set; }
 
@@ -27,7 +28,7 @@ namespace AntlrGrammarEditor.WorkflowState
         public string RootOrDefault =>
             Root ?? (ParserCompiledState.ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault() ?? "");
 
-        public TextParsedState(ParserCompiledState parserCompiledState, CodeSource? text)
+        public TextParsedState(ParserCompiledState parserCompiledState, Source? text)
         {
             ParserCompiledState = parserCompiledState;
             Text = text;

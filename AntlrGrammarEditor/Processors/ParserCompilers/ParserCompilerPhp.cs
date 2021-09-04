@@ -2,6 +2,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using AntlrGrammarEditor.WorkflowState;
+using static AntlrGrammarEditor.Helpers;
 
 namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
@@ -13,7 +14,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         // PHP Parse error:  syntax error, unexpected ';' in <file_name.php> on line 145
         protected override Regex ParserCompilerMessageRegex { get; } =
-            new($@"^([^:]+):\s*(?<{Helpers.MessageMark}>.+?) in (?<{FileMark}>[^>]+) on line (?<{LineMark}>\d+)",
+            new($@"^([^:]+):\s*(?<{MessageMark}>.+?) in (?<{FileMark}>[^>]+) on line (?<{LineMark}>\d+)",
                 RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()

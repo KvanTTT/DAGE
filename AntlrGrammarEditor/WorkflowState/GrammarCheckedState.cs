@@ -12,9 +12,7 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public InputState InputState { get; }
 
-        public Dictionary<string, CodeSource> GrammarFilesData { get; } = new();
-
-        public Dictionary<string, List<CodeInsertion>> GrammarActionsTextSpan { get; } = new();
+        public Dictionary<string, GrammarInfo> GrammarInfos { get; } = new();
 
         public CaseInsensitiveType CaseInsensitiveType { get; set; }
 

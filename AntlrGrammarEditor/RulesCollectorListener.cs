@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
+using AntlrGrammarEditor.Fragments;
+using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor
 {
@@ -8,22 +10,26 @@ namespace AntlrGrammarEditor
     {
         private bool _question;
         private bool _lexerRule, _parserRule;
+        private int _currentFragmentNumber;
 
         public List<string> Rules { get; } = new();
 
-        public List<CodeInsertion> CodeInsertions { get; } = new();
+        public List<Fragment> Fragments { get; } = new();
 
         public string? GrammarName { get; private set; }
 
-        public CodeSource GrammarSource { get; }
+        public Source GrammarSource { get; }
 
         public GrammarType GrammarType { get; private set; }
 
         public string? SuperClass { get; private set; }
 
-        public GrammarInfoCollectorListener(CodeSource grammarSource)
+        public int CurrentFragmentNumber => _currentFragmentNumber;
+
+        public GrammarInfoCollectorListener(Source grammarSource, int currentFragmentNumber)
         {
             GrammarSource = grammarSource;
+            _currentFragmentNumber = currentFragmentNumber;
         }
 
         public void CollectInfo(ANTLRv4Parser.GrammarSpecContext context)
@@ -143,14 +149,12 @@ namespace AntlrGrammarEditor
 
         public override void EnterActionBlock([NotNull] ANTLRv4Parser.ActionBlockContext context)
         {
-            var text = context.GetText();
-            text = text.Substring(1, text.Length - 2);
             var textSpan = context.GetTextSpan(GrammarSource);
             textSpan = new TextSpan(textSpan.Start + 1, textSpan.Length - 2, GrammarSource);
 
             if (_lexerRule || _parserRule)
             {
-                CodeInsertions.Add(new CodeInsertion(textSpan, text, _lexerRule, _question));
+                Fragments.Add(new Fragment(textSpan, _currentFragmentNumber++, _lexerRule, _question));
             }
         }
     }

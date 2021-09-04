@@ -1,5 +1,6 @@
 ﻿using System;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor
 {
@@ -18,14 +19,14 @@ namespace AntlrGrammarEditor
         {
         }
 
-        public Diagnosis(int line, int column, string message, CodeSource codeSource, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
-            : this(new LineColumnTextSpan(line, column, codeSource).GetTextSpan(), message, stage, type)
+        public Diagnosis(int line, int column, string message, Source source, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
+            : this(new LineColumnTextSpan(line, column, source).GetTextSpan(), message, stage, type)
         {
         }
 
         public Diagnosis(int beginLine, int beginColumn, int endLine, int endColumn,
-            string message, CodeSource codeSource, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
-            : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, codeSource).GetTextSpan(), message, stage, type)
+            string message, Source source, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
+            : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, source).GetTextSpan(), message, stage, type)
         {
         }
 

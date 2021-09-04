@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
+using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Processors
@@ -12,8 +13,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Lexer;
 
-        public CaseInsensitiveTypeOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
-            base(codeSource, grammarType, diagnosisEvent)
+        public CaseInsensitiveTypeOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
+            base(source, grammarType, diagnosisEvent)
         {
         }
     }
@@ -24,8 +25,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Combined;
 
-        public RuntimeOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
-            : base(codeSource, grammarType, diagnosisEvent)
+        public RuntimeOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+            : base(source, grammarType, diagnosisEvent)
         {
         }
     }
@@ -36,8 +37,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Combined;
 
-        public PackageOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
-            : base(codeSource, grammarType, diagnosisEvent)
+        public PackageOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+            : base(source, grammarType, diagnosisEvent)
         {
         }
     }
@@ -48,8 +49,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Separated;
 
-        public VisitorOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
-            base(codeSource, grammarType, diagnosisEvent)
+        public VisitorOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
+            base(source, grammarType, diagnosisEvent)
         {
         }
     }
@@ -60,8 +61,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Separated;
 
-        public ListenerOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
-            base(codeSource, grammarType, diagnosisEvent)
+        public ListenerOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
+            base(source, grammarType, diagnosisEvent)
         {
         }
     }
@@ -74,8 +75,8 @@ namespace AntlrGrammarEditor.Processors
 
         private List<string> ExistingRules { get; }
 
-        public RootOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent, List<string> existingRules)
-            : base(codeSource, grammarType, diagnosisEvent)
+        public RootOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent, List<string> existingRules)
+            : base(source, grammarType, diagnosisEvent)
         {
             ExistingRules = existingRules;
         }
@@ -84,7 +85,7 @@ namespace AntlrGrammarEditor.Processors
         {
             if (GrammarType != GrammarType.Lexer && !ExistingRules.Contains(group.Value))
             {
-                ReportWarning($"Root {group.Value} is not exist", token, group, CodeSource);
+                ReportWarning($"Root {group.Value} is not exist", token, group, Source);
                 return false;
             }
 
@@ -98,8 +99,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected override GrammarType OptionGrammarType => GrammarType.Separated;
 
-        public PredictionModeOptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
-            : base(codeSource, grammarType, diagnosisEvent)
+        public PredictionModeOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+            : base(source, grammarType, diagnosisEvent)
         {
         }
     }
@@ -110,7 +111,7 @@ namespace AntlrGrammarEditor.Processors
 
         public Regex Regex { get; }
 
-        public CodeSource CodeSource { get; }
+        public Source Source { get; }
 
         public GrammarType GrammarType { get; }
 
@@ -120,10 +121,10 @@ namespace AntlrGrammarEditor.Processors
 
         public Action<Diagnosis> ErrorAction { get; }
 
-        protected OptionMatcher(CodeSource codeSource, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+        protected OptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
         {
             Regex = new Regex($@"({Name})\s*=\s*(\w+);", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            CodeSource = codeSource ?? throw new ArgumentNullException(nameof(codeSource));
+            Source = source ?? throw new ArgumentNullException(nameof(source));
             GrammarType = grammarType;
             ErrorAction = diagnosisEvent ?? throw new ArgumentNullException(nameof(diagnosisEvent));
         }
@@ -140,7 +141,7 @@ namespace AntlrGrammarEditor.Processors
 
                 if (IsAlreadyDefined)
                 {
-                    ReportWarning($"Option {optionName} is already defined", token, group, CodeSource);
+                    ReportWarning($"Option {optionName} is already defined", token, group, Source);
                 }
 
                 IsAlreadyDefined = true;
@@ -157,7 +158,7 @@ namespace AntlrGrammarEditor.Processors
                         var allowedValues = (T[]) Enum.GetValues(typeof(T));
                         ReportWarning(
                             $"Incorrect option {optionName} '{group.Value}'. Allowed values: {string.Join(", ", allowedValues)}",
-                            token, group, CodeSource);
+                            token, group, Source);
                     }
                 }
                 else if (valueType == typeof(bool))
@@ -170,7 +171,7 @@ namespace AntlrGrammarEditor.Processors
                     {
                         ReportWarning(
                             $"Incorrect option {optionName} '{group.Value}'. Allowed values: true, false",
-                            token, group, CodeSource);
+                            token, group, Source);
                     }
                 }
                 else if (valueType == typeof(string))
@@ -194,7 +195,7 @@ namespace AntlrGrammarEditor.Processors
                 {
                     ReportWarning(
                         $"Option {optionName} should be defined in {(parserWarning ? "parser" : "lexer")} or combined grammar",
-                        token, group, CodeSource);
+                        token, group, Source);
                 }
 
                 if (!AdditionalCheck(token, group))
@@ -211,12 +212,12 @@ namespace AntlrGrammarEditor.Processors
 
         protected virtual bool AdditionalCheck(IToken token, Group group) => true;
 
-        protected void ReportWarning(string message, IToken token, Group group, CodeSource codeSource)
+        protected void ReportWarning(string message, IToken token, Group group, Source source)
         {
-            var warningTextSpan = new TextSpan(token.StartIndex + group.Index, group.Length, codeSource);
-            var lineColumn = codeSource.ToLineColumn(warningTextSpan);
+            var warningTextSpan = new TextSpan(token.StartIndex + group.Index, group.Length, source);
+            var lineColumn = source.ToLineColumn(warningTextSpan);
             var error = new Diagnosis(warningTextSpan,
-                Helpers.FormatErrorMessage(codeSource, lineColumn.BeginLine, lineColumn.BeginColumn, message, true),
+                Helpers.FormatErrorMessage(source, lineColumn.BeginLine, lineColumn.BeginColumn, message, true),
                 WorkflowStage.GrammarChecked, DiagnosisType.Error);
             ErrorAction(error);
         }

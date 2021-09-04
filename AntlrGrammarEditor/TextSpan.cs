@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor
 {
@@ -8,15 +10,17 @@ namespace AntlrGrammarEditor
 
         public int Length { get; }
 
-        public CodeSource Source { get; }
+        public Source Source { get; }
 
         public LineColumnTextSpan LineColumn => Source.ToLineColumn(this);
 
-        public static TextSpan GetEmpty(CodeSource source) => new TextSpan(0, 0, source);
+        public ReadOnlySpan<Char> Span => Source.Text.AsSpan().Slice(Start, Length);
 
-        public TextSpan(int start, int length, CodeSource codeSource)
+        public static TextSpan GetEmpty(Source source) => new TextSpan(0, 0, source);
+
+        public TextSpan(int start, int length, Source source)
         {
-            Source = codeSource ?? throw new ArgumentNullException(nameof(codeSource));
+            Source = source ?? throw new ArgumentNullException(nameof(source));
 
             if (start < 0)
             {
@@ -36,7 +40,7 @@ namespace AntlrGrammarEditor
 
         public bool IsEmpty => Start == 0 && Length == 0;
 
-        public static TextSpan FromBounds(int start, int end, CodeSource source)
+        public static TextSpan FromBounds(int start, int end, Source source)
         {
             return new TextSpan(start, end - start, source);
         }
@@ -69,7 +73,7 @@ namespace AntlrGrammarEditor
 
         public override string ToString()
         {
-            return Start == End ? $"[{Start})" : $"[{Start}..{End})";
+            return Start == End ? $"[{Start})" : $"[{Start}..{End}) in {Path.GetFileName(Source.Name)}";
         }
     }
 }

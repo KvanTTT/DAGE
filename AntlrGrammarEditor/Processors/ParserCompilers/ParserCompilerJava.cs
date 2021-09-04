@@ -2,6 +2,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using AntlrGrammarEditor.WorkflowState;
+using static AntlrGrammarEditor.Helpers;
 
 namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
@@ -13,7 +14,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         // Lexer.java:98: error: cannot find symbol
         protected override Regex ParserCompilerMessageRegex { get; } =
-            new($@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+): ?(?<{TypeMark}>[^:]+): ?(?<{Helpers.MessageMark}>.+)",
+            new($@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+): ?(?<{TypeMark}>[^:]+): ?(?<{MessageMark}>.+)",
                 RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()

@@ -149,7 +149,8 @@ namespace AntlrGrammarEditor
                 mainFile: "index.php",
                 antlrInputStream: "InputStream",
                 runtimeToolName: "php",
-                versionArg: "--version"
+                versionArg: "--version",
+                interpreted: true
             ),
             [Runtime.Dart] = new RuntimeInfo
             (

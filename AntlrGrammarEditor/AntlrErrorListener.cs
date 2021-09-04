@@ -1,6 +1,7 @@
 ﻿using Antlr4.Runtime;
 using System;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor
 {
@@ -8,28 +9,28 @@ namespace AntlrGrammarEditor
     {
         public event EventHandler<Diagnosis>? ErrorEvent;
 
-        public CodeSource CodeSource { get; }
+        public Source Source { get; }
 
-        public AntlrErrorListener(CodeSource codeSource)
+        public AntlrErrorListener(Source source)
         {
-            CodeSource = codeSource;
+            Source = source;
         }
 
         public void SyntaxError(IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine,
             string msg, RecognitionException e)
         {
             int column = charPositionInLine + 1;
-            var message = Helpers.FormatErrorMessage(CodeSource, line, column, msg);
-            var start = CodeSource.LineColumnToPosition(line, column);
-            var parserError = new Diagnosis(TextHelpers.ExtractTextSpan(start, msg, CodeSource), message,
+            var message = Helpers.FormatErrorMessage(Source, line, column, msg);
+            var start = Source.LineColumnToPosition(line, column);
+            var parserError = new Diagnosis(TextHelpers.ExtractTextSpan(start, msg, Source), message,
                 WorkflowStage.GrammarChecked);
             ErrorEvent?.Invoke(this, parserError);
         }
 
         public void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
         {
-            var message = Helpers.FormatErrorMessage(CodeSource, line, charPositionInLine + 1, msg);
-            var textSpan = TextSpan.FromBounds(offendingSymbol.StartIndex, offendingSymbol.StopIndex + 1, CodeSource);
+            var message = Helpers.FormatErrorMessage(Source, line, charPositionInLine + 1, msg);
+            var textSpan = TextSpan.FromBounds(offendingSymbol.StartIndex, offendingSymbol.StopIndex + 1, Source);
             var lexerError = new Diagnosis(textSpan, message, WorkflowStage.GrammarChecked, DiagnosisType.Error);
             ErrorEvent?.Invoke(this, lexerError);
         }

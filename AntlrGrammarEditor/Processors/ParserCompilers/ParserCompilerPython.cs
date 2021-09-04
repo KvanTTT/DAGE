@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using AntlrGrammarEditor.WorkflowState;
+using static AntlrGrammarEditor.Helpers;
 
 namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
@@ -103,7 +104,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 }
             }
 
-            AddDiagnosis(MapGeneratedToSourceAndCreateDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error));
+            AddDiagnosis(CreateMappedGrammarDiagnosis(codeFileName, line, LineColumnTextSpan.StartColumn, message, DiagnosisType.Error));
         }
     }
 }
