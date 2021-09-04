@@ -112,7 +112,7 @@ namespace DesktopAntlrGrammarEditor
 
             var availableRuntimes = new[]
             {
-                Runtime.Java, Runtime.CSharpStandard, Runtime.CSharpOptimized, Runtime.Python2, Runtime.Python3,
+                Runtime.Java, Runtime.CSharpStandard, Runtime.CSharpOptimized, Runtime.Python,
                 Runtime.JavaScript, Runtime.Go, Runtime.Php, Runtime.Dart
             };
 

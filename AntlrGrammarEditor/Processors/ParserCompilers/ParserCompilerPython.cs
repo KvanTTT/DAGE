@@ -1,5 +1,4 @@
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using AntlrGrammarEditor.WorkflowState;
@@ -35,45 +34,11 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
             if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
             {
-                string antlrCaseInsensitiveInputStream =
-                    File.ReadAllText(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.py"));
-                string superCall, strType, intType, boolType;
-
-                if (CurrentRuntimeInfo.Runtime == Runtime.Python2)
-                {
-                    superCall = "type(self), self";
-                    strType = "";
-                    intType = "";
-                    boolType = "";
-                }
-                else
-                {
-                    superCall = "";
-                    strType = ": str";
-                    intType = ": int";
-                    boolType = ": bool";
-                }
-
-                antlrCaseInsensitiveInputStream = antlrCaseInsensitiveInputStream
-                    .Replace("'''SuperCall'''", superCall)
-                    .Replace("''': str'''", strType)
-                    .Replace("''': int'''", intType)
-                    .Replace("''': bool'''", boolType);
-
                 File.WriteAllText(Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.py"),
-                    antlrCaseInsensitiveInputStream);
+                    File.ReadAllText(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.py")));
             }
 
-            var compileTestFileName = CreateHelperFile(stringBuilder);
-
-            string arguments = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                arguments += CurrentRuntimeInfo.Runtime == Runtime.Python2 ? "-2 " : "-3 ";
-            }
-            arguments += compileTestFileName;
-
-            return arguments;
+            return CreateHelperFile(stringBuilder);
         }
 
         protected override void ProcessReceivedData(string data)

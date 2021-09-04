@@ -71,8 +71,7 @@ namespace AntlrGrammarEditor.Processors
                         toolName = PrepareJavaToolAndArgs(runtimeLibraryPath, out args);
                         break;
 
-                    case Runtime.Python2:
-                    case Runtime.Python3:
+                    case Runtime.Python:
                         toolName = PreparePythonToolAndArgs(runtimeInfo, out args);
                         break;
 
@@ -134,12 +133,7 @@ namespace AntlrGrammarEditor.Processors
 
         private static string PreparePythonToolAndArgs(RuntimeInfo runtimeInfo, out string args)
         {
-            args = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                args += runtimeInfo.Runtime == Runtime.Python2 ? "-2 " : "-3 ";
-            }
-            args += runtimeInfo.MainFile;
+            args = runtimeInfo.MainFile;
             return runtimeInfo.RuntimeToolName;
         }
 

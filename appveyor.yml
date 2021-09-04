@@ -20,17 +20,7 @@ before_build:
         $env:GOPATH = "$HOME/go"
     }
 
-    if ($isWindows) {
-        py -2 -V
-    } else {
-        python2 -V
-    }
-
-    if ($isWindows) {
-        py -3 -V
-    } else {
-        python3 -V
-    }
+    python -V
 
     node -v
 
@@ -42,12 +32,8 @@ build_script:
     if ($isWindows) {
         python -m pip install --upgrade pip
 
-        C:\Python27-x64\Scripts\pip.exe install antlr4-python2-runtime
-
         C:\Python35-x64\Scripts\pip.exe install antlr4-python3-runtime
     } else {
-        sudo pip2 install antlr4-python2-runtime
-
         sudo pip3 install antlr4-python3-runtime
     }
 

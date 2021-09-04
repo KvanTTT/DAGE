@@ -1,4 +1,4 @@
-import sys;
+import sys
 from antlr4.InputStream import InputStream
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.ListTokenSource import ListTokenSource
@@ -8,33 +8,33 @@ from __TemplateGrammarName__Lexer import __TemplateGrammarName__Lexer
 '''$AntlrCaseInsensitive'''from AntlrCaseInsensitiveInputStream import AntlrCaseInsensitiveInputStream'''AntlrCaseInsensitive$'''
 
 def main(argv):
-    fileName = '../../Text'
+    file_name = '../../Text'
 
-    argvLen = len(argv)
-    if argvLen > 0:
-        fileName = argv[1]
+    argv_len = len(argv)
+    if argv_len > 0:
+        file_name = argv[1]
 
-    code = open(fileName, 'r').read()
-    codeStream = InputStream(code)
-    lexer = __TemplateGrammarName__Lexer(codeStream)
+    code = open(file_name, 'r').read()
+    code_stream = InputStream(code)
+    lexer = __TemplateGrammarName__Lexer(code_stream)
     tokens = lexer.getAllTokens()
 
 '''$ParserPart'''
     mode = 'll'
-    if argvLen > 1:
-        rootRule = argv[2]
-        if argvLen > 2:
+    if argv_len > 1:
+        root_rule = argv[2]
+        if argv_len > 2:
             # TODO: onlyTokenize parameter processing
-            if argvLen > 3:
+            if argv_len > 3:
                 mode = argv[4].lower()
 
-    tokensSource = ListTokenSource(tokens)
-    tokensStream = CommonTokenStream(tokensSource)
-    parser = __TemplateGrammarName__Parser(tokensStream)
+    tokens_source = ListTokenSource(tokens)
+    tokens_stream = CommonTokenStream(tokens_source)
+    parser = __TemplateGrammarName__Parser(tokens_stream)
     parser._interp.predictionMode = PredictionMode.SLL if mode == "sll" else PredictionMode.LL if mode == "ll" else PredictionMode.LL_EXACT_AMBIG_DETECTION
-    ruleName = __TemplateGrammarName__Parser.ruleNames[0] if rootRule is None else rootRule
+    ruleName = __TemplateGrammarName__Parser.ruleNames[0] if root_rule is None else root_rule
     tree = getattr(parser, ruleName)()
-    '''$PrintTree$'''
+    print("Tree ", tree.toStringTree(recog=parser))
 '''ParserPart$'''
 
 if __name__ == '__main__':

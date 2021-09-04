@@ -46,26 +46,9 @@ namespace AntlrGrammarEditor
                 runtimeToolName: "javac",
                 versionArg: "-version"
             ),
-            [Runtime.Python2] = new RuntimeInfo
+            [Runtime.Python] = new RuntimeInfo
             (
-                runtime: Runtime.Python2,
-                name: "Python2",
-                dLanguage: "Python2",
-                runtimeLibrary: "",
-                extensions: new[] { "py" },
-                mainFile: "main.py",
-                antlrInputStream: "InputStream",
-                interpreted: true,
-                runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python2",
-                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-2 " : "") + "--version",
-                baseListenerPostfix: null,
-                baseVisitorPostfix: null,
-                startCommentToken: "'''",
-                endCommentToken: "'''"
-            ),
-            [Runtime.Python3] = new RuntimeInfo
-            (
-                runtime: Runtime.Python3,
+                runtime: Runtime.Python,
                 name: "Python3",
                 dLanguage: "Python3",
                 runtimeLibrary: "",
@@ -73,8 +56,8 @@ namespace AntlrGrammarEditor
                 mainFile: "main.py",
                 antlrInputStream: "InputStream",
                 interpreted: true,
-                runtimeToolName: RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "py" : "python3",
-                versionArg: (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-3 " : "") + "--version",
+                runtimeToolName: "python",
+                versionArg: "--version",
                 baseListenerPostfix: null,
                 baseVisitorPostfix: null,
                 startCommentToken: "'''",
@@ -210,7 +193,7 @@ namespace AntlrGrammarEditor
                     }
 
                     processor.Start();
-                    if (runtime.IsPythonRuntime() && version.StartsWith("Python", StringComparison.OrdinalIgnoreCase))
+                    if (runtime == Runtime.Python && version.StartsWith("Python", StringComparison.OrdinalIgnoreCase))
                         version = version.Substring("Python".Length);
                     else if (version.StartsWith(runtimeInfo.RuntimeToolName, StringComparison.OrdinalIgnoreCase))
                         version = version.Substring(runtimeInfo.RuntimeToolName.Length);

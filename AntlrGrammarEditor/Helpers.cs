@@ -115,22 +115,12 @@ namespace AntlrGrammarEditor
                 return "CSharp";
             }
 
-            if (runtime.IsPythonRuntime())
-            {
-                return "Python";
-            }
-
             return runtime.ToString();
         }
 
         public static bool IsCSharpRuntime(this Runtime runtime)
         {
             return runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard;
-        }
-
-        public static bool IsPythonRuntime(this Runtime runtime)
-        {
-            return runtime == Runtime.Python2 || runtime == Runtime.Python3;
         }
 
         public static string FormatErrorMessage(Source source, int line, int charPositionInLine, string msg, bool isWarning = false)

@@ -345,7 +345,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
                 var antlrInputStreamRegex = new Regex($@"{antlrInputStream}\(([^\)]+)\)");
                 string isLowerBool = (Grammar.CaseInsensitiveType == CaseInsensitiveType.lower).ToString();
-                if (!runtime.IsPythonRuntime())
+                if (runtime != Runtime.Python)
                 {
                     isLowerBool = isLowerBool.ToLowerInvariant();
                 }
@@ -353,20 +353,13 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 code = antlrInputStreamRegex.Replace(code,
                     m => $"{caseInsensitiveStream}({m.Groups[1].Value}, {isLowerBool})");
 
-                if (runtime.IsPythonRuntime())
+                if (runtime == Runtime.Python)
                     code = code.Replace("from antlr4.InputStream import InputStream", "");
             }
 
             RemoveCodeWithinMarkOrRemoveMark(ref code, _caseInsensitiveMark, Grammar.CaseInsensitiveType == CaseInsensitiveType.None);
 
-            if (runtime.IsPythonRuntime())
-            {
-                string newValue = runtime == Runtime.Python2
-                    ? "print \"Tree \" + tree.toStringTree(recog=parser)"
-                    : "print(\"Tree \", tree.toStringTree(recog=parser))";
-                code = code.Replace("'''$PrintTree$'''", newValue);
-            }
-            else if (runtime == Runtime.Dart)
+            if (runtime == Runtime.Dart)
             {
                 RemoveCodeWithinMarkOrRemoveMark(ref code, _lexerIncludeMark, !isPackageNameEmpty);
             }

@@ -17,8 +17,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 case Runtime.Java:
                     result = new ParserCompilerJava(state);
                     break;
-                case Runtime.Python2:
-                case Runtime.Python3:
+                case Runtime.Python:
                     result = new ParserCompilerPython(state);
                     break;
                 case Runtime.JavaScript:
