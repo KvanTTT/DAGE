@@ -15,6 +15,7 @@ using System.Reactive.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;

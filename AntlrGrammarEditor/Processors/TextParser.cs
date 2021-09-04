@@ -2,15 +2,21 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading;
+using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors.ParserCompilers;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
+using static AntlrGrammarEditor.Helpers;
 
 namespace AntlrGrammarEditor.Processors
 {
     public class TextParser : StageProcessor
     {
+        private static readonly Regex TextParserErrorMessageRegex =
+            new ($@"line (?<{LineMark}>\d+):(?<{ColumnMark}>\d+) (?<{MessageMark}>.+)", RegexOptions.Compiled);
+
         private readonly TextParsedState _result;
 
         public string? TextFileName { get; }
@@ -38,7 +44,7 @@ namespace AntlrGrammarEditor.Processors
 
         public TextParsedState Parse(CancellationToken cancellationToken = default)
         {
-            if (_result.Text == null)
+            if (_result.TextSource == null)
             {
                 _result.AddDiagnosis(new Diagnosis("File to parse is not specified", WorkflowStage.TextParsed));
                 return _result;
@@ -156,21 +162,26 @@ namespace AntlrGrammarEditor.Processors
         {
             if (!e.IsIgnoredMessage(_result.ParserCompiledState.ParserGeneratedState.Runtime))
             {
-                var diagnosisString = Helpers.FixEncoding(e.Data);
+                var diagnosisString = FixEncoding(e.Data);
                 Diagnosis diagnosis;
                 try
                 {
-                    var words = diagnosisString.Split(new[] {' '}, 3);
-                    var parts = words[1].Split(':');
-                    string diagnosisMessage = words[2];
-                    int.TryParse(parts[0], out int beginLine);
-                    int.TryParse(parts[1], out int beginColumn);
-                    beginColumn += 1;
-                    var text = _result.Text!;
-                    int start = text.LineColumnToPosition(beginLine, beginColumn);
-                    diagnosisString = $"{words[0]} {beginLine}:{beginColumn} {words[2]}";
-                    diagnosis = new Diagnosis(TextHelpers.ExtractTextSpan(start, diagnosisMessage, text),
-                        diagnosisString, WorkflowStage.TextParsed);
+                    var match = TextParserErrorMessageRegex.Match(diagnosisString);
+                    if (match.Success)
+                    {
+                        var groups = match.Groups;
+                        int beginLine = int.Parse(groups[LineMark].Value);
+                        int beginColumn = int.Parse(groups[ColumnMark].Value) + LineColumnTextSpan.StartColumn;
+                        var message = groups[MessageMark].Value;
+                        var textSource = _result.TextSource!;
+                        int start = textSource.LineColumnToPosition(beginLine, beginColumn);
+                        var textSpan = AntlrHelper.ExtractTextSpanFromErrorMessage(start, message, textSource);
+                        diagnosis = new Diagnosis(textSpan, message, WorkflowStage.TextParsed);
+                    }
+                    else
+                    {
+                        throw new FormatException("Incorrect ANTLR error format");
+                    }
                 }
                 catch
                 {

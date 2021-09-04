@@ -4,7 +4,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor
 {
@@ -121,11 +120,6 @@ namespace AntlrGrammarEditor
         public static bool IsCSharpRuntime(this Runtime runtime)
         {
             return runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard;
-        }
-
-        public static string FormatErrorMessage(Source source, int line, int charPositionInLine, string msg, bool isWarning = false)
-        {
-            return $"{(isWarning ? "Warning" : "Error")}: {Path.GetFileName(source.Name)}:{line}:{charPositionInLine}: {msg}";
         }
     }
 }

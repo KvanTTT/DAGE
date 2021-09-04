@@ -2,7 +2,7 @@
 using AntlrGrammarEditor.Processors;
 using AntlrGrammarEditor.Sources;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.Diagnoses
 {
     public class Diagnosis
     {
@@ -63,7 +63,9 @@ namespace AntlrGrammarEditor
 
         public override string ToString()
         {
-            return WorkflowStage + ":" + Message;
+            const string separator = ";";
+            var textSpanString = TextSpan.HasValue ? $"{separator} {TextSpan.Value.LineColumn}" : "";
+            return $"{WorkflowStage}{separator} {(Type == DiagnosisType.Warning ? "Warning" : "Error")}{textSpanString}{separator} {Message}";
         }
     }
 }

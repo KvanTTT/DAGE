@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Threading;
+using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 

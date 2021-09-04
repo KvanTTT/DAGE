@@ -56,7 +56,7 @@ namespace AntlrGrammarEditor.Sources
             line += LineColumnTextSpan.StartLine;
         }
 
-        public bool Equals(Source other) => Name.Equals(other.Name);
+        public bool Equals(Source other) => Name.Equals(other.Name) && Text == other.Text;
 
         public override string ToString() => Name;
     }

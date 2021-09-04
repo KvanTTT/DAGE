@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
+using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
@@ -214,11 +215,8 @@ namespace AntlrGrammarEditor.Processors
 
         protected void ReportWarning(string message, IToken token, Group group, Source source)
         {
-            var warningTextSpan = new TextSpan(token.StartIndex + group.Index, group.Length, source);
-            var lineColumn = source.ToLineColumn(warningTextSpan);
-            var error = new Diagnosis(warningTextSpan,
-                Helpers.FormatErrorMessage(source, lineColumn.BeginLine, lineColumn.BeginColumn, message, true),
-                WorkflowStage.GrammarChecked, DiagnosisType.Error);
+            var textSpan = new TextSpan(token.StartIndex + group.Index, group.Length, source);
+            var error = new Diagnosis(textSpan, message, WorkflowStage.GrammarChecked, DiagnosisType.Warning);
             ErrorAction(error);
         }
     }

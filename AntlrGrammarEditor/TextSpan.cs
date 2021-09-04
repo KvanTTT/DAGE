@@ -73,7 +73,7 @@ namespace AntlrGrammarEditor
 
         public override string ToString()
         {
-            return Start == End ? $"[{Start})" : $"[{Start}..{End}) in {Path.GetFileName(Source.Name)}";
+            return $"{LineColumn} (Linear)";
         }
     }
 }

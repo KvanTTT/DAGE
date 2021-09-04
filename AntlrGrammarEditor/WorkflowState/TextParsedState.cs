@@ -11,7 +11,7 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public override WorkflowState PreviousState => ParserCompiledState;
 
-        public Source? Text { get; }
+        public Source? TextSource { get; }
 
         public string? Root { get; set; }
 
@@ -28,10 +28,10 @@ namespace AntlrGrammarEditor.WorkflowState
         public string RootOrDefault =>
             Root ?? (ParserCompiledState.ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault() ?? "");
 
-        public TextParsedState(ParserCompiledState parserCompiledState, Source? text)
+        public TextParsedState(ParserCompiledState parserCompiledState, Source? textSource)
         {
             ParserCompiledState = parserCompiledState;
-            Text = text;
+            TextSource = textSource;
         }
     }
 }

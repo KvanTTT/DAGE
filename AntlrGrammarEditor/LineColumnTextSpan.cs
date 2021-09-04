@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor
@@ -116,7 +117,7 @@ namespace AntlrGrammarEditor
                     : $"[{BeginLine},{BeginColumn}..{EndLine},{EndColumn})";
             }
 
-            return result;
+            return result + $" in {Path.GetFileName(Source.Name)}";
         }
 
         private int GetHash(int x, int y)

@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Fragments;
 using AntlrGrammarEditor.Processors.ParserCompilers;
 using AntlrGrammarEditor.Sources;
@@ -21,10 +22,9 @@ namespace AntlrGrammarEditor.Processors
         public const string HelperDirectoryName = "DageHelperDirectory";
 
         // warning(180): .\test.g4:3:20: chars '\'' used multiple times in set ['' ]
-        private readonly Regex _parserGeneratorMessageRegex = new(
+        private static readonly Regex ParserGeneratorMessageRegex = new(
             $@"^(?<{TypeMark}>[^\(]+)\(\d+\): (?<{FileMark}>.+?):(?<{LineMark}>\d+):(?<{ColumnMark}>\d+): (?<{MessageMark}>.+)",
             RegexOptions.Compiled);
-
         private static readonly string FragmentMarkFormat = FragmentMarkWord + "{0:" + new string('0', FragmentMarkDigitsCount) + "}";
         private static readonly int FragmentMarkLength = new OpenCloseMark(string.Format(FragmentMarkFormat, 0),
             RuntimeInfo.Runtimes[Runtime.Java], FragmentMarkSuffix).OpenMark.Length;
@@ -154,7 +154,7 @@ namespace AntlrGrammarEditor.Processors
         {
             if (!e.IsIgnoredMessage(Runtime.Java))
             {
-                var match = _parserGeneratorMessageRegex.Match(e.Data);
+                var match = ParserGeneratorMessageRegex.Match(e.Data);
                 var groups = match.Groups;
                 var grammarFileName = Path.GetFileName(groups[FileMark].Value);
                 var line = int.Parse(groups[LineMark].Value);
@@ -163,9 +163,7 @@ namespace AntlrGrammarEditor.Processors
                 var diagnosisType = groups[TypeMark].Value == "warning" ? DiagnosisType.Warning : DiagnosisType.Error;
 
                 var textSpan = _result.GetOriginalTextSpanForLineColumn(grammarFileName, line, column);
-                var lineColumnTextSpan = textSpan.LineColumn;
-                var fullMessage = $"{diagnosisType.ToString()}: {grammarFileName}:{lineColumnTextSpan.BeginLine}:{lineColumnTextSpan.BeginColumn}: {message}";
-                var diagnosis = new Diagnosis(textSpan, fullMessage, WorkflowStage.ParserGenerated, diagnosisType);
+                var diagnosis = new Diagnosis(textSpan, message, WorkflowStage.ParserGenerated, diagnosisType);
                 _result.AddDiagnosis(diagnosis);
                 DiagnosisEvent?.Invoke(this, diagnosis);
             }

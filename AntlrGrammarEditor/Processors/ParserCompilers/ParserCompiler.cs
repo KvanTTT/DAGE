@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Fragments;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
@@ -451,9 +452,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 var fragmentInMarkedGrammar = foundFragmentInGenerated.Fragment.OriginalFragment;
                 var fragmentInOriginalGrammar = ((MappedFragment)fragmentInMarkedGrammar).OriginalFragment;
                 textSpan = fragmentInOriginalGrammar.TextSpan;
-                return new Diagnosis(textSpan,
-                    $"{textSpan.Source.Name}:{textSpan.LineColumn.BeginLine}:{message}",
-                    WorkflowStage.ParserCompiled, type);
+                return new Diagnosis(textSpan, message, WorkflowStage.ParserCompiled, type);
             }
 
             var grammarFilesData = Result.ParserGeneratedState.GrammarCheckedState.GrammarInfos;
