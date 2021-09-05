@@ -1,12 +1,12 @@
-﻿using Antlr4.Runtime;
-using System;
+﻿using System;
 using System.IO;
 using System.Threading;
+using Antlr4.Runtime;
 using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
-namespace AntlrGrammarEditor.Processors
+namespace AntlrGrammarEditor.Processors.GrammarChecking
 {
     public class GrammarChecker : StageProcessor
     {

@@ -4,7 +4,7 @@ using Antlr4.Runtime.Tree;
 using AntlrGrammarEditor.Fragments;
 using AntlrGrammarEditor.Sources;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.Processors.GrammarChecking
 {
     public class GrammarInfoCollectorListener : ANTLRv4ParserBaseListener
     {

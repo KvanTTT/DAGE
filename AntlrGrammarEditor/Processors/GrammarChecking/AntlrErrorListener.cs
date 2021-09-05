@@ -1,10 +1,9 @@
-﻿using Antlr4.Runtime;
-using System;
+﻿using System;
+using Antlr4.Runtime;
 using AntlrGrammarEditor.Diagnoses;
-using AntlrGrammarEditor.Processors;
 using AntlrGrammarEditor.Sources;
 
-namespace AntlrGrammarEditor
+namespace AntlrGrammarEditor.Processors.GrammarChecking
 {
     public class AntlrErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
     {

@@ -4,7 +4,7 @@ namespace AntlrGrammarEditor
 {
     public class FileName
     {
-        public string FullFileName { get; set; }
+        public string FullFileName { get; }
 
         public string ShortFileName => Path.GetFileName(FullFileName);
 
