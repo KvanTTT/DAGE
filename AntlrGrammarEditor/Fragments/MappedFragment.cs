@@ -6,8 +6,6 @@ namespace AntlrGrammarEditor.Fragments
 
         public override int Number => OriginalFragment.Number;
 
-        public override bool IsLexer => OriginalFragment.IsLexer;
-
         public override bool IsPredicate => OriginalFragment.IsPredicate;
 
         public MappedFragment(TextSpan textSpan, FragmentBase originalFragment)

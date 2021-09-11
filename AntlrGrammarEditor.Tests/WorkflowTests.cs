@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using AntlrGrammarEditor.Diagnoses;
@@ -570,7 +571,7 @@ TOKEN: 'token';";
         }
 
         [Test]
-        public void GrammarGeneratedCodeCorrectMapping([Values] SupportedRuntime supportedRuntime)
+        public void GeneratedToGrammarCorrectMapping([Values] SupportedRuntime supportedRuntime)
         {
             var grammarText =
 @"grammar test;
@@ -580,8 +581,7 @@ rootRule
 tokensOrRules
     : {a====0}? TOKEN+ {a+++;}
     ;
-TOKEN: {b====0}? [a-z]+ {b+++;};
-DIGIT: {b====0}? [0-9]+ {b+++;};";
+TOKEN: [a-z]+;";
 
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "test", ".");
             var runtime = (Runtime)supportedRuntime;
@@ -595,40 +595,150 @@ DIGIT: {b====0}? [0-9]+ {b+++;};";
             ParserCompiledState parserCompiledState = (ParserCompiledState)state;
             var errors = parserCompiledState.Diagnoses;
 
-            static bool Compare(Diagnosis diagnosis, int line, int column)
-            {
-                if (!diagnosis.TextSpan.HasValue)
-                    return false;
-                var textSpan = diagnosis.TextSpan.Value;
-                var lineColumn = textSpan.LineColumn;
-                return lineColumn.BeginLine == line && lineColumn.BeginColumn == column;
-            }
-
             var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
             if (!runtimeInfo.Interpreted)
             {
                 Assert.GreaterOrEqual(errors.Count, 8);
-                Assert.GreaterOrEqual(errors.Count(e => Compare(e, 3, 8)), 1);
-                Assert.GreaterOrEqual(errors.Count(e => Compare(e, 3, 37)), 1);
-                Assert.GreaterOrEqual(errors.Count(e => Compare(e, 6, 8)), 1);
 
-                if (runtime != Runtime.Dart)
-                    Assert.GreaterOrEqual(errors.Count(e => Compare(e, 6, 25)), 1);
-
-                if (runtime != Runtime.Dart && runtime != Runtime.Go)
+                if (runtime.IsCSharpRuntime())
                 {
-                    // Dart shows only first 10 errors
-                    Assert.GreaterOrEqual(errors.Count(e => Compare(e, 8, 9)), 1);
-                    Assert.GreaterOrEqual(errors.Count(e => Compare(e, 8, 26)), 1);
-                    Assert.GreaterOrEqual(errors.Count(e => Compare(e, 9, 9)), 1);
-                    Assert.GreaterOrEqual(errors.Count(e => Compare(e, 9, 26)), 1);
+                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 11)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 41)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 11)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 29)));
+                }
+                else if (runtime == Runtime.Java)
+                {
+                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 8)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 37)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 8)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 25)));
+                }
+                else if (runtime == Runtime.Dart)
+                {
+                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 9)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 37)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 41)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 9)));
+                }
+                else if (runtime == Runtime.Go)
+                {
+                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 11)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 40)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 11)));
+                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 28)));
+                }
+                else
+                {
+                    throw new NotSupportedException($"Not completed runtime: {supportedRuntime}");
                 }
             }
             else
             {
                 Assert.GreaterOrEqual(errors.Count, 1);
-                Assert.GreaterOrEqual(errors.Count(e => Compare(e, 3, 8)), 1);
+                Assert.IsTrue(errors.Any(e => Compare(e, 3, 8)));
             }
+        }
+
+        [Test]
+        public void GeneratedToGrammarCorrectMultilineMapping([Values] SupportedRuntime supportedRuntime)
+        {
+            var cSharpCode =
+@"void Test() {
+    Console.WriteLine(error1);
+    Console.WriteLine(error2);
+}";
+
+            var fragmentsMap = new Dictionary<SupportedRuntime, string>
+            {
+                [SupportedRuntime.CSharpStandard] = cSharpCode,
+                [SupportedRuntime.CSharpOptimized] = cSharpCode,
+                [SupportedRuntime.Java] =
+@"void test() {
+    System.out.println(error1);
+    System.out.println(error2);
+}",
+                [SupportedRuntime.Python] =
+@"def test():
+    print(""test"")
+    error~",
+                [SupportedRuntime.JavaScript] =
+@"function test() {
+    print(""test"");
+    error~
+}",
+                [SupportedRuntime.Go] =
+@"func test() {
+    println(error1)
+    println(error2)
+}",
+                [SupportedRuntime.Php] =
+@"function test() {
+    print('test');
+    error~
+}",
+                [SupportedRuntime.Dart] =
+@"void test() {
+    print(error1);
+    print(error2);
+}"
+            };
+
+            var grammarText =
+$@"grammar test;
+
+@lexer::members {{{fragmentsMap[supportedRuntime]}}}
+
+start: CHAR+;
+CHAR:   [a-z]+;
+WS:     [ \r\n\t]+ -> skip;";
+
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "test", ".");
+            var runtime = (Runtime)supportedRuntime;
+            var workflow = new Workflow(grammar) { Runtime = runtime };
+
+            var state = workflow.Process();
+            Assert.IsInstanceOf<ParserCompiledState>(state, state.DiagnosisMessage);
+            ParserCompiledState parserCompiledState = (ParserCompiledState)state;
+            var errors = parserCompiledState.Diagnoses;
+
+            if (runtime.IsCSharpRuntime())
+            {
+                Assert.True(errors.Any(e => Compare(e, 4, 23)));
+                Assert.True(errors.Any(e => Compare(e, 5, 23)));
+            }
+            else if (runtime == Runtime.Java)
+            {
+                Assert.True(errors.Any(e => Compare(e, 4, 1)));
+                Assert.True(errors.Any(e => Compare(e, 5, 1)));
+            }
+            else if (runtime == Runtime.Go)
+            {
+                Assert.True(errors.Any(e => Compare(e, 4, 13)));
+                Assert.True(errors.Any(e => Compare(e, 5, 13)));
+            }
+            else if (runtime == Runtime.Dart)
+            {
+                Assert.True(errors.Any(e => Compare(e, 4, 11)));
+                Assert.True(errors.Any(e => Compare(e, 5, 11)));
+            }
+            else if (RuntimeInfo.InitOrGetRuntimeInfo(runtime).Interpreted)
+            {
+                Assert.True(errors.Any(e => Compare(e, 5, 1)));
+            }
+            else
+            {
+                throw new NotSupportedException($"Not completed runtime: {supportedRuntime}");
+            }
+        }
+
+        static bool Compare(Diagnosis diagnosis, int line, int column)
+        {
+            if (!diagnosis.TextSpan.HasValue)
+                return false;
+            var textSpan = diagnosis.TextSpan.Value;
+            var lineColumn = textSpan.LineColumn;
+            return lineColumn.BeginLine == line && lineColumn.BeginColumn == column;
         }
     }
 }

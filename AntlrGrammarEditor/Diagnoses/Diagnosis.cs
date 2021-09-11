@@ -20,13 +20,13 @@ namespace AntlrGrammarEditor.Diagnoses
         }
 
         public Diagnosis(int line, int column, string message, Source source, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
-            : this(new LineColumnTextSpan(line, column, source).GetTextSpan(), message, stage, type)
+            : this(new LineColumnTextSpan(line, column, source).ToLinear(), message, stage, type)
         {
         }
 
         public Diagnosis(int beginLine, int beginColumn, int endLine, int endColumn,
             string message, Source source, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
-            : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, source).GetTextSpan(), message, stage, type)
+            : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, source).ToLinear(), message, stage, type)
         {
         }
 

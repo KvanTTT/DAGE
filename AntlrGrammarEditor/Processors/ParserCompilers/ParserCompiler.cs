@@ -32,7 +32,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         private readonly OpenCloseMark _caseInsensitiveMark;
 
         private readonly string _generatedGrammarName;
-        private readonly Dictionary<string, FragmentFinder> _fragmentFinders = new ();
+        private readonly Dictionary<string, FragmentMapper> _fragmentFinders = new ();
 
         protected readonly Grammar Grammar;
         protected readonly RuntimeInfo CurrentRuntimeInfo;
@@ -268,7 +268,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                         generatedMappedFragments.Add(rawMappedFragment.ToMappedFragment(source));
 
                     _fragmentFinders.Add(Path.GetFileName(generatedFile),
-                        new FragmentFinder(source, generatedMappedFragments));
+                        new FragmentMapper(Result.ParserGeneratedState.Runtime, source, generatedMappedFragments));
                 }
             }
         }
@@ -444,15 +444,10 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             if (codeFileName == null)
                 return new Diagnosis(message, WorkflowStage.ParserCompiled, type);
 
-            TextSpan textSpan;
-
-            if (_fragmentFinders.TryGetValue(codeFileName, out FragmentFinder fragmentFinder))
+            if (_fragmentFinders.TryGetValue(codeFileName, out FragmentMapper fragmentMapper))
             {
-                var foundFragmentInGenerated = fragmentFinder.Find(line, column);
-                var fragmentInMarkedGrammar = foundFragmentInGenerated.Fragment.OriginalFragment;
-                var fragmentInOriginalGrammar = ((MappedFragment)fragmentInMarkedGrammar).OriginalFragment;
-                textSpan = fragmentInOriginalGrammar.TextSpan;
-                return new Diagnosis(textSpan, message, WorkflowStage.ParserCompiled, type);
+                var mappedResult = fragmentMapper.Map(line, column);
+                return new Diagnosis(mappedResult.TextSpanInGrammar, message, WorkflowStage.ParserCompiled, type);
             }
 
             var grammarFilesData = Result.ParserGeneratedState.GrammarCheckedState.GrammarInfos;
@@ -462,7 +457,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                     .Value
                     .Source;
 
-            textSpan = new LineColumnTextSpan(line, column, grammarSource).GetTextSpan();
+            var textSpan = new LineColumnTextSpan(line, column, grammarSource).ToLinear();
             return new Diagnosis(textSpan, message, WorkflowStage.ParserCompiled, type);
         }
 

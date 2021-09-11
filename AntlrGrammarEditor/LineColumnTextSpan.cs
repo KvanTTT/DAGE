@@ -34,7 +34,7 @@ namespace AntlrGrammarEditor
             Source = source;
         }
 
-        public TextSpan GetTextSpan()
+        public TextSpan ToLinear()
         {
             int start = Source.LineColumnToPosition(BeginLine, BeginColumn);
             int end = Source.LineColumnToPosition(EndLine, EndColumn);

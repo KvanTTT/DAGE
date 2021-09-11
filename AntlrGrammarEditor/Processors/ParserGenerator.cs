@@ -223,6 +223,8 @@ namespace AntlrGrammarEditor.Processors
                     _mappedFragments.Add(rawFragment.ToMappedFragment(source));
 
                 grammarPath = Path.Combine(_runtimeDirectoryName, grammarFileName);
+                if (!Directory.Exists(_runtimeDirectoryName))
+                    Directory.CreateDirectory(_runtimeDirectoryName);
                 File.WriteAllText(grammarPath, newCode);
                 outputDirectory = ".";
             }

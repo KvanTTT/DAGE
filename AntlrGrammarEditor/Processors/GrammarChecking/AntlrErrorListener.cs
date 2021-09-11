@@ -29,8 +29,7 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
         public void SyntaxError(IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine,
             string msg, RecognitionException e)
         {
-            var textSpan = TextSpan.FromBounds(offendingSymbol.StartIndex,
-                offendingSymbol.StopIndex + LineColumnTextSpan.StartColumn, Source);
+            var textSpan = TextSpan.FromBounds(offendingSymbol.StartIndex, offendingSymbol.StopIndex + 1, Source);
             var lexerError = new Diagnosis(textSpan, msg, WorkflowStage.GrammarChecked);
             ErrorEvent?.Invoke(this, lexerError);
         }

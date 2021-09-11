@@ -6,8 +6,6 @@ namespace AntlrGrammarEditor.Fragments
 
         public abstract int Number { get; }
 
-        public abstract bool IsLexer { get; }
-
         public abstract bool IsPredicate { get; }
 
         protected FragmentBase(TextSpan textSpan)
@@ -17,9 +15,8 @@ namespace AntlrGrammarEditor.Fragments
 
         public override string ToString()
         {
-            string lexer = IsLexer ? "Lexer" : "Parser";
             string predicate = IsPredicate ? "Predicate" : "Action";
-            return $"{TextSpan.Span.ToString()} at {TextSpan.LineColumn} ({Number}, {lexer}, {predicate})";
+            return $"{TextSpan.Span.ToString()} at {TextSpan.LineColumn} ({Number}, {predicate})";
         }
     }
 }

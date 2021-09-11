@@ -4,15 +4,12 @@
     {
         public override int Number { get; }
 
-        public override bool IsLexer { get; }
-
         public override bool IsPredicate { get; }
 
-        public Fragment(TextSpan textSpan, int number, bool isLexer, bool isPredicate)
+        public Fragment(TextSpan textSpan, int number, bool isPredicate)
             : base(textSpan)
         {
             Number = number;
-            IsLexer = isLexer;
             IsPredicate = isPredicate;
         }
     }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor
@@ -68,6 +69,16 @@ namespace AntlrGrammarEditor
             }
 
             return Length - other.Length;
+        }
+
+        public LineColumnTextSpan ToLineColumn()
+        {
+            return Source.ToLineColumn(this);
+        }
+
+        public IReadOnlyList<TextSpan> GetLineTextSpans()
+        {
+            return Source.GetLineTextSpans(this);
         }
 
         public override string ToString()

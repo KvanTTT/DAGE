@@ -56,6 +56,32 @@ namespace AntlrGrammarEditor.Sources
             line += LineColumnTextSpan.StartLine;
         }
 
+        public IReadOnlyList<TextSpan> GetLineTextSpans(TextSpan textSpan)
+        {
+            var result = new List<TextSpan>();
+            int charIndex = 0;
+            var prevLineIndex = 0;
+            var span = textSpan.Span;
+            while (charIndex < span.Length)
+            {
+                var c = span[charIndex];
+                if (c == '\r' || c == '\n')
+                {
+                    result.Add(new TextSpan(textSpan.Start + prevLineIndex, charIndex - prevLineIndex,
+                        textSpan.Source));
+
+                    if (c == '\r' && charIndex + 1 < span.Length && span[charIndex + 1] == '\n')
+                        charIndex++;
+
+                    prevLineIndex = charIndex + 1;
+                }
+
+                charIndex++;
+            }
+            result.Add(new TextSpan(textSpan.Start + prevLineIndex, charIndex - prevLineIndex, textSpan.Source));
+            return result;
+        }
+
         public bool Equals(Source other) => Name.Equals(other.Name) && Text == other.Text;
 
         public override string ToString() => Name;
