@@ -520,7 +520,6 @@ namespace DesktopAntlrGrammarEditor
 
                     _text = new Source(_openedTextFile.ShortFileName, _textTextBox.Text);
                     ClearParseResult();
-
                     this.RaisePropertyChanged();
                 }
 

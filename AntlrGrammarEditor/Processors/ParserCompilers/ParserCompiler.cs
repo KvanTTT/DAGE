@@ -25,6 +25,9 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         private static readonly Regex FragmentMarkRegexBegin;
         private static readonly Regex FragmentMarkRegexEnd;
+        private static readonly Regex CSharpStopStringRegex = new Regex(@"^Build FAILED\.$", RegexOptions.Compiled);
+
+        private readonly object _lockObject = new object();
 
         private readonly OpenCloseMark _packageNameMark;
         private readonly OpenCloseMark _parserPartMark;
@@ -43,6 +46,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         protected readonly string RuntimeLibraryPath;
         protected readonly List<string> GeneratedFiles = new();
         protected readonly List<string> Buffer = new();
+        private bool _ignoreDiagnosis;
 
         public string? RuntimeLibrary { get; set; }
 
@@ -418,6 +422,15 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         protected virtual void ProcessReceivedData(string data)
         {
+            lock (_lockObject)
+            {
+                if (_ignoreDiagnosis)
+                    return;
+
+                if (CurrentRuntimeInfo.Runtime.IsCSharpRuntime() && CSharpStopStringRegex.IsMatch(data))
+                    _ignoreDiagnosis = true;
+            }
+
             var match = ParserCompilerMessageRegex.Match(data);
             if (match.Success)
             {
@@ -427,6 +440,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 if (!int.TryParse(groups[ColumnMark].Value, out int column))
                     column = LineColumnTextSpan.StartColumn;
                 string message = groups[MessageMark].Value;
+                var (simplifiedMessage, errorTextSpanLength) = SimplifyMessageAndSpecifyErrorTextSpanLength(message);
                 var diagnosisType = groups[TypeMark].Value.Contains("warning", StringComparison.OrdinalIgnoreCase)
                     ? DiagnosisType.Warning
                     : DiagnosisType.Error;
@@ -434,9 +448,14 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 if (CurrentRuntimeInfo.Runtime == Runtime.Java && message.StartsWith("[deprecation] ANTLRInputStream"))
                     return;
 
-                var diagnosis = CreateMappedGrammarDiagnosis(codeFileName, line, column, message, diagnosisType);
+                var diagnosis = CreateMappedGrammarDiagnosis(codeFileName, line, column, simplifiedMessage, diagnosisType);
                 AddDiagnosis(diagnosis);
             }
+        }
+
+        protected virtual (string NewMessage, int ErrorTextSpanLength) SimplifyMessageAndSpecifyErrorTextSpanLength(string message)
+        {
+            return (message, 0);
         }
 
         protected Diagnosis CreateMappedGrammarDiagnosis(string? codeFileName, int line, int column,

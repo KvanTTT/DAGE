@@ -604,8 +604,6 @@ TOKEN: [a-z]+;";
             var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
             if (!runtimeInfo.Interpreted)
             {
-                Assert.GreaterOrEqual(errors.Count, 8);
-
                 if (runtime.IsCSharpRuntime())
                 {
                     Assert.IsTrue(errors.Any(e => Compare(e, 3, 11)));

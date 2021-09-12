@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using AntlrGrammarEditor.WorkflowState;
@@ -33,6 +34,18 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             File.WriteAllText(Path.Combine(WorkingDirectory, $"{Grammar.Name}.csproj"), projectContent);
 
             return "build";
+        }
+
+        protected override (string NewMessage, int ErrorTextSpanLength) SimplifyMessageAndSpecifyErrorTextSpanLength(string message)
+        {
+            var resultMessage = message;
+            if (message.EndsWith(']'))
+            {
+                // Removing of useless project path
+                var lastIndex = message.LastIndexOf(" [", StringComparison.Ordinal);
+                resultMessage = message.Remove(lastIndex);
+            }
+            return (resultMessage, 0);
         }
     }
 }
