@@ -179,14 +179,52 @@ WS:     [ \r\n\t]+ -> skip;";
             var state = workflow.Process();
 
             var grammarSource = new Source(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
-            char separator = Path.DirectorySeparatorChar;
-            string testGrammarFullName = $"{Environment.CurrentDirectory}{separator}.{separator}{TestGrammarName}.g4";
 
             Assert.IsInstanceOf<ParserGeneratedState>(state, state.DiagnosisMessage);
             var parserGeneratedState = (ParserGeneratedState)state;
             CollectionAssert.AreEquivalent(
                 new [] {
                     new Diagnosis(2, 17, "reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
+                },
+                parserGeneratedState.Diagnoses);
+        }
+
+        [Test]
+        public void ParserGeneratedStageSyntaxErrors()
+        {
+            var grammarText =
+$@"lexer grammar {TestGrammarName};
+TEST: {{'}};";
+
+            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
+            var state = workflow.Process();
+            var grammarSource = new Source(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
+            Assert.IsInstanceOf<ParserGeneratedState>(state, state.DiagnosisMessage);
+            var parserGeneratedState = (ParserGeneratedState)state;
+            CollectionAssert.AreEquivalent(
+                new [] {
+                    new Diagnosis(1, 1, "syntax error: mismatched character '<EOF>' expecting '''", grammarSource, WorkflowStage.ParserGenerated),
+                    new Diagnosis(2, 11, "syntax error: '<EOF>' came as a complete surprise to me while matching a lexer rule", grammarSource, WorkflowStage.ParserGenerated),
+                },
+                parserGeneratedState.Diagnoses);
+        }
+
+        [Test]
+        public void ParserGeneratedStageInvalidPackageError()
+        {
+            var grammarText =
+$@"lexer grammar {TestGrammarName};
+TEST: 'test';";
+
+            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
+            workflow.PackageName = "invalid package";
+            var state = workflow.Process();
+            var grammarSource = new Source(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
+            Assert.IsInstanceOf<ParserGeneratedState>(state, state.DiagnosisMessage);
+            var parserGeneratedState = (ParserGeneratedState)state;
+            CollectionAssert.AreEquivalent(
+                new [] {
+                    new Diagnosis( "Package name (invalid package) should contain only latin letter, digits, and underscore", WorkflowStage.ParserGenerated),
                 },
                 parserGeneratedState.Diagnoses);
         }

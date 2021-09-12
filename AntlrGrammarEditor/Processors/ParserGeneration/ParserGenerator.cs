@@ -23,11 +23,12 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
 
         // warning(180): .\test.g4:3:20: chars '\'' used multiple times in set ['' ]
         private static readonly Regex ParserGeneratorMessageRegex = new(
-            $@"^(?<{TypeMark}>[^\(]+)\(\d+\): (?<{FileMark}>.+?):(?<{LineMark}>\d+):(?<{ColumnMark}>\d+): (?<{MessageMark}>.+)",
+            $@"^(?<{TypeMark}>[^\(]+)\(\d+\): (?<{FileMark}>.+?):(?<{LineMark}>\d*):(?<{ColumnMark}>\d*): (?<{MessageMark}>.+)",
             RegexOptions.Compiled);
         private static readonly string FragmentMarkFormat = FragmentMarkWord + "{0:" + new string('0', FragmentMarkDigitsCount) + "}";
         private static readonly int FragmentMarkLength = new OpenCloseMark(string.Format(FragmentMarkFormat, 0),
             RuntimeInfo.Runtimes[Runtime.Java], FragmentMarkSuffix).OpenMark.Length;
+        private static readonly Regex PackageRegex = new(@"^([a-zA-Z_][a-zA-Z\d_]*)$", RegexOptions.Compiled);
 
         private static readonly Dictionary<Encoding, string> Encodings = new()
         {
@@ -115,6 +116,16 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
 
                     if (!string.IsNullOrWhiteSpace(PackageName))
                     {
+                        if (!PackageRegex.IsMatch(PackageName))
+                        {
+                            var invalidPackageNameDiagnosis = new Diagnosis(
+                                $"Package name ({PackageName}) should contain only latin letter, digits, and underscore",
+                                WorkflowStage.ParserGenerated);
+
+                            _result.AddDiagnosis(invalidPackageNameDiagnosis);
+                            DiagnosisEvent?.Invoke(this, invalidPackageNameDiagnosis);
+                            return;
+                        }
                         arguments.Append(" -package ");
                         arguments.Append(PackageName);
                     }
@@ -165,16 +176,29 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
         {
             if (!e.IsIgnoredMessage(Runtime.Java))
             {
+                Diagnosis diagnosis;
                 var match = ParserGeneratorMessageRegex.Match(e.Data);
-                var groups = match.Groups;
-                var grammarFileName = Path.GetFileName(groups[FileMark].Value);
-                var line = int.Parse(groups[LineMark].Value);
-                var column = int.Parse(groups[ColumnMark].Value) + LineColumnTextSpan.StartColumn;
-                var message = groups[MessageMark].Value;
-                var diagnosisType = groups[TypeMark].Value == "warning" ? DiagnosisType.Warning : DiagnosisType.Error;
+                if (match.Success)
+                {
+                    var groups = match.Groups;
+                    var grammarFileName = Path.GetFileName(groups[FileMark].Value);
+                    if (!int.TryParse(groups[LineMark].Value, out int line))
+                        line = LineColumnTextSpan.StartLine;
+                    int.TryParse(groups[ColumnMark].Value, out int column);
+                    column += LineColumnTextSpan.StartColumn;
+                    var message = groups[MessageMark].Value;
+                    var diagnosisType = groups[TypeMark].Value == "warning"
+                        ? DiagnosisType.Warning
+                        : DiagnosisType.Error;
 
-                var textSpan = _result.GetOriginalTextSpanForLineColumn(grammarFileName, line, column);
-                var diagnosis = new Diagnosis(textSpan, message, WorkflowStage.ParserGenerated, diagnosisType);
+                    var textSpan = _result.GetOriginalTextSpanForLineColumn(grammarFileName, line, column);
+                    diagnosis = new Diagnosis(textSpan, message, WorkflowStage.ParserGenerated, diagnosisType);
+                }
+                else
+                {
+                    diagnosis = new Diagnosis("Unknown error: " + e.Data, WorkflowStage.ParserGenerated);
+                }
+
                 _result.AddDiagnosis(diagnosis);
                 DiagnosisEvent?.Invoke(this, diagnosis);
             }
