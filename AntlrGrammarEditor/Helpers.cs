@@ -67,24 +67,6 @@ namespace AntlrGrammarEditor
             }
         }
 
-        public static string FixEncoding(string str)
-        {
-            string result = str;
-            var bytes = Encoding.Default.GetBytes(result);
-            using (var stream = new MemoryStream(bytes))
-            {
-                var charsetDetector = new Ude.CharsetDetector();
-                charsetDetector.Feed(stream);
-                charsetDetector.DataEnd();
-                if (charsetDetector.Charset != null)
-                {
-                    var detectedEncoding = Encoding.GetEncoding(charsetDetector.Charset);
-                    result = detectedEncoding.GetString(bytes);
-                }
-            }
-            return result;
-        }
-
         public static bool IsIgnoredMessage(this DataReceivedEventArgs message, Runtime runtime)
         {
             var data = message.Data;

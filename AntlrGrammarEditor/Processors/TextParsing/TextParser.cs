@@ -138,11 +138,10 @@ namespace AntlrGrammarEditor.Processors.TextParsing
         {
             if (!e.IsIgnoredMessage(_result.ParserCompiledState.ParserGeneratedState.Runtime))
             {
-                var diagnosisString = FixEncoding(e.Data);
                 Diagnosis diagnosis;
                 try
                 {
-                    var match = TextParserErrorMessageRegex.Match(diagnosisString);
+                    var match = TextParserErrorMessageRegex.Match(e.Data);
                     if (match.Success)
                     {
                         var groups = match.Groups;
@@ -156,12 +155,12 @@ namespace AntlrGrammarEditor.Processors.TextParsing
                     }
                     else
                     {
-                        throw new FormatException("Incorrect ANTLR error format");
+                        diagnosis = new Diagnosis(e.Data, WorkflowStage.TextParsed);
                     }
                 }
                 catch
                 {
-                    diagnosis = new Diagnosis(diagnosisString, WorkflowStage.TextParsed);
+                    diagnosis = new Diagnosis(e.Data, WorkflowStage.TextParsed);
                 }
 
                 AddDiagnosis(diagnosis);
