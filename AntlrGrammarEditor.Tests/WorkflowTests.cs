@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Processors.ParserGeneration;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 

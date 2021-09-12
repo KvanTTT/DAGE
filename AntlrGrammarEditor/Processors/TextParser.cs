@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors.ParserCompilers;
+using AntlrGrammarEditor.Processors.ParserGeneration;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 using static AntlrGrammarEditor.Helpers;
@@ -98,7 +99,8 @@ namespace AntlrGrammarEditor.Processors
                 processor.CancellationToken = cancellationToken;
                 processor.ErrorDataReceived += TextParsing_ErrorDataReceived;
                 processor.OutputDataReceived += TextParsing_OutputDataReceived;
-
+                foreach (var environmentVariable in runtimeInfo.TextParserEnvironmentVariables)
+                    processor.EnvironmentVariables.Add(environmentVariable.Key, environmentVariable.Value);
                 processor.Start();
 
                 cancellationToken.ThrowIfCancellationRequested();

@@ -12,7 +12,7 @@ using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 using static AntlrGrammarEditor.Helpers;
 
-namespace AntlrGrammarEditor.Processors
+namespace AntlrGrammarEditor.Processors.ParserGeneration
 {
     public class ParserGenerator : StageProcessor
     {
@@ -28,6 +28,12 @@ namespace AntlrGrammarEditor.Processors
         private static readonly string FragmentMarkFormat = FragmentMarkWord + "{0:" + new string('0', FragmentMarkDigitsCount) + "}";
         private static readonly int FragmentMarkLength = new OpenCloseMark(string.Format(FragmentMarkFormat, 0),
             RuntimeInfo.Runtimes[Runtime.Java], FragmentMarkSuffix).OpenMark.Length;
+
+        private static readonly Dictionary<Encoding, string> Encodings = new()
+        {
+            [Encoding.Default] = "default",
+            [Encoding.Utf8] = "utf8"
+        };
 
         private readonly Grammar _grammar;
         private readonly List<MappedFragment> _mappedFragments = new();
@@ -46,7 +52,10 @@ namespace AntlrGrammarEditor.Processors
 
         public string? GeneratorTool { get; set; }
 
-        public ParserGenerator(GrammarCheckedState state, Runtime runtime, string? packageName, bool generateListener, bool generateVisitor)
+        public Encoding Encoding { get; }
+
+        public ParserGenerator(GrammarCheckedState state, Runtime runtime, string? packageName, bool generateListener, bool generateVisitor,
+            Encoding encoding = Encoding.Utf8)
         {
             PackageName = packageName;
             GenerateListener = generateListener;
@@ -54,6 +63,7 @@ namespace AntlrGrammarEditor.Processors
             _grammar = state.InputState.Grammar;
             _result = new ParserGeneratedState(state, packageName, runtime, generateListener, generateVisitor, _mappedFragments, _grammarSources);
             Runtime = runtime;
+            Encoding = encoding;
         }
 
         public ParserGeneratedState Generate(CancellationToken cancellationToken = default)
@@ -99,6 +109,7 @@ namespace AntlrGrammarEditor.Processors
                     arguments.Append($@"-jar ""{jarGenerator}"" ""{grammarPath}""");
                     arguments.Append($@" -o ""{outputDirectory}""");
                     arguments.Append($" -Dlanguage={runtimeInfo.DLanguage}");
+                    arguments.Append($" -encoding {Encodings[Encoding]}");
                     arguments.Append(GenerateVisitor ? " -visitor" : " -no-visitor");
                     arguments.Append(GenerateListener ? " -listener" : " -no-listener");
 

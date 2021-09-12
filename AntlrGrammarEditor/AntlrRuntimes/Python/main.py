@@ -11,21 +11,22 @@ def main(argv):
     file_name = '../../Text'
 
     argv_len = len(argv)
-    if argv_len > 0:
+    if argv_len > 1:
         file_name = argv[1]
 
-    code = open(file_name, 'r').read()
+    code = open(file_name, 'r', encoding="utf-8").read()
     code_stream = InputStream(code)
     lexer = __TemplateGrammarName__Lexer(code_stream)
     tokens = lexer.getAllTokens()
 
 '''$ParserPart'''
+    root_rule = None
     mode = 'll'
-    if argv_len > 1:
+    if argv_len > 2:
         root_rule = argv[2]
-        if argv_len > 2:
+        if argv_len > 3:
             # TODO: onlyTokenize parameter processing
-            if argv_len > 3:
+            if argv_len > 4:
                 mode = argv[4].lower()
 
     tokens_source = ListTokenSource(tokens)

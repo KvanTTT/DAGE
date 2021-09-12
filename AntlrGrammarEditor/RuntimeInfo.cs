@@ -43,7 +43,11 @@ namespace AntlrGrammarEditor
                 mainFile: "Main.java",
                 antlrInputStream: "CharStreams.fromFileName",
                 runtimeToolName: "javac",
-                versionArg: "-version"
+                versionArg: "-version",
+                textParserEnvironmentVariables: new Dictionary<string, string>
+                {
+                    ["JAVA_TOOL_OPTIONS"] = "-Dfile.encoding=UTF8"
+                }
             ),
             [Runtime.Python] = new RuntimeInfo
             (
@@ -60,7 +64,11 @@ namespace AntlrGrammarEditor
                 baseListenerPostfix: null,
                 baseVisitorPostfix: null,
                 startCommentToken: "'''",
-                endCommentToken: "'''"
+                endCommentToken: "'''",
+                textParserEnvironmentVariables: new Dictionary<string, string>
+                {
+                    ["PYTHONIOENCODING"] = "utf-8"
+                }
             ),
             [Runtime.JavaScript] = new RuntimeInfo
             (
@@ -167,10 +175,9 @@ namespace AntlrGrammarEditor
         public string VersionArg { get; }
         public bool Initialized { get; private set; }
         public string? Version { get; private set; }
-
         public string StartCommentToken { get; }
-
         public string EndCommentToken { get; }
+        public IReadOnlyDictionary<string, string> TextParserEnvironmentVariables { get; }
 
         public static RuntimeInfo InitOrGetRuntimeInfo(Runtime runtime)
         {
@@ -215,7 +222,8 @@ namespace AntlrGrammarEditor
             string lexerPostfix = "Lexer", string parserPostfix = "Parser",
             string? baseListenerPostfix = "BaseListener", string listenerPostfix = "Listener",
             string? baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor",
-            string startCommentToken = "/*", string endCommentToken = "*/")
+            string startCommentToken = "/*", string endCommentToken = "*/",
+            Dictionary<string, string>? textParserEnvironmentVariables = null)
         {
             Runtime = runtime;
             Name = name;
@@ -236,6 +244,7 @@ namespace AntlrGrammarEditor
             VersionArg = versionArg;
             StartCommentToken = startCommentToken;
             EndCommentToken = endCommentToken;
+            TextParserEnvironmentVariables = textParserEnvironmentVariables ?? new Dictionary<string, string>();
         }
 
         public override string ToString()

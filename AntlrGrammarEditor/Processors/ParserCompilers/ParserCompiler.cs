@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Fragments;
+using AntlrGrammarEditor.Processors.ParserGeneration;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 using static AntlrGrammarEditor.Helpers;

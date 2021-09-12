@@ -17,6 +17,8 @@ class Program
     {
         try
         {
+            Console.InputEncoding = Encoding.UTF8;
+            Console.OutputEncoding = Encoding.UTF8;
             string fileName = "../../../../Text";
 
             if (args.Length > 0)

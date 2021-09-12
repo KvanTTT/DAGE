@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
@@ -19,6 +20,8 @@ namespace AntlrGrammarEditor
         public int Timeout { get; set; } = 0;
 
         public int CheckTimeout { get; set; } = 200;
+
+        public Dictionary<string, string> EnvironmentVariables { get; set; } = new ();
 
         public event EventHandler<DataReceivedEventArgs>? ErrorDataReceived;
 
@@ -42,16 +45,18 @@ namespace AntlrGrammarEditor
             startInfo.FileName = ToolName;
             startInfo.Arguments = Arguments;
             if (WorkingDirectory != null)
-            {
                 startInfo.WorkingDirectory = WorkingDirectory;
-            }
             startInfo.RedirectStandardInput = true;
             startInfo.RedirectStandardError = true;
             startInfo.RedirectStandardOutput = true;
             startInfo.UseShellExecute = false;
             startInfo.CreateNoWindow = true;
+            startInfo.StandardInputEncoding = Encoding.UTF8;
             startInfo.StandardErrorEncoding = Encoding.UTF8;
             startInfo.StandardOutputEncoding = Encoding.UTF8;
+
+            foreach (var environmentVariable in EnvironmentVariables)
+                startInfo.EnvironmentVariables[environmentVariable.Key] = environmentVariable.Value;
 
             _process.ErrorDataReceived += (sender, e) =>
             {

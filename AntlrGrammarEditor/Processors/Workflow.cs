@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors.GrammarChecking;
 using AntlrGrammarEditor.Processors.ParserCompilers;
+using AntlrGrammarEditor.Processors.ParserGeneration;
 using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Processors
