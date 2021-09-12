@@ -5,8 +5,12 @@ class AntlrCaseInsensitiveInputStream(InputStream):
 
     def __init__(self, input_str: str, lower_case: bool):
         super().__init__(input_str)
-        input_normalized = input_str.lower() if lower_case else input_str.upper()
-        self._lookaheadData = [ord(c) for c in input_normalized]
+        input_normalized = []
+        for char in input_str:
+            normalized_char = char.lower() if lower_case else char.upper()
+            result_char = char if len(normalized_char) > 1 else normalized_char
+            input_normalized.append(ord(result_char))
+        self._lookaheadData = input_normalized
 
     def LA(self, offset: int):
         if offset == 0:

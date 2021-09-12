@@ -346,7 +346,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 }
 
                 var antlrInputStreamRegex = new Regex($@"{antlrInputStream}\(([^\)]+)\)");
-                string isLowerBool = (Grammar.CaseInsensitiveType == CaseInsensitiveType.lower).ToString();
+                string isLowerBool = (Grammar.CaseInsensitiveType == CaseInsensitiveType.Lower).ToString();
                 if (runtime != Runtime.Python)
                 {
                     isLowerBool = isLowerBool.ToLowerInvariant();

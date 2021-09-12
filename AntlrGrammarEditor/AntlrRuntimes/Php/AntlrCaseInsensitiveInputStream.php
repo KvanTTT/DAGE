@@ -18,7 +18,7 @@ class AntlrCaseInsensitiveInputStream implements CharStream
     /** @var string */
     public $input;
 
-    /** @var array<string> */
+    /** @var array<int> */
     public $characters = [];
 
     /**
@@ -31,24 +31,28 @@ class AntlrCaseInsensitiveInputStream implements CharStream
         $this->size = \count($this->characters);
     }
 
-    public static function fromString(string $input, bool $lowerCase) : AntlrCaseInsensitiveInputStream
-    {
-        $normalized = $lowerCase ? strtolower($input) : strtoupper($input);
-
-        $chars = \preg_split('//u', $normalized, -1, \PREG_SPLIT_NO_EMPTY);
-
-        return new self($input, $chars === false ? [] : $chars);
-    }
-
     public static function fromPath(string $path, bool $lowerCase) : AntlrCaseInsensitiveInputStream
     {
-        $content = \file_get_contents($path);
+        $content = file_get_contents($path);
 
         if ($content === false) {
             throw new \InvalidArgumentException(\sprintf('File not found at %s.', $path));
         }
 
         return self::fromString($content, $lowerCase);
+    }
+
+    public static function fromString(string $input, bool $lowerCase) : AntlrCaseInsensitiveInputStream
+    {
+        $chars = mb_str_split($input);
+        $result = array();
+        foreach ($chars as $char) {
+            $normalized_char = $lowerCase ? mb_strtolower($char) : mb_strtoupper($char);
+            $result_char = mb_strlen($normalized_char) > 1 ? $char : $normalized_char;
+            $result[] =  StringUtils::codePoint($result_char);
+        }
+
+        return new self($input, $result);
     }
 
     public function getIndex() : int
@@ -89,7 +93,7 @@ class AntlrCaseInsensitiveInputStream implements CharStream
             return Token::EOF;
         }
 
-        return StringUtils::codePoint($this->characters[$pos]);
+        return $this->characters[$pos];
     }
 
     public function LT(int $offset) : int

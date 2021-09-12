@@ -34,7 +34,10 @@ namespace AntlrGrammarEditor.WorkflowState
             {
                 var result = new StringBuilder();
                 foreach (Diagnosis diagnosis in Diagnoses)
+                {
                     result.Append(diagnosis);
+                    result.Append(" ");
+                }
                 return result.ToString();
             }
         }

@@ -5,8 +5,8 @@ namespace AntlrGrammarEditor
     public enum CaseInsensitiveType
     {
         None,
-        lower,
-        UPPER
+        Lower,
+        Upper
     }
 
     public enum GrammarType

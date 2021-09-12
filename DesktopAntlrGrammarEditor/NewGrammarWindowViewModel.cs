@@ -144,8 +144,8 @@ namespace DesktopAntlrGrammarEditor
             new ObservableCollection<CaseInsensitiveType>(new List<CaseInsensitiveType>
         {
             CaseInsensitiveType.None,
-            CaseInsensitiveType.lower,
-            CaseInsensitiveType.UPPER
+            CaseInsensitiveType.Lower,
+            CaseInsensitiveType.Upper
         });
 
         public ObservableCollection<GrammarType> GrammarTypes { get; } =

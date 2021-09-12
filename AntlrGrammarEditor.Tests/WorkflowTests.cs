@@ -292,16 +292,19 @@ error 123 456 ;   // mismatched input '123' expecting Id");
 
         private static void CheckCaseInsensitiveWorkflow(Runtime runtime, bool lowerCase)
         {
-            char c = lowerCase ? 'a' : 'A';
+            char a = lowerCase ? 'a' : 'A';
+            char д = lowerCase ? 'д' : 'Д';
             var grammarText =
 $@"grammar {TestGrammarName};
-start:  A A DIGIT;
-A:      '{c}';
+start:  A A B D D DIGIT;
+A:      '{a}';
+B:      'ß';    // No transformation into SS here (result's char length is more than 1)
+D:      '{д}';  // Should work fine for non latin chars too (if result's char length is 1)
 DIGIT:  [0-9]+;
 WS:     [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            grammar.CaseInsensitiveType = lowerCase ? CaseInsensitiveType.lower : CaseInsensitiveType.UPPER;
-            File.WriteAllText(TestTextName, @"A a 1234");
+            grammar.CaseInsensitiveType = lowerCase ? CaseInsensitiveType.Lower : CaseInsensitiveType.Upper;
+            File.WriteAllText(TestTextName, @"A a ß Д д 1234");
 
             var workflow = new Workflow(grammar);
             workflow.Runtime = runtime;
@@ -310,8 +313,9 @@ WS:     [ \r\n\t]+ -> skip;";
             var state = workflow.Process();
             Assert.IsInstanceOf<TextParsedState>(state, state.DiagnosisMessage);
             var textParsedState = (TextParsedState)state;
-            Assert.AreEqual(0, textParsedState.Diagnoses.Count, string.Join(Environment.NewLine, textParsedState.Diagnoses));
-            Assert.AreEqual("(start A a 1234)", textParsedState.Tree);
+            Assert.AreEqual(0, textParsedState.Diagnoses.Count, textParsedState.DiagnosisMessage);
+            if (runtime != Runtime.Php)
+                Assert.AreEqual("(start A a ß Д д 1234)", textParsedState.Tree);
         }
 
         [Test]
@@ -419,7 +423,7 @@ TOKEN:  'a';";
             }
 
             var grammar = GrammarFactory.CreateDefaultAndFill(grammarType, lexerGrammarText, parserGrammarText, TestGrammarName, ".");
-            grammar.CaseInsensitiveType = CaseInsensitiveType.lower;
+            grammar.CaseInsensitiveType = CaseInsensitiveType.Lower;
             var workflow = new Workflow(grammar)
             {
                 Runtime = runtime,
@@ -525,7 +529,7 @@ TOKEN: 'token';";
             Assert.IsInstanceOf<GrammarCheckedState>(state, state.DiagnosisMessage);
             var grammarCheckedState = (GrammarCheckedState)state;
 
-            Assert.AreEqual(CaseInsensitiveType.lower, grammarCheckedState.CaseInsensitiveType);
+            Assert.AreEqual(CaseInsensitiveType.Lower, grammarCheckedState.CaseInsensitiveType);
             Assert.AreEqual(Runtime.JavaScript, grammarCheckedState.Runtime);
             Assert.AreEqual("package", grammarCheckedState.Package);
             Assert.AreEqual(true, grammarCheckedState.Listener);
