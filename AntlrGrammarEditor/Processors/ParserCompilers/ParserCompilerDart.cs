@@ -16,7 +16,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         // TestParser.dart:64:9: Error: Expected an identifier, but got ';'.
         protected override Regex ParserCompilerMessageRegex { get; } =
             new(
-                $@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+):(?<{ColumnMark}>\d+): ?(?<{TypeMark}>[^:]+): ?(?<{MessageMark}>.+)",
+                $@"^(?<{FileMark}>.+?):(?<{LineMark}>\d+):(?<{ColumnMark}>\d+): (?<{TypeMark}>[^:]+): (?<{MessageMark}>.+)",
                 RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()

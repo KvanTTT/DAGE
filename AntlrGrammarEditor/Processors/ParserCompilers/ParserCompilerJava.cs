@@ -14,7 +14,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         // Lexer.java:98: error: cannot find symbol
         protected override Regex ParserCompilerMessageRegex { get; } =
-            new($@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+): ?(?<{TypeMark}>[^:]+): ?(?<{MessageMark}>.+)",
+            new($@"^(?<{FileMark}>.+?):(?<{LineMark}>\d+): (?<{TypeMark}>[^:]+): (?<{MessageMark}>.+)",
                 RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()

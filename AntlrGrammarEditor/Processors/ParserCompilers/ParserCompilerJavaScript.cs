@@ -32,7 +32,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         // (node:17616) ExperimentalWarning: The ESM module loader is experimental.
 
         // file:///C:/Users/User/Documents/My-Projects/DAGE/AntlrGrammarEditor.Tests/bin/Debug/netcoreapp3.1/DageHelperDirectory/Test/JavaScript/TestParser.js:58
-        protected override Regex ParserCompilerMessageRegex { get; } = new($@"^(?<file>.+):(?<line>\d+)", RegexOptions.Compiled);
+        protected override Regex ParserCompilerMessageRegex { get; } = new($@"^(?<file>.+?):(?<line>\d+)", RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()
         {

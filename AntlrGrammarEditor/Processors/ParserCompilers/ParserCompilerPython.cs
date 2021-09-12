@@ -21,7 +21,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         //    ^
         //IndentationError: unexpected indent
         protected override Regex ParserCompilerMessageRegex { get; } =
-            new ($@"^\s*File ""(?<{FileMark}>[^""]+)"", line (?<{LineMark}>\d+)(, in (.+))?", RegexOptions.Compiled);
+            new ($@"^\s*File ""(?<{FileMark}>.+?)"", line (?<{LineMark}>\d+)(, in (.+))?", RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()
         {

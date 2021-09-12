@@ -14,7 +14,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         // PHP Parse error:  syntax error, unexpected ';' in <file_name.php> on line 145
         protected override Regex ParserCompilerMessageRegex { get; } =
-            new($@"^([^:]+):\s*(?<{MessageMark}>.+?) in (?<{FileMark}>[^>]+) on line (?<{LineMark}>\d+)",
+            new($@"^([^:]+):\s*(?<{MessageMark}>.+?) in (?<{FileMark}>.+?) on line (?<{LineMark}>\d+)",
                 RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()

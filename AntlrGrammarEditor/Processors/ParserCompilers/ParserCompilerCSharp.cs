@@ -14,7 +14,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         // Lexer.cs(106,11): error CS0103: The  name 'a' does not exist in the current context
         protected override Regex ParserCompilerMessageRegex { get; } =
-            new ($@"^(?<{FileMark}>[^(]+)\((?<{LineMark}>\d+),(?<{ColumnMark}>\d+)\): ?(?<{TypeMark}>[^:]+): ?(?<{MessageMark}>.+)",
+            new ($@"^(?<{FileMark}>.+?)\((?<{LineMark}>\d+),(?<{ColumnMark}>\d+)\): (?<{TypeMark}>[^:]+): (?<{MessageMark}>.+)",
                 RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()

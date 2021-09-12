@@ -14,7 +14,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         // .\test_parser.go:172:4: syntax error: unexpected semicolon, expecting expression
         protected override Regex ParserCompilerMessageRegex { get; } =
-            new($@"^(?<{FileMark}>[^:]+):(?<{LineMark}>\d+):(?<{ColumnMark}>\d+): ?(?<{TypeMark}>[^:]+): ?(?<{MessageMark}>.+)",
+            new($@"^(?<{FileMark}>.+?):(?<{LineMark}>\d+):(?<{ColumnMark}>\d+): (?<{TypeMark}>[^:]+): (?<{MessageMark}>.+)",
                 RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()
