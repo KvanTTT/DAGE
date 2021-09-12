@@ -11,7 +11,7 @@ using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 using static AntlrGrammarEditor.Helpers;
 
-namespace AntlrGrammarEditor.Processors
+namespace AntlrGrammarEditor.Processors.TextParsing
 {
     public class TextParser : StageProcessor
     {
@@ -62,40 +62,37 @@ namespace AntlrGrammarEditor.Processors
                 string runtimeDir = Path.Combine(ParserCompiler.RuntimesDirName, runtime.ToString());
                 string runtimeLibraryPath = RuntimeLibrary ?? Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
 
-                string toolName;
-                string args = "";
                 string workingDirectory =
                     Path.Combine(ParserGenerator.HelperDirectoryName, grammar.Name, runtime.ToString());
 
-                switch (runtime)
+                string args = runtime switch
                 {
-                    case Runtime.CSharpOptimized:
-                    case Runtime.CSharpStandard:
-                        toolName = PrepareCSharpToolAndArgs(grammar, out args);
-                        break;
-
-                    case Runtime.Java:
-                        toolName = PrepareJavaToolAndArgs(runtimeLibraryPath, out args);
-                        break;
-
-                    case Runtime.Python:
-                        toolName = PreparePythonToolAndArgs(runtimeInfo, out args);
-                        break;
-
-                    case Runtime.Go:
-                        toolName = PrepareGoToolAndArgs(workingDirectory, runtimeInfo);
-                        break;
-
-                    default:
-                        toolName = PrepareDefaultToolAndArgs(runtimeInfo, out args);
-                        break;
-                }
+                    Runtime.CSharpOptimized => PrepareCSharpArgs(grammar),
+                    Runtime.CSharpStandard => PrepareCSharpArgs(grammar),
+                    Runtime.Java => PrepareJavaArgs(runtimeLibraryPath),
+                    Runtime.Go => "",
+                    _ => runtimeInfo.MainFile
+                };
 
                 args +=
                     $" \"{TextFileName}\" {_result.RootOrDefault} {OnlyTokenize.ToString().ToLowerInvariant()} {PredictionMode.ToString().ToLowerInvariant()}";
 
-                _result.Command = toolName + " " + args;
-                processor = new Processor(toolName, args, workingDirectory);
+                string runtimeToolName;
+                if (runtimeInfo.IsNativeBinary)
+                {
+                    string fileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                        ? Path.ChangeExtension(runtimeInfo.MainFile, ".exe")
+                        : Path.GetFileNameWithoutExtension(runtimeInfo.MainFile);
+
+                    runtimeToolName = Path.Combine(workingDirectory, fileName);
+                }
+                else
+                {
+                    runtimeToolName = runtimeInfo.RuntimeToolName;
+                }
+
+                _result.Command = runtimeToolName + " " + args;
+                processor = new Processor(runtimeToolName, args, workingDirectory);
                 processor.CancellationToken = cancellationToken;
                 processor.ErrorDataReceived += TextParsing_ErrorDataReceived;
                 processor.OutputDataReceived += TextParsing_OutputDataReceived;
@@ -117,13 +114,12 @@ namespace AntlrGrammarEditor.Processors
             return _result;
         }
 
-        private string PrepareCSharpToolAndArgs(Grammar grammar, out string args)
+        private string PrepareCSharpArgs(Grammar grammar)
         {
-            args = $"\"{Path.Combine("bin", "netcoreapp3.1", grammar.Name + ".dll")}\"";
-            return "dotnet";
+            return $"\"{Path.Combine("bin", "netcoreapp3.1", grammar.Name + ".dll")}\"";
         }
 
-        private static string PrepareJavaToolAndArgs(string runtimeLibraryPath, out string args)
+        private string PrepareJavaArgs(string runtimeLibraryPath)
         {
             string relativeRuntimeLibraryPath = "\"" + Path.Combine("..", "..", "..", runtimeLibraryPath) + "\"";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -135,29 +131,7 @@ namespace AntlrGrammarEditor.Processors
                 relativeRuntimeLibraryPath = ".:" + relativeRuntimeLibraryPath;
             }
 
-            args = $@"-cp {relativeRuntimeLibraryPath} Main";
-            return "java";
-        }
-
-        private static string PreparePythonToolAndArgs(RuntimeInfo runtimeInfo, out string args)
-        {
-            args = runtimeInfo.MainFile;
-            return runtimeInfo.RuntimeToolName;
-        }
-
-        private static string PrepareGoToolAndArgs(string workingDirectory, RuntimeInfo runtimeInfo)
-        {
-            string fileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? Path.ChangeExtension(runtimeInfo.MainFile, ".exe")
-                : Path.GetFileNameWithoutExtension(runtimeInfo.MainFile);
-
-            return Path.Combine(workingDirectory, fileName);
-        }
-
-        private static string PrepareDefaultToolAndArgs(RuntimeInfo runtimeInfo, out string args)
-        {
-            args = runtimeInfo.MainFile;
-            return runtimeInfo.RuntimeToolName;
+            return $@"-cp {relativeRuntimeLibraryPath} Main";
         }
 
         private void TextParsing_ErrorDataReceived(object sender, DataReceivedEventArgs e)

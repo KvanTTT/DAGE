@@ -118,8 +118,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                     Buffer.Clear();
                 }
 
-                Result.Command = CurrentRuntimeInfo.RuntimeToolName + " " + arguments;
-                processor = new Processor(CurrentRuntimeInfo.RuntimeToolName, arguments, WorkingDirectory);
+                Result.Command = CurrentRuntimeInfo.RuntimeCompilerToolToolName + " " + arguments;
+                processor = new Processor(CurrentRuntimeInfo.RuntimeCompilerToolToolName, arguments, WorkingDirectory);
                 processor.CancellationToken = cancellationToken;
                 processor.ErrorDataReceived += ParserCompilation_ErrorDataReceived;
                 processor.OutputDataReceived += ParserCompilation_OutputDataReceived;

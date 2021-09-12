@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Processors.TextParsing;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 

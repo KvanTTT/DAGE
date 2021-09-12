@@ -42,8 +42,9 @@ namespace AntlrGrammarEditor
                 extensions: new[] { "java" },
                 mainFile: "Main.java",
                 antlrInputStream: "CharStreams.fromFileName",
-                runtimeToolName: "javac",
+                runtimeToolName: "java",
                 versionArg: "-version",
+                runtimeCompilerToolName: "javac",
                 textParserEnvironmentVariables: new Dictionary<string, string>
                 {
                     ["JAVA_TOOL_OPTIONS"] = "-Dfile.encoding=UTF8"
@@ -115,7 +116,8 @@ namespace AntlrGrammarEditor
                 baseListenerPostfix: "_base_listener",
                 listenerPostfix: "_listener",
                 baseVisitorPostfix: "_base_visitor",
-                visitorPostfix: "_visitor"
+                visitorPostfix: "_visitor",
+                isNativeBinary: true
             ),
             [Runtime.Swift] = new RuntimeInfo
             (
@@ -165,7 +167,9 @@ namespace AntlrGrammarEditor
         public string MainFile { get; }
         public string AntlrInputStream { get; }
         public bool Interpreted { get; }
+        public string RuntimeCompilerToolToolName { get; }
         public string RuntimeToolName { get; }
+        public bool IsNativeBinary { get; }
         public string LexerPostfix { get; }
         public string ParserPostfix { get; }
         public string? BaseListenerPostfix { get; }
@@ -217,13 +221,16 @@ namespace AntlrGrammarEditor
 
         private RuntimeInfo(Runtime runtime, string name,
             string dLanguage, string runtimeLibrary, string[] extensions, string mainFile, string antlrInputStream,
-            string runtimeToolName, string versionArg, bool interpreted = false,
+            string runtimeToolName,
+            string versionArg, bool interpreted = false,
             string jarGenerator = "antlr-4.9.2-complete.jar",
             string lexerPostfix = "Lexer", string parserPostfix = "Parser",
             string? baseListenerPostfix = "BaseListener", string listenerPostfix = "Listener",
             string? baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor",
             string startCommentToken = "/*", string endCommentToken = "*/",
-            Dictionary<string, string>? textParserEnvironmentVariables = null)
+            Dictionary<string, string>? textParserEnvironmentVariables = null,
+            string? runtimeCompilerToolName = null,
+            bool isNativeBinary = false)
         {
             Runtime = runtime;
             Name = name;
@@ -234,7 +241,9 @@ namespace AntlrGrammarEditor
             MainFile = mainFile;
             AntlrInputStream = antlrInputStream;
             Interpreted = interpreted;
+            RuntimeCompilerToolToolName = runtimeCompilerToolName ?? runtimeToolName;
             RuntimeToolName = runtimeToolName;
+            IsNativeBinary = isNativeBinary;
             LexerPostfix = lexerPostfix;
             ParserPostfix = parserPostfix;
             BaseListenerPostfix = baseListenerPostfix;

@@ -5,6 +5,7 @@ using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors.GrammarChecking;
 using AntlrGrammarEditor.Processors.ParserCompilers;
 using AntlrGrammarEditor.Processors.ParserGeneration;
+using AntlrGrammarEditor.Processors.TextParsing;
 using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Processors
@@ -14,7 +15,7 @@ namespace AntlrGrammarEditor.Processors
         private Grammar _grammar;
         private Runtime? _runtime;
         private string? _root;
-        private PredictionMode? _predictionMode = AntlrGrammarEditor.Processors.PredictionMode.LL;
+        private PredictionMode? _predictionMode = Processors.PredictionMode.LL;
         private string? _textFileName;
         private string? _packageName;
         private string? _generatorTool;

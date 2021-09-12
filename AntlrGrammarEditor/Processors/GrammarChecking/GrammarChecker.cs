@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using Antlr4.Runtime;
 using AntlrGrammarEditor.Diagnoses;
+using AntlrGrammarEditor.Processors.TextParsing;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 

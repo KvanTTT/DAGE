@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Processors.TextParsing;
 
 namespace AntlrGrammarEditor.WorkflowState
 {
