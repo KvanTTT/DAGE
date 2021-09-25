@@ -6,32 +6,35 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public static class ParserCompilerFactory
     {
-        public static ParserCompiler Create(ParserGeneratedState state, string? runtimeLibrary, EventHandler<Diagnosis>? diagnosisEvent)
+        public static ParserCompiler Create(ParserGeneratedState state,
+            CaseInsensitiveType? caseInsensitiveType,
+            string? runtimeLibrary,
+            EventHandler<Diagnosis>? diagnosisEvent)
         {
             ParserCompiler result;
             switch (state.Runtime)
             {
                 case Runtime.CSharpStandard:
                 case Runtime.CSharpOptimized:
-                    result = new ParserCompilerCSharp(state);
+                    result = new ParserCompilerCSharp(state, caseInsensitiveType);
                     break;
                 case Runtime.Java:
-                    result = new ParserCompilerJava(state);
+                    result = new ParserCompilerJava(state, caseInsensitiveType);
                     break;
                 case Runtime.Python:
-                    result = new ParserCompilerPython(state);
+                    result = new ParserCompilerPython(state, caseInsensitiveType);
                     break;
                 case Runtime.JavaScript:
-                    result = new ParserCompilerJavaScript(state);
+                    result = new ParserCompilerJavaScript(state, caseInsensitiveType);
                     break;
                 case Runtime.Go:
-                    result = new ParserCompilerGo(state);
+                    result = new ParserCompilerGo(state, caseInsensitiveType);
                     break;
                 case Runtime.Php:
-                    result = new ParserCompilerPhp(state);
+                    result = new ParserCompilerPhp(state, caseInsensitiveType);
                     break;
                 case Runtime.Dart:
-                    result = new ParserCompilerDart(state);
+                    result = new ParserCompilerDart(state, caseInsensitiveType);
                     break;
                 default:
                     throw new NotImplementedException($"ParserCompiler for {state.Runtime} is not implemented");

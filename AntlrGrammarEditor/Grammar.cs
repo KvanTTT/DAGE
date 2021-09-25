@@ -1,44 +1,43 @@
-﻿using System.Collections.Generic;
+﻿using System.IO;
 
 namespace AntlrGrammarEditor
 {
-    public enum CaseInsensitiveType
-    {
-        None,
-        Lower,
-        Upper
-    }
-
-    public enum GrammarType
-    {
-        Combined,
-        Separated,
-        Lexer
-    }
-
     public class Grammar
     {
         public const string AntlrDotExt = ".g4";
         public const string LexerPostfix = "Lexer";
         public const string ParserPostfix = "Parser";
 
-        public string Name { get; set; }
+        public string Name { get; }
 
-        public string FileExtension { get; set; } = "txt";
+        public string Directory { get; }
 
-        public GrammarType Type { get; set; }
+        public string? Root { get; }
 
-        public CaseInsensitiveType CaseInsensitiveType { get; set; }
+        public string? Package { get; }
 
-        public List<string> Files { get; set; } = new();
+        public string? TextExtension { get; }
 
-        public List<string> TextFiles { get; set; } = new();
+        public CaseInsensitiveType CaseInsensitiveType { get; }
 
-        public string Directory { get; set; } = "";
+        public string FullFileName => Path.Combine(Directory, Name + AntlrDotExt);
 
-        public Grammar(string name)
+        public string ExamplesDirectory => Path.Combine(Directory, "examples");
+
+        public string DotTextExtension => string.IsNullOrEmpty(TextExtension) ? "" : "." + TextExtension;
+
+        public Grammar(string name, string directory,
+            string? root = null, string? package = null, CaseInsensitiveType caseInsensitiveType = CaseInsensitiveType.None,
+            string? textExtension = null)
         {
             Name = name;
+            Directory = directory;
+            TextExtension = textExtension;
+            CaseInsensitiveType = caseInsensitiveType;
+            Root = root;
+            Package = package;
         }
+
+        public override string ToString() => FullFileName;
     }
 }

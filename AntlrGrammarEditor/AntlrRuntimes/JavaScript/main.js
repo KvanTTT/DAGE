@@ -1,8 +1,8 @@
 import fs from 'fs';
 import antlr4 from 'antlr4';
 import PredictionMode from 'antlr4/atn/PredictionMode.js';
-import __TemplateGrammarName__Lexer from './__TemplateGrammarName__Lexer.js';
-/*$ParserInclude*/import __TemplateGrammarName__Parser from './__TemplateGrammarName__Parser.js';/*ParserInclude$*/
+import __TemplateLexerName__ from './__TemplateLexerName__.js';
+/*$ParserInclude*/import __TemplateParserName__ from './__TemplateParserName__.js';/*ParserInclude$*/
 /*$AntlrCaseInsensitive*/import AntlrCaseInsensitiveInputStream from './AntlrCaseInsensitiveInputStream.js';/*AntlrCaseInsensitive$*/
 
 var fileName = "../../Text"
@@ -13,7 +13,7 @@ if (process.argv.length > 2) {
 
 var input = fs.readFileSync(fileName).toString();
 var chars = new antlr4.InputStream(input);
-var lexer = new __TemplateGrammarName__Lexer(chars);
+var lexer = new __TemplateLexerName__(chars);
 var tokensStream = new antlr4.CommonTokenStream(lexer);
 
 /*$ParserPart*/
@@ -29,7 +29,7 @@ if (process.argv.length > 3) {
         }
     }
 }
-var parser = new __TemplateGrammarName__Parser(tokensStream);
+var parser = new __TemplateParserName__(tokensStream);
 parser._interp.predictionMode = mode === "sll"
     ? PredictionMode.PredictionMode.SLL
     : mode === "ll"

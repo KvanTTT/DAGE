@@ -111,8 +111,8 @@ namespace AntlrGrammarEditor
                 antlrInputStream: "antlr.NewInputStream",
                 runtimeToolName: "go",
                 versionArg: "version",
-                lexerPostfix: "_lexer",
-                parserPostfix: "_parser",
+                lexerFilePostfix: "_lexer",
+                parserFilePostfix: "_parser",
                 baseListenerPostfix: "_base_listener",
                 listenerPostfix: "_listener",
                 baseVisitorPostfix: "_base_visitor",
@@ -164,14 +164,15 @@ namespace AntlrGrammarEditor
         public string DLanguage { get; }
         public string RuntimeLibrary { get; }
         public string[] Extensions { get; }
+        public string MainExtension => Extensions[0];
         public string MainFile { get; }
         public string AntlrInputStream { get; }
         public bool Interpreted { get; }
         public string RuntimeCompilerToolToolName { get; }
         public string RuntimeToolName { get; }
         public bool IsNativeBinary { get; }
-        public string LexerPostfix { get; }
-        public string ParserPostfix { get; }
+        public string LexerFilePostfix { get; }
+        public string ParserFilePostfix { get; }
         public string? BaseListenerPostfix { get; }
         public string ListenerPostfix { get; }
         public string? BaseVisitorPostfix { get; }
@@ -224,7 +225,7 @@ namespace AntlrGrammarEditor
             string runtimeToolName,
             string versionArg, bool interpreted = false,
             string jarGenerator = "antlr-4.9.2-complete.jar",
-            string lexerPostfix = "Lexer", string parserPostfix = "Parser",
+            string lexerFilePostfix = "Lexer", string parserFilePostfix = "Parser",
             string? baseListenerPostfix = "BaseListener", string listenerPostfix = "Listener",
             string? baseVisitorPostfix = "BaseVisitor", string visitorPostfix = "Visitor",
             string startCommentToken = "/*", string endCommentToken = "*/",
@@ -244,8 +245,8 @@ namespace AntlrGrammarEditor
             RuntimeCompilerToolToolName = runtimeCompilerToolName ?? runtimeToolName;
             RuntimeToolName = runtimeToolName;
             IsNativeBinary = isNativeBinary;
-            LexerPostfix = lexerPostfix;
-            ParserPostfix = parserPostfix;
+            LexerFilePostfix = lexerFilePostfix;
+            ParserFilePostfix = parserFilePostfix;
             BaseListenerPostfix = baseListenerPostfix;
             ListenerPostfix = listenerPostfix;
             BaseVisitorPostfix = baseVisitorPostfix;

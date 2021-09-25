@@ -11,6 +11,8 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
         private bool _question;
         private int _currentFragmentNumber;
 
+        public GrammarFileType GrammarType { get; private set; }
+
         public List<string> Rules { get; } = new();
 
         public List<Fragment> Fragments { get; } = new();
@@ -19,9 +21,9 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
 
         public Source GrammarSource { get; }
 
-        public GrammarType GrammarType { get; private set; }
-
         public string? SuperClass { get; private set; }
+
+        public string? TokenVocab { get; private set; }
 
         public int CurrentFragmentNumber => _currentFragmentNumber;
 
@@ -40,10 +42,10 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
         public override void EnterGrammarType(ANTLRv4Parser.GrammarTypeContext context)
         {
             GrammarType = context.LEXER() != null
-                ? GrammarType.Lexer
+                ? GrammarFileType.Lexer
                 : context.PARSER() != null
-                    ? GrammarType.Separated
-                    : GrammarType.Combined;
+                    ? GrammarFileType.Parser
+                    : GrammarFileType.Combined;
         }
 
         public override void EnterOption([NotNull] ANTLRv4Parser.OptionContext context)
@@ -54,11 +56,20 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
             {
                 SuperClass = context.optionValue()?.GetText();
             }
+            else if (optionName == "tokenVocab")
+            {
+                TokenVocab = context.optionValue()?.GetText();
+            }
         }
 
         public override void EnterGrammarSpec([NotNull] ANTLRv4Parser.GrammarSpecContext context)
         {
             GrammarName = context.identifier().GetText();
+        }
+
+        public override void EnterLexerRuleSpec([NotNull] ANTLRv4Parser.LexerRuleSpecContext context)
+        {
+            Rules.Add(context.TOKEN_REF().GetText());
         }
 
         public override void EnterParserRuleSpec([NotNull] ANTLRv4Parser.ParserRuleSpecContext context)

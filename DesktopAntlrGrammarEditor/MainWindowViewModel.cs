@@ -17,21 +17,21 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors;
-using AntlrGrammarEditor.Processors.TextParsing;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
+using Avalonia.Layout;
+using DynamicData;
 
 namespace DesktopAntlrGrammarEditor
 {
     public class MainWindowViewModel : ReactiveObject
     {
-        private static readonly RuntimeInfoWrapper AutodetectRuntime = new RuntimeInfoWrapper(null);
+        private static readonly RuntimeWrapper AutodetectRuntime = new RuntimeWrapper(null);
 
-        private readonly Dictionary<Runtime, RuntimeInfoWrapper> _runtimeInfoWrappers;
         private readonly Window _window;
         private readonly Settings _settings;
-        private readonly Workflow _workflow;
-        private string _openedGrammarFile = "";
+        private Workflow? _workflow;
+        private FileName _openedGrammarFile = FileName.Empty;
         private FileName _openedTextFile = FileName.Empty;
         private FileState _grammarFileState, _textFileState;
         private readonly TextEditor _grammarTextBox;
@@ -44,10 +44,18 @@ namespace DesktopAntlrGrammarEditor
         private WorkflowStage _endStage = WorkflowStage.TextParsed;
         private Source? _grammarCode;
         private Source? _text;
-        private LineColumnTextSpan _grammarLineColumn;
-        private LineColumnTextSpan _textLineColumn;
+        private LineColumnTextSpan _grammarLineColumn = new LineColumnTextSpan(1, 1, new Source("", ""));
+        private LineColumnTextSpan _textLineColumn = new LineColumnTextSpan(1, 1, new Source("", ""));
+        private static readonly Dictionary<Runtime, RuntimeWrapper> SupportedRuntimeDictionary;
 
-        private Grammar Grammar => _workflow.Grammar;
+        private Grammar? Grammar => _workflow?.Grammar;
+
+        static MainWindowViewModel()
+        {
+            SupportedRuntimeDictionary = ((SupportedRuntime[])Enum.GetValues(typeof(SupportedRuntime))).ToDictionary(
+                runtime => (Runtime)runtime,
+                runtime => new RuntimeWrapper(runtime));
+        }
 
         public MainWindowViewModel(Window window)
         {
@@ -77,118 +85,39 @@ namespace DesktopAntlrGrammarEditor
                 _window.Position = new PixelPoint(_settings.Left, _settings.Top);
             }
 
-            Grammar? grammar;
-
-            bool openDefaultGrammar = false;
-            string? packageName = null;
-            string? root = null;
-            if (string.IsNullOrEmpty(_settings.GrammarFileOrDirectory))
-            {
-                openDefaultGrammar = true;
-                grammar = GrammarFactory.CreateDefault();
-            }
-            else
-            {
-                try
-                {
-                    grammar = GrammarFactory.Open(_settings.GrammarFileOrDirectory, out packageName, out root);
-                }
-                catch (Exception ex)
-                {
-                    ShowOpenFileErrorMessage(_settings.GrammarFileOrDirectory, ex.Message);
-
-                    _settings.OpenedGrammarFile = "";
-                    openDefaultGrammar = true;
-                    grammar = GrammarFactory.CreateDefault();
-                }
-            }
-
-            if (openDefaultGrammar)
-            {
-                GrammarFactory.FillGrammarFiles(grammar, Settings.Directory, false);
-                _settings.GrammarFileOrDirectory = grammar.Directory;
-                _settings.Save();
-            }
-
-            _workflow = new Workflow(grammar);
-
-            var availableRuntimes = new[]
-            {
-                Runtime.Java, Runtime.CSharpStandard, Runtime.CSharpOptimized, Runtime.Python,
-                Runtime.JavaScript, Runtime.Go, Runtime.Php, Runtime.Dart
-            };
-
-            _runtimeInfoWrappers = new Dictionary<Runtime, RuntimeInfoWrapper>();
-
-            foreach (Runtime runtime in availableRuntimes)
-            {
-                _runtimeInfoWrappers.Add(runtime, new RuntimeInfoWrapper(RuntimeInfo.InitOrGetRuntimeInfo(runtime)));
-            }
-
-            var list = new List<RuntimeInfoWrapper> {AutodetectRuntime};
-            list.AddRange(_runtimeInfoWrappers.Values);
-
-            Runtimes = new ObservableCollection<RuntimeInfoWrapper>(list);
-
-            SelectedRuntime = GetAutoOrSelectedRuntime();
-            PackageName = packageName;
-            Root = root;
-
-            InitFiles();
-            if (string.IsNullOrEmpty(_settings.OpenedGrammarFile) || !grammar.Files.Contains(_settings.OpenedGrammarFile))
-            {
-                OpenedGrammarFile = GrammarFiles.FirstOrDefault();
-            }
-            else
-            {
-                OpenedGrammarFile = _settings.OpenedGrammarFile;
-            }
-
-            if (string.IsNullOrEmpty(_settings.OpenedTextFile))
-            {
-                OpenedTextFile = TextFiles.Count > 0 ? TextFiles.First() : null;
-            }
-            else
-            {
-                OpenedTextFile = new FileName(_settings.OpenedTextFile);
-            }
-
-            SetupWindowSubscriptions();
-            SetupWorkflowSubscriptions();
-            SetupTextBoxSubscriptions();
-
             NewGrammarCommand = ReactiveCommand.CreateFromTask(async () =>
             {
                 var newGrammarWindow = new NewGrammarWindow();
                 Grammar localGrammar = await newGrammarWindow.ShowDialog<Grammar>(_window);
                 if (localGrammar != null)
                 {
-                    OpenGrammar(localGrammar, null, null);
+                    OpenGrammar(localGrammar);
                 }
                 _window.Activate();
             });
 
             OpenGrammarCommand = ReactiveCommand.CreateFromTask(async () =>
             {
-                var openGrammarDialog = new OpenFolderDialog
+                var openGrammarDialog = new OpenFileDialog
                 {
-                    Title = "Enter grammar directory name"
+                    Title = "Enter grammar file name",
+                    AllowMultiple = false
                 };
 
-                string folderName = "";
+                string? grammarFileName = null;
                 try
                 {
-                    folderName = await openGrammarDialog.ShowAsync(_window);
+                    grammarFileName = (await openGrammarDialog.ShowAsync(_window)).FirstOrDefault();
 
-                    if (!string.IsNullOrEmpty(folderName))
+                    if (!string.IsNullOrEmpty(grammarFileName))
                     {
-                        var localGrammar = GrammarFactory.Open(folderName, out string? localPackageName, out string? localRoot);
-                        OpenGrammar(localGrammar, localPackageName, localRoot);
+                        var localGrammar = GrammarFactory.Open(grammarFileName);
+                        OpenGrammar(localGrammar);
                     }
                 }
                 catch (Exception ex)
                 {
-                    await ShowOpenFileErrorMessage(folderName, ex.Message);
+                    await ShowOpenFileErrorMessage(grammarFileName ?? "", ex.Message);
                 }
             });
 
@@ -200,15 +129,16 @@ namespace DesktopAntlrGrammarEditor
                 {
                     RollbackGrammarIfRequired();
 
-                    File.WriteAllText(GetFullGrammarFileName(_openedGrammarFile), _grammarTextBox.Text);
+                    File.WriteAllText(_openedGrammarFile.FullFileName, _grammarTextBox.Text);
                     _grammarFileState = FileState.Saved;
                     changed = true;
                 }
 
-                if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile?.FullFileName))
+                if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile.FullFileName))
                 {
                     File.WriteAllText(_openedTextFile.FullFileName, _textTextBox.Text);
-                    _workflow.TextFileName = _openedTextFile.FullFileName;
+                    if (_workflow != null)
+                        _workflow.TextFileName = _openedTextFile.FullFileName;
                     _textFileState = FileState.Saved;
                     changed = true;
                 }
@@ -223,13 +153,17 @@ namespace DesktopAntlrGrammarEditor
 
             NewTextFile = ReactiveCommand.CreateFromTask(async () =>
             {
+                var grammar = Grammar;
+                if (grammar == null)
+                    return;
+
                 var filters = new List<FileDialogFilter>();
-                if (!string.IsNullOrEmpty(Grammar.FileExtension))
+                if (!string.IsNullOrEmpty(Grammar?.TextExtension))
                 {
                     filters.Add(new FileDialogFilter
                     {
                         Name = $"{Grammar.Name} parsing file",
-                        Extensions = new List<string> { Grammar.FileExtension }
+                        Extensions = new List<string> { Grammar.TextExtension }
                     });
                 }
 
@@ -239,13 +173,19 @@ namespace DesktopAntlrGrammarEditor
                     Extensions = new List<string> { "*" }
                 });
 
+                var defaultExamplesDirectory = grammar.ExamplesDirectory;
+                if (!Directory.Exists(defaultExamplesDirectory))
+                    Directory.CreateDirectory(defaultExamplesDirectory);
+
+                var defaultFileName = GrammarFilesManager.GetNotConflictingTextFile(grammar);
+
                 var saveFileDialog = new SaveFileDialog
                 {
                     Title = "Enter file name",
-                    DefaultExtension = Grammar.FileExtension,
+                    DefaultExtension = grammar.TextExtension,
                     Filters = filters,
-                    Directory = Grammar.Directory,
-                    InitialFileName = Path.GetFileName(GrammarFactory.GenerateTextFileName(Grammar))
+                    Directory = defaultExamplesDirectory,
+                    InitialFileName = Path.GetFileName(defaultFileName)
                 };
 
                 string fileName = await saveFileDialog.ShowAsync(_window);
@@ -256,7 +196,6 @@ namespace DesktopAntlrGrammarEditor
                     if (!TextFiles.Contains(newFile))
                     {
                         TextFiles.Add(newFile);
-                        Grammar.TextFiles.Add(newFile.FullFileName);
                         OpenedTextFile = TextFiles.Last();
                     }
                 }
@@ -279,7 +218,6 @@ namespace DesktopAntlrGrammarEditor
                         {
                             atLeastOneFileHasBeenAdded = true;
                             TextFiles.Add(openedFile);
-                            Grammar.TextFiles.Add(openedFile.FullFileName);
                         }
                     }
                     if (atLeastOneFileHasBeenAdded)
@@ -297,11 +235,10 @@ namespace DesktopAntlrGrammarEditor
                 {
                     string shortFileName = openedTextFile.ShortFileName;
                     string fullFileName = openedTextFile.FullFileName;
-                    Grammar.TextFiles.Remove(fullFileName);
                     var index = TextFiles.IndexOf(openedTextFile);
                     TextFiles.Remove(openedTextFile);
                     index = Math.Min(index, TextFiles.Count - 1);
-                    if (await MessageBox.ShowDialog(_window, $"Do you want to delete file {shortFileName}?", "",
+                    if (await MessageBox.ShowDialog(_window, $"Do you want to delete the file {shortFileName}?", "",
                         MessageBoxType.YesNo))
                     {
                         try
@@ -321,10 +258,115 @@ namespace DesktopAntlrGrammarEditor
                 }
             });
 
-            AutoProcessing = _settings.Autoprocessing;
+
+
+            SetupWindowSubscriptions();
         }
 
-        public string? OpenedGrammarFile
+        private void SetupWindowSubscriptions()
+        {
+            Observable.FromEventPattern(
+                    ev => _window.Opened += ev, ev => _window.Opened -= ev)
+                .Subscribe(ev =>
+                {
+                    Grammar? grammar;
+
+                    bool openDefaultGrammar = false;
+                    if (string.IsNullOrEmpty(_settings.GrammarFileName))
+                    {
+                        openDefaultGrammar = true;
+                        grammar = GrammarFilesManager.GetGrammarWithNotConflictingName(Utils.DefaultGrammarsDirectory);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            grammar = GrammarFactory.Open(_settings.GrammarFileName);
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowOpenFileErrorMessage(_settings.GrammarFileName, ex.Message).ConfigureAwait(false);
+
+                            _settings.OpenedGrammarFile = null;
+                            openDefaultGrammar = true;
+                            grammar = GrammarFilesManager.GetGrammarWithNotConflictingName(
+                                Utils.DefaultGrammarsDirectory);
+                        }
+                    }
+
+                    if (openDefaultGrammar)
+                    {
+                        new GrammarFilesManager(grammar).CreateFiles();
+                        var notConflictingTextFile = GrammarFilesManager.GetNotConflictingTextFile(grammar);
+                        TextFiles.Add(new FileName(notConflictingTextFile));
+                        _settings.GrammarFileName = grammar.FullFileName;
+                        _settings.Save();
+                    }
+
+                    _workflow = new Workflow(grammar);
+
+                    OpenGrammar(grammar, _settings.OpenedGrammarFile, _settings.OpenedTextFile);
+
+                    this.RaisePropertyChanged(nameof(SelectedRuntime));
+                    AutoProcessing = _settings.Autoprocessing;
+
+                    SetupWorkflowSubscriptions();
+                    SetupTextBoxSubscriptions();
+                });
+
+            _window.GetObservable(Layoutable.WidthProperty)
+                .Throttle(TimeSpan.FromMilliseconds(250))
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(width =>
+                {
+                    if (_window.WindowState != WindowState.Maximized)
+                    {
+                        _settings.Width = width;
+                    }
+
+                    _settings.WindowState = _window.WindowState;
+                    _settings.Save();
+                });
+
+            _window.GetObservable(Layoutable.HeightProperty)
+                .Throttle(TimeSpan.FromMilliseconds(250))
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(height =>
+                {
+                    if (_window.WindowState != WindowState.Maximized)
+                    {
+                        _settings.Height = height;
+                    }
+
+                    _settings.WindowState = _window.WindowState;
+                    _settings.Save();
+                });
+
+            Observable.FromEventPattern<CancelEventArgs>(
+                    ev => _window.Closing += ev, ev => _window.Closing -= ev)
+                .Subscribe(ev =>
+                {
+                    SaveGrammarFileIfRequired();
+                    SaveTextFileIfRequired();
+                });
+
+            Observable.FromEventPattern<PixelPointEventArgs>(
+                    ev => _window.PositionChanged += ev, ev => _window.PositionChanged -= ev)
+                .Throttle(TimeSpan.FromMilliseconds(250))
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(ev =>
+                {
+                    if (_window.WindowState != WindowState.Maximized)
+                    {
+                        _settings.Left = _window.Position.X;
+                        _settings.Top = _window.Position.Y;
+                    }
+
+                    _settings.Save();
+                });
+        }
+
+        public FileName? OpenedGrammarFile
         {
             get => _openedGrammarFile;
             set
@@ -334,46 +376,44 @@ namespace DesktopAntlrGrammarEditor
                 {
                     try
                     {
-                        _grammarTextBox.Text = File.ReadAllText(GetFullGrammarFileName(value));
+                        _grammarTextBox.Text = File.ReadAllText(value.FullFileName);
 
                         _openedGrammarFile = value;
                         _grammarFileState = FileState.Opened;
 
-                        if (_workflow.CurrentState.Stage == WorkflowStage.Input)
-                        {
-                            _workflow.EndStage = WorkflowStage.GrammarChecked;
-                            _workflow.Process();
-                            _workflow.EndStage = EndStage;
-                        }
-                        UpdateRules();
+                        _workflow?.GetGrammarCheckedState();
+                        UpdateParserRules();
 
-                        _settings.OpenedGrammarFile = value;
+                        _settings.OpenedGrammarFile = value.FullFileName;
                         _settings.Save();
 
-                        _grammarTextBox.SetupHightlighting(value);
-                        _grammarCode = new Source(_openedGrammarFile, _grammarTextBox.Text);
+                        _grammarTextBox.SetupHightlighting(value.FullFileName);
+                        _grammarCode = new Source(_openedGrammarFile.FullFileName, _grammarTextBox.Text);
 
                         this.RaisePropertyChanged();
                     }
                     catch (Exception ex)
                     {
-                        ShowOpenFileErrorMessage(_openedGrammarFile, ex.Message);
+                        ShowOpenFileErrorMessage(_openedGrammarFile.FullFileName, ex.Message).ConfigureAwait(false);
                     }
                 }
             }
         }
 
-        public ObservableCollection<string> GrammarFiles => new ObservableCollection<string>(_workflow.Grammar.Files);
+        public ObservableCollection<FileName> GrammarFiles => new ObservableCollection<FileName>(
+            _workflow?.GetGrammarCheckedState().GrammarInfos.Select(info => new FileName(info.Source.Name)) ??
+            Enumerable.Empty<FileName>());
 
         public string? Root
         {
-            get => _workflow.Root;
+            get => _workflow?.Root;
             set
             {
-                var currentRoot = _workflow.Root;
+                var currentRoot = _workflow?.Root;
                 if (currentRoot != value)
                 {
-                    _workflow.Root = value;
+                    if (_workflow != null)
+                        _workflow.Root = value;
 
                     if (AutoProcessing)
                     {
@@ -387,9 +427,12 @@ namespace DesktopAntlrGrammarEditor
 
         public string? PackageName
         {
-            get => _workflow.PackageName;
+            get => _workflow?.PackageName;
             set
             {
+                if (_workflow == null)
+                    return;
+
                 var currentPackageName = _workflow.PackageName;
                 if (currentPackageName != value)
                 {
@@ -407,13 +450,14 @@ namespace DesktopAntlrGrammarEditor
 
         public PredictionMode? PredictionMode
         {
-            get => _workflow.PredictionMode;
+            get => _workflow?.PredictionMode;
             set
             {
-                var currentPredictionMode = _workflow.PredictionMode;
+                var currentPredictionMode = _workflow?.PredictionMode;
                 if (currentPredictionMode != value)
                 {
-                    _workflow.PredictionMode = value;
+                    if (_workflow != null)
+                        _workflow.PredictionMode = value;
 
                     if (AutoProcessing)
                     {
@@ -425,51 +469,40 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public ObservableCollection<string> Rules { get; } = new ObservableCollection<string>();
+        public ObservableCollection<string> ParserRules { get; } = new ObservableCollection<string>();
 
-        public RuntimeInfoWrapper SelectedRuntime
+        public RuntimeWrapper SelectedRuntime
         {
-            get => GetAutoOrSelectedRuntime();
+            get => _workflow?.Runtime == null
+                ? AutodetectRuntime
+                : SupportedRuntimeDictionary[_workflow.Runtime.Value];
             set
             {
-                if (GetAutoOrSelectedRuntime() != value)
+                var runtime = value.Runtime.HasValue ? (Runtime?)value.Runtime : null;
+                if (runtime != _workflow?.Runtime)
                 {
-                    _workflow.Runtime = value.RuntimeInfo?.Runtime;
-
-                    InitGrammarAndCompiledFiles();
-
-                    var openedGrammarFile = OpenedGrammarFile;
-                    if (openedGrammarFile == null || !GrammarFiles.Contains(openedGrammarFile))
-                    {
-                        OpenedGrammarFile = GrammarFiles.First();
-                    }
+                    if (_workflow != null)
+                        _workflow.Runtime = runtime;
 
                     this.RaisePropertyChanged();
-                    this.RaisePropertyChanged(nameof(OpenedGrammarFile));
                     if (AutoProcessing)
-                    {
                         Process();
-                    }
                 }
             }
         }
 
-        public RuntimeInfo? DetectedRuntime => _runtimeInfoWrappers[_workflow.DetectedRuntime].RuntimeInfo;
 
-        private RuntimeInfoWrapper GetAutoOrSelectedRuntime() =>
-            _workflow.Runtime.HasValue
-                ? _runtimeInfoWrappers[_workflow.Runtime.Value]
-                : AutodetectRuntime;
 
-        public string CurrentState => _workflow.CurrentState.Stage.ToString();
+        public string CurrentState => (_workflow?.CurrentState.Stage ?? WorkflowStage.Input).ToString();
 
-        public ObservableCollection<RuntimeInfoWrapper> Runtimes { get; }
+        public ObservableCollection<RuntimeWrapper> SupportedRuntimes { get; } = new ObservableCollection<RuntimeWrapper>(
+            new [] { AutodetectRuntime }.Union(SupportedRuntimeDictionary.Values));
 
         public string GrammarErrorsText => $"Grammar Errors ({GrammarErrors.Count})";
 
         public bool GrammarErrorsExpanded => GrammarErrors.Count > 0;
 
-        public bool TextBoxEnabled => !string.IsNullOrEmpty(_openedTextFile?.FullFileName);
+        public bool TextBoxEnabled => !string.IsNullOrEmpty(_openedTextFile.FullFileName);
 
         public ObservableCollection<object> GrammarErrors { get; } = new ObservableCollection<object>();
 
@@ -503,16 +536,17 @@ namespace DesktopAntlrGrammarEditor
                         string fileName = value.FullFileName;
                         if (!File.Exists(value.FullFileName))
                         {
-                            fileName = GetFullGrammarFileName(value.FullFileName);
+                            File.WriteAllText(value.FullFileName, "");
                         }
                         _textTextBox.Text = File.ReadAllText(fileName);
                     }
                     catch (Exception ex)
                     {
                         _textTextBox.Text = "";
-                        ShowOpenFileErrorMessage(_openedTextFile.FullFileName, ex.Message);
+                        ShowOpenFileErrorMessage(_openedTextFile.FullFileName, ex.Message).ConfigureAwait(false);
                     }
-                    _workflow.TextFileName = value.FullFileName;
+                    if (_workflow != null)
+                        _workflow.TextFileName = value.FullFileName;
                     _textFileState = FileState.Opened;
 
                     _settings.OpenedTextFile = value.FullFileName;
@@ -530,7 +564,8 @@ namespace DesktopAntlrGrammarEditor
                     _parseTreeTextBox.IsEnabled = false;
                     _openedTextFile = FileName.Empty;
                     _textTextBox.Text = "";
-                    _workflow.TextFileName = null;
+                    if (_workflow != null)
+                        _workflow.TextFileName = null;
                     _textFileState = FileState.Opened;
 
                     _settings.OpenedTextFile = _openedTextFile.FullFileName;
@@ -589,7 +624,7 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        public bool IsParserExists => _workflow.Grammar.Type != GrammarType.Lexer;
+        public bool IsParserExists => _workflow?.GetGrammarCheckedState().GrammarProjectType != GrammarProjectType.Lexer;
 
         public LineColumnTextSpan GrammarCursorPosition
         {
@@ -677,71 +712,15 @@ namespace DesktopAntlrGrammarEditor
             set => this.RaiseAndSetIfChanged(ref _endStage, value);
         }
 
-        private void SetupWindowSubscriptions()
-        {
-            _window.GetObservable(Window.WidthProperty)
-                .Throttle(TimeSpan.FromMilliseconds(250))
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(width =>
-                {
-                    if (_window.WindowState != WindowState.Maximized)
-                    {
-                        _settings.Width = width;
-                    }
-                    _settings.WindowState = _window.WindowState;
-                    _settings.Save();
-                });
-
-            _window.GetObservable(Window.HeightProperty)
-                .Throttle(TimeSpan.FromMilliseconds(250))
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(height =>
-                {
-                    if (_window.WindowState != WindowState.Maximized)
-                    {
-                        _settings.Height = height;
-                    }
-                    _settings.WindowState = _window.WindowState;
-                    _settings.Save();
-                });
-
-            Observable.FromEventPattern<CancelEventArgs>(
-                ev => _window.Closing += ev, ev => _window.Closing -= ev)
-                .Subscribe(ev =>
-                {
-                    SaveGrammarFileIfRequired();
-                    SaveTextFileIfRequired();
-                });
-
-            Observable.FromEventPattern<PixelPointEventArgs>(
-                ev => _window.PositionChanged += ev, ev => _window.PositionChanged -= ev)
-                .Throttle(TimeSpan.FromMilliseconds(250))
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(ev =>
-                {
-                    if (_window.WindowState != WindowState.Maximized)
-                    {
-                        _settings.Left = _window.Position.X;
-                        _settings.Top = _window.Position.Y;
-                    }
-                    _settings.Save();
-                });
-        }
-
         private void SetupWorkflowSubscriptions()
         {
             Observable.FromEventPattern<WorkflowState>(
-                ev => _workflow.StateChanged += ev, ev => _workflow.StateChanged -= ev)
+                ev => _workflow!.StateChanged += ev, ev => _workflow!.StateChanged -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev => this.RaisePropertyChanged(nameof(CurrentState)));
 
-            Observable.FromEventPattern<Runtime>(
-                    ev => _workflow.DetectedRuntimeEvent += ev, ev => _workflow.DetectedRuntimeEvent -= ev)
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(ev => this.RaisePropertyChanged(nameof(DetectedRuntime)));
-
             Observable.FromEventPattern<Diagnosis>(
-                ev => _workflow.DiagnosisEvent += ev, ev => _workflow.DiagnosisEvent -= ev)
+                ev => _workflow!.DiagnosisEvent += ev, ev => _workflow!.DiagnosisEvent -= ev)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(ev =>
                 {
@@ -764,7 +743,8 @@ namespace DesktopAntlrGrammarEditor
                 });
 
             Observable.FromEventPattern<(TextParsedOutput, object)>(
-                 ev => _workflow.TextParsedOutputEvent += ev, ev => _workflow.TextParsedOutputEvent -= ev)
+                 ev => _workflow!.TextParsedOutputEvent += ev,
+                 ev => _workflow!.TextParsedOutputEvent -= ev)
                  .ObserveOn(RxApp.MainThreadScheduler)
                  .Subscribe(ev =>
                  {
@@ -783,7 +763,7 @@ namespace DesktopAntlrGrammarEditor
                      }
                  });
 
-            _workflow.ClearErrorsEvent += Workflow_ClearErrorsEvent;
+            _workflow!.ClearErrorsEvent += Workflow_ClearErrorsEvent;
         }
 
         private void SetupTextBoxSubscriptions()
@@ -805,12 +785,12 @@ namespace DesktopAntlrGrammarEditor
             grammarTextBoxObservable
                 .Throttle(TimeSpan.FromMilliseconds(200))
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(x => _grammarCode = new Source(_openedGrammarFile, _grammarTextBox.Text));
+                .Subscribe(x => _grammarCode = new Source(_openedGrammarFile.FullFileName, _grammarTextBox.Text));
 
             textBoxObservable
                 .Throttle(TimeSpan.FromMilliseconds(200))
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(x => _text = new Source(_openedTextFile.ShortFileName, _text?.Text ?? ""));
+                .Subscribe(x => _text = new Source(_openedTextFile.FullFileName, _text?.Text ?? ""));
 
             Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(100), RxApp.MainThreadScheduler)
                 .Subscribe(_ =>
@@ -849,7 +829,7 @@ namespace DesktopAntlrGrammarEditor
                 {
                     if (_textFileState == FileState.Changed)
                     {
-                        _workflow.TextFileName = OpenedTextFile?.FullFileName;
+                        _workflow!.TextFileName = OpenedTextFile?.FullFileName;
                         _workflow.RollbackToStage(WorkflowStage.ParserCompiled);
 
                         if (AutoProcessing)
@@ -863,28 +843,51 @@ namespace DesktopAntlrGrammarEditor
 
         private void RollbackGrammarIfRequired()
         {
-            WorkflowStage switchStage =
-                (Path.GetExtension(OpenedGrammarFile) ?? "").Equals(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase)
-                   ? WorkflowStage.Input
-                   : WorkflowStage.ParserGenerated;
-            _workflow.RollbackToStage(switchStage);
+            _workflow?.RollbackToStage(WorkflowStage.Input);
         }
 
-        private void OpenGrammar(Grammar grammar, string? packageName, string? root)
+        private void OpenGrammar(Grammar grammar, string? openedGrammarFile = null, string? openedTextFile = null)
         {
-            _workflow.Grammar = grammar;
-            _settings.GrammarFileOrDirectory = grammar.Directory;
+            _workflow!.Grammar = grammar;
+            _settings.GrammarFileName = grammar.FullFileName;
             _settings.Save();
-            _openedGrammarFile = "";
+            _openedGrammarFile = FileName.Empty;
             _openedTextFile = FileName.Empty;
-            Rules.Clear();
+            ParserRules.Clear();
+            var grammarCheckedState = _workflow.GetGrammarCheckedState();
             InitFiles();
-            OpenedGrammarFile = GrammarFiles.FirstOrDefault();
-            OpenedTextFile = TextFiles.FirstOrDefault();
-            PackageName = packageName;
-            Root = root;
-            this.RaisePropertyChanged(nameof(SelectedRuntime));
+            OpenedGrammarFile = openedGrammarFile == null ||
+                                grammarCheckedState.GrammarInfos.All(info => info.Source.Name != openedGrammarFile)
+                ? GrammarFiles.LastOrDefault()
+                : new FileName(openedGrammarFile);
+            OpenedTextFile = openedTextFile == null ||
+                             TextFiles.All(textFile => textFile.FullFileName != openedTextFile)
+                ? TextFiles.FirstOrDefault()
+                : new FileName(openedTextFile);
+            PackageName = grammar.Package;
+            Root = grammar.Root;
             this.RaisePropertyChanged(nameof(IsParserExists));
+        }
+
+        private void InitFiles()
+        {
+            this.RaisePropertyChanged(nameof(GrammarFiles));
+
+            TextFiles.Clear();
+            var textExtension = Grammar?.TextExtension;
+            var examplesDirectory = Grammar?.ExamplesDirectory;
+
+            if (!Directory.Exists(examplesDirectory))
+                Directory.CreateDirectory(examplesDirectory);
+
+            IEnumerable<string> textFileNames = Directory.GetFiles(examplesDirectory, "*", SearchOption.AllDirectories);
+            if (textExtension != null)
+            {
+                var dotTextExtension = "." + textExtension;
+                textFileNames = textFileNames.Where(fileName => Path.GetExtension(fileName) == dotTextExtension);
+            }
+
+            TextFiles.AddRange(textFileNames.Select(fileName => new FileName(fileName)));
         }
 
         private void Workflow_ClearErrorsEvent(object? sender, WorkflowStage e)
@@ -971,7 +974,7 @@ namespace DesktopAntlrGrammarEditor
 
                 if (ReferenceEquals(textBox, _grammarTextBox))
                 {
-                    OpenedGrammarFile = diagnosisFileName;
+                    OpenedGrammarFile = new FileName(diagnosisFileName);
                 }
 
                 TextSpan selectTextSpan;
@@ -1002,94 +1005,18 @@ namespace DesktopAntlrGrammarEditor
             }
         }
 
-        private void InitFiles()
-        {
-            InitGrammarAndCompiledFiles();
-
-            TextFiles.Clear();
-            foreach (var file in Grammar.TextFiles)
-            {
-                TextFiles.Add(new FileName(file));
-            }
-        }
-
-        private void InitGrammarAndCompiledFiles()
-        {
-            var value = SelectedRuntime;
-
-            var runtimeInfo = value.RuntimeInfo;
-            if (runtimeInfo == null)
-            {
-                return;
-            }
-
-            string runtimeName = runtimeInfo.Runtime.ToString();
-            string runtimeFilesPath = Path.Combine(Grammar.Directory, runtimeName);
-
-            if (!Directory.Exists(runtimeFilesPath))
-            {
-                runtimeName = runtimeInfo.Runtime.GetGeneralRuntimeName();
-                runtimeFilesPath = Path.Combine(Grammar.Directory, runtimeName);
-            }
-
-            var runtimeGrammarAndCompiledFiles = new List<string>();
-            if (Directory.Exists(runtimeFilesPath))
-            {
-                runtimeGrammarAndCompiledFiles = GetGrammarAndCompiliedFiles(runtimeFilesPath, runtimeName, runtimeInfo.Extensions[0]);
-            }
-
-            List<string> grammarAndCompiliedFiles = GetGrammarAndCompiliedFiles(Grammar.Directory, "", runtimeInfo.Extensions[0]);
-
-            Grammar.Files.Clear();
-
-            foreach (string fileName in grammarAndCompiliedFiles)
-            {
-                string? runtimeFile = runtimeGrammarAndCompiledFiles
-                    .FirstOrDefault(f => Path.GetFileName(f) == fileName);
-
-                string addedFile;
-                if (runtimeFile != null)
-                {
-                    addedFile = runtimeFile;
-                    runtimeGrammarAndCompiledFiles.Remove(runtimeFile);
-                }
-                else
-                {
-                    addedFile = fileName;
-                }
-
-                Grammar.Files.Add(addedFile);
-            }
-
-            foreach (string fileName in runtimeGrammarAndCompiledFiles)
-            {
-                Grammar.Files.Add(fileName);
-            }
-
-            this.RaisePropertyChanged(nameof(GrammarFiles));
-        }
-
-        private List<string> GetGrammarAndCompiliedFiles(string path, string runtimeName, string extension)
-        {
-            return Directory.GetFiles(path, "*.*")
-                            .Where(file => file.EndsWith(extension, StringComparison.OrdinalIgnoreCase)
-                                        || file.EndsWith(Grammar.AntlrDotExt, StringComparison.OrdinalIgnoreCase))
-                            .Select(file => Path.Combine(runtimeName, Path.GetFileName(file)))
-                            .ToList();
-        }
-
         private void SaveGrammarFileIfRequired()
         {
             if (_grammarFileState == FileState.Changed)
             {
-                File.WriteAllText(GetFullGrammarFileName(_openedGrammarFile), _grammarTextBox.Text);
+                File.WriteAllText(_openedGrammarFile.FullFileName, _grammarTextBox.Text);
                 _grammarFileState = FileState.Saved;
             }
         }
 
         private void SaveTextFileIfRequired()
         {
-            if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile?.FullFileName))
+            if (_textFileState == FileState.Changed && !string.IsNullOrEmpty(_openedTextFile.FullFileName))
             {
                 File.WriteAllText(_openedTextFile.FullFileName, _textTextBox.Text);
                 _textFileState = FileState.Saved;
@@ -1098,6 +1025,12 @@ namespace DesktopAntlrGrammarEditor
 
         private async void Process()
         {
+            if (_workflow == null)
+            {
+                await Task.Delay(0);
+                return;
+            }
+
             _workflow.RollbackToPreviousStageIfErrors();
 
             var assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -1116,11 +1049,11 @@ namespace DesktopAntlrGrammarEditor
                 return;
             }
 
-            RuntimeInfo? runtimeInfo = SelectedRuntime.RuntimeInfo != null
-                ? RuntimeInfo.InitOrGetRuntimeInfo(SelectedRuntime.RuntimeInfo.Runtime)
+            RuntimeInfo? runtimeInfo = SelectedRuntime.Runtime != null
+                ? ((Runtime)SelectedRuntime.Runtime.Value).GetRuntimeInfo()
                 : null;
 
-            if (EndStage >= WorkflowStage.ParserCompiled && runtimeInfo != null && runtimeInfo.Version == null)
+            if (EndStage >= WorkflowStage.ParserCompiled && runtimeInfo is { Version: null })
             {
                 string message = $"Install {runtimeInfo.RuntimeToolName}";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -1136,29 +1069,35 @@ namespace DesktopAntlrGrammarEditor
 
             await _workflow.ProcessAsync();
 
-            UpdateRules();
+            UpdateParserRules();
         }
 
-        private void UpdateRules()
+        private void UpdateParserRules()
         {
-            var grammarCheckedState = _workflow.CurrentState.GetState<GrammarCheckedState>();
+            var grammarCheckedState = _workflow?.CurrentState.GetState<GrammarCheckedState>();
             if (grammarCheckedState == null)
             {
                 return;
             }
 
-            var workflowRules = grammarCheckedState.Rules;
-            if (!Rules.SequenceEqual(workflowRules))
+            var workflowRules = grammarCheckedState.GrammarInfos.FirstOrDefault(info => info.Type == GrammarFileType.Parser)?.Rules;
+
+            if (workflowRules == null)
             {
-                Rules.Clear();
+                ParserRules.Clear();
+                Root = null;
+            }
+            else if (!ParserRules.SequenceEqual(workflowRules))
+            {
+                ParserRules.Clear();
                 foreach (var rule in workflowRules)
                 {
-                    Rules.Add(rule);
+                    ParserRules.Add(rule);
                 }
 
-                if (Root == null || !Rules.Contains(Root))
+                if (Root == null || !ParserRules.Contains(Root))
                 {
-                    Root = Rules[0];
+                    Root = ParserRules[0];
                 }
                 else
                 {
@@ -1166,8 +1105,6 @@ namespace DesktopAntlrGrammarEditor
                 }
             }
         }
-
-        private string GetFullGrammarFileName(string fileName) => Path.Combine(Grammar.Directory, fileName);
 
         private async Task ShowOpenFileErrorMessage(string fileName, string exceptionMessage)
         {

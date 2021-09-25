@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -22,25 +23,25 @@ namespace AntlrGrammarEditor.Processors.TextParsing
 
         public string? TextFileName { get; }
 
-        public string? Root { get; }
-
         public bool OnlyTokenize { get; set; }
-
-        public PredictionMode PredictionMode { get; set; }
 
         public EventHandler<(TextParsedOutput, object)>? TextParsedOutputEvent { get; set; }
 
         public string? RuntimeLibrary { get; set; }
 
-        public TextParser(ParserCompiledState state, string? textFileName, string? root)
+        public TextParser(ParserCompiledState state, string? textFileName, string? root,
+            PredictionMode? predictionMode)
         {
+            var grammarCheckedState = state.ParserGeneratedState.GrammarCheckedState;
             TextFileName = textFileName;
-            Root = root;
+            var definedRoot = root ?? grammarCheckedState.Root ??
+                grammarCheckedState.GrammarInfos.FirstOrDefault(info => info.Type.IsParser())?.Rules[0] ??
+                "";
+            var definedPredictionMode = predictionMode ?? grammarCheckedState.PredictionMode ?? PredictionMode.LL;
             _result = new TextParsedState(state,
-                textFileName != null ? new Source(textFileName, File.ReadAllText(textFileName)) : null)
-            {
-                Root = root
-            };
+                definedRoot,
+                definedPredictionMode,
+                textFileName != null ? new Source(textFileName, File.ReadAllText(textFileName)) : null);
         }
 
         public TextParsedState Parse(CancellationToken cancellationToken = default)
@@ -58,7 +59,7 @@ namespace AntlrGrammarEditor.Processors.TextParsing
                 Grammar grammar = parserCompiledState.ParserGeneratedState.GrammarCheckedState.InputState.Grammar;
                 Runtime runtime = parserCompiledState.ParserGeneratedState.Runtime;
 
-                var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
+                var runtimeInfo = runtime.GetRuntimeInfo();
                 string runtimeDir = Path.Combine(ParserCompiler.RuntimesDirName, runtime.ToString());
                 string runtimeLibraryPath = RuntimeLibrary ?? Path.Combine(runtimeDir, runtimeInfo.RuntimeLibrary);
 
@@ -75,7 +76,7 @@ namespace AntlrGrammarEditor.Processors.TextParsing
                 };
 
                 args +=
-                    $" \"{TextFileName}\" {_result.RootOrDefault} {OnlyTokenize.ToString().ToLowerInvariant()} {PredictionMode.ToString().ToLowerInvariant()}";
+                    $" \"{TextFileName}\" {_result.Root} {OnlyTokenize.ToString().ToLowerInvariant()} {_result.PredictionMode.ToString().ToLowerInvariant()}";
 
                 string runtimeToolName;
                 if (runtimeInfo.IsNativeBinary)

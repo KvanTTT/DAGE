@@ -9,7 +9,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerDart : ParserCompiler
     {
-        public ParserCompilerDart(ParserGeneratedState state) : base(state)
+        public ParserCompilerDart(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
+            : base(state, caseInsensitiveType)
         {
         }
 
@@ -25,26 +26,26 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
             var packageName = Result.ParserGeneratedState.PackageName;
             var lexerOnlyAndNotEmptyPackageName =
-                !string.IsNullOrEmpty(packageName) && Grammar.Type == GrammarType.Lexer;
+                !string.IsNullOrEmpty(packageName) &&
+                Result.ParserGeneratedState.GrammarCheckedState.GrammarProjectType == GrammarProjectType.Lexer;
 
             if (lexerOnlyAndNotEmptyPackageName)
             {
                 stringBuilder.AppendLine($"library {packageName};");
                 stringBuilder.AppendLine("import 'package:antlr4/antlr4.dart';");
 
-                var lexerFile = GeneratedFiles.FirstOrDefault(file =>
-                    Path.GetFileNameWithoutExtension(file).EndsWith(CurrentRuntimeInfo.LexerPostfix));
-                if (lexerFile != null)
-                {
-                    stringBuilder.AppendLine($"part '{Path.GetFileNameWithoutExtension(lexerFile)}.dart';");
-                }
+                var lexerFile = Result.ParserGeneratedState.RuntimeFileInfos
+                    .First(info => info.Value.RelatedGrammarInfo.Type == GrammarFileType.Lexer)
+                    .Key;
+
+                stringBuilder.AppendLine($"part '{Path.GetFileNameWithoutExtension(lexerFile)}.dart';");
             }
             else
             {
-                foreach (string file in GeneratedFiles)
+                foreach (string file in Result.ParserGeneratedState.RuntimeFileInfos.Keys)
                 {
                     var shortFileName = Path.GetFileNameWithoutExtension(file);
-                    if (string.IsNullOrEmpty(packageName) || shortFileName.EndsWith(CurrentRuntimeInfo.ParserPostfix))
+                    if (string.IsNullOrEmpty(packageName) || shortFileName.EndsWith(CurrentRuntimeInfo.ParserFilePostfix))
                     {
                         stringBuilder.AppendLine($"import '{shortFileName}.dart';");
                     }
@@ -57,7 +58,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             string compileTestFileName = CreateHelperFile(stringBuilder);
 
             File.Copy(Path.Combine(RuntimeDir, "pubspec.yaml"), Path.Combine(WorkingDirectory, "pubspec.yaml"), true);
-            if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            if (CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.Copy(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.dart"),
                     Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.dart"), true);

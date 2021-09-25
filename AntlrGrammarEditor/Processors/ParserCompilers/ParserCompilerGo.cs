@@ -8,13 +8,14 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerGo : ParserCompiler
     {
-        public ParserCompilerGo(ParserGeneratedState state) : base(state)
+        public ParserCompilerGo(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
+            : base(state, caseInsensitiveType)
         {
         }
 
         // .\test_parser.go:172:4: syntax error: unexpected semicolon, expecting expression
         protected override Regex ParserCompilerMessageRegex { get; } =
-            new($@"^(?<{FileMark}>.+?):(?<{LineMark}>\d+):(?<{ColumnMark}>\d+): (?<{TypeMark}>[^:]+): (?<{MessageMark}>.+)",
+            new($@"^(?<{FileMark}>.+?):(?<{LineMark}>\d+):(?<{ColumnMark}>\d+): ((?<{TypeMark}>[^:]+): )?(?<{MessageMark}>.+)",
                 RegexOptions.Compiled);
 
         protected override string PrepareFilesAndGetArguments()
@@ -23,13 +24,13 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
             if (string.IsNullOrWhiteSpace(Result.ParserGeneratedState.PackageName))
             {
-                foreach (string generatedFile in GeneratedFiles)
+                foreach (string generatedFile in Result.ParserGeneratedState.RuntimeFileInfos.Keys)
                 {
                     compiledFiles.Append($" \"{Path.GetFileName(generatedFile)}\"");
                 }
             }
 
-            if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            if (CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 compiledFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
 

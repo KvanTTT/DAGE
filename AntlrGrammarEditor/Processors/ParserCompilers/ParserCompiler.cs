@@ -18,16 +18,17 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
     public abstract class ParserCompiler : StageProcessor
     {
         private const string CompilerHelperFileName = "AntlrCompileTest";
-        private const string TemplateGrammarName = "__TemplateGrammarName__";
+        private const string TemplateLexerName = "__TemplateLexerName__";
+        private const string TemplateParserName = "__TemplateParserName__";
         private const string RuntimesPath = "__RuntimesPath__";
         private const string PackageName = "__PackageName__";
         public const string RuntimesDirName = "AntlrRuntimes";
 
         private static readonly Regex FragmentMarkRegexBegin;
         private static readonly Regex FragmentMarkRegexEnd;
-        private static readonly Regex CSharpStopStringRegex = new Regex(@"^Build FAILED\.$", RegexOptions.Compiled);
+        private static readonly Regex CSharpStopStringRegex = new (@"^Build FAILED\.$", RegexOptions.Compiled);
 
-        private readonly object _lockObject = new object();
+        private readonly object _lockObject = new ();
 
         private readonly OpenCloseMark _packageNameMark;
         private readonly OpenCloseMark _parserPartMark;
@@ -35,20 +36,23 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         private readonly OpenCloseMark _parserIncludeMark;
         private readonly OpenCloseMark _caseInsensitiveMark;
 
-        private readonly string _generatedGrammarName;
         private readonly Dictionary<string, FragmentMapper> _fragmentFinders = new ();
+        private readonly Dictionary<string, Source> _runtimeFileSources = new();
 
-        protected readonly Grammar Grammar;
+        protected readonly GrammarCheckedState GrammarCheckedState;
         protected readonly RuntimeInfo CurrentRuntimeInfo;
         protected readonly ParserCompiledState Result;
         protected readonly string RuntimeDir;
         protected readonly string WorkingDirectory;
         protected readonly string RuntimeLibraryPath;
-        protected readonly List<string> GeneratedFiles = new();
         protected readonly List<string> Buffer = new();
         private bool _ignoreDiagnosis;
 
         public string? RuntimeLibrary { get; set; }
+
+        public string GrammarName => Result.ParserGeneratedState.GrammarCheckedState.MainGrammarName;
+
+        public CaseInsensitiveType CaseInsensitiveType => Result.CaseInsensitiveType;
 
         protected abstract Regex ParserCompilerMessageRegex { get; }
 
@@ -70,18 +74,18 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             FragmentMarkRegexEnd = new Regex(fragmentRegexStringEnd, RegexOptions.Compiled);
         }
 
-        protected ParserCompiler(ParserGeneratedState state)
+        protected ParserCompiler(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
         {
-            Grammar = state.GrammarCheckedState.InputState.Grammar;
-            Result = new ParserCompiledState(state);
-            CurrentRuntimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Result.ParserGeneratedState.Runtime);
-            Runtime runtime = state.Runtime;
-            string runtimeSource = runtime.GetGeneralRuntimeName();
+            GrammarCheckedState = state.GrammarCheckedState;
+            var definedCaseInsensitiveType = caseInsensitiveType ??
+                                             state.GrammarCheckedState.CaseInsensitiveType ?? CaseInsensitiveType.None;
+            Result = new ParserCompiledState(state, definedCaseInsensitiveType, _runtimeFileSources);
+            CurrentRuntimeInfo = Result.ParserGeneratedState.Runtime.GetRuntimeInfo();
+            string runtimeSource = state.Runtime.GetGeneralRuntimeName();
             RuntimeDir = Path.Combine(RuntimesDirName, runtimeSource);
             RuntimeLibraryPath = RuntimeLibrary ?? Path.Combine(RuntimeDir, CurrentRuntimeInfo.RuntimeLibrary);
-            WorkingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName, Grammar.Name, runtime.ToString());
-            _generatedGrammarName =
-                runtime != Runtime.Go ? Grammar.Name : Grammar.Name.ToLowerInvariant();
+            WorkingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName,
+                state.GrammarCheckedState.MainGrammarName, Result.ParserGeneratedState.Runtime.ToString());
 
             _packageNameMark = new OpenCloseMark("PackageName", CurrentRuntimeInfo);
             _parserPartMark = new OpenCloseMark("ParserPart", CurrentRuntimeInfo);
@@ -92,26 +96,12 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         public ParserCompiledState Compile(CancellationToken cancellationToken = default)
         {
-            var state = Result.ParserGeneratedState;
-
             Processor? processor = null;
             try
             {
-                if (Grammar.Type != GrammarType.Lexer)
-                    GetGeneratedFileNames(false);
+                //CopyCompiledSources();
 
-                GetGeneratedFileNames(true);
-                CopyCompiledSources();
-
-                if (Grammar.Type != GrammarType.Lexer)
-                {
-                    if (state.IncludeListener)
-                        GetGeneratedListenerOrVisitorFiles(false);
-
-                    if (state.IncludeVisitor)
-                        GetGeneratedListenerOrVisitorFiles(true);
-                }
-
+                _runtimeFileSources.Clear();
                 PreprocessGeneratedFiles();
 
                 string arguments = PrepareFilesAndGetArguments();
@@ -163,72 +153,16 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         protected string GetPhpAutoloadPath() =>
             Helpers.RuntimesPath.Replace("\\", "/") + "/Php/vendor/autoload.php";
 
-        private void GetGeneratedFileNames(bool lexer)
-        {
-            string shortGeneratedFile = _generatedGrammarName +
-                                        (lexer ? CurrentRuntimeInfo.LexerPostfix : CurrentRuntimeInfo.ParserPostfix) +
-                                        "." + CurrentRuntimeInfo.Extensions[0];
-
-            string generatedFileDir = WorkingDirectory;
-            Runtime runtime = CurrentRuntimeInfo.Runtime;
-            if ((runtime == Runtime.Java || runtime == Runtime.Go) && !string.IsNullOrWhiteSpace(Result.ParserGeneratedState.PackageName))
-            {
-                generatedFileDir = Path.Combine(generatedFileDir, Result.ParserGeneratedState.PackageName);
-            }
-            string generatedFile = Path.Combine(generatedFileDir, shortGeneratedFile);
-            GeneratedFiles.Add(generatedFile);
-        }
-
-        private void CopyCompiledSources()
-        {
-            RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(CurrentRuntimeInfo.Runtime);
-            string extension = runtimeInfo.Extensions[0];
-
-            foreach (string fileName in Grammar.Files)
-            {
-                if (Path.GetExtension(fileName).Equals("." + extension, StringComparison.OrdinalIgnoreCase))
-                {
-                    string sourceFileName = Path.Combine(Grammar.Directory, fileName);
-
-                    string shortFileName = Path.GetFileName(fileName);
-
-                    if ((runtimeInfo.Runtime == Runtime.Java || runtimeInfo.Runtime == Runtime.Go) &&
-                        !string.IsNullOrWhiteSpace(Result.ParserGeneratedState.PackageName))
-                    {
-                        shortFileName = Path.Combine(Result.ParserGeneratedState.PackageName, shortFileName);
-                    }
-
-                    string destFileName = Path.Combine(WorkingDirectory, shortFileName);
-
-                    File.Copy(sourceFileName, destFileName, true);
-                }
-            }
-        }
-
-        private void GetGeneratedListenerOrVisitorFiles(bool visitor)
-        {
-            string postfix = visitor ? CurrentRuntimeInfo.VisitorPostfix : CurrentRuntimeInfo.ListenerPostfix;
-            string? basePostfix = visitor ? CurrentRuntimeInfo.BaseVisitorPostfix : CurrentRuntimeInfo.BaseListenerPostfix;
-
-            GeneratedFiles.Add(Path.Combine(WorkingDirectory,
-                _generatedGrammarName + postfix + "." + CurrentRuntimeInfo.Extensions[0]));
-            if (basePostfix != null)
-            {
-                GeneratedFiles.Add(Path.Combine(WorkingDirectory,
-                    _generatedGrammarName + basePostfix + "." + CurrentRuntimeInfo.Extensions[0]));
-            }
-        }
-
         private void PreprocessGeneratedFiles()
         {
-            foreach (string generatedFile in GeneratedFiles)
+            var grammarMappedFragments = Result.ParserGeneratedState.MappedFragments;
+            foreach (var generatedFileName in Result.ParserGeneratedState.RuntimeFileInfos.Keys)
             {
                 var generatedRawMappedFragments = new List<RawMappedFragment>();
 
-                var text = File.ReadAllText(generatedFile);
+                var text = File.ReadAllText(generatedFileName);
                 var textSpan = text.AsSpan();
                 StringBuilder? newTextBuilder = null;
-                var grammarMappedFragments = Result.ParserGeneratedState.MappedFragments;
 
                 var index = 0;
                 var beginMatch = FragmentMarkRegexBegin.Match(text, index);
@@ -260,21 +194,30 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                     beginMatch = FragmentMarkRegexBegin.Match(text, index);
                 }
 
+                var shortGeneratedFileName = Path.GetFileName(generatedFileName);
+                Source source;
+
                 if (newTextBuilder != null)
                 {
                     // Grammar contains actions and predicates
                     newTextBuilder.Append(textSpan.Slice(index));
                     var newText = newTextBuilder.ToString();
-                    File.WriteAllText(generatedFile, newText);
-                    var source = new Source(generatedFile, newText);
+                    File.WriteAllText(generatedFileName, newText);
+                    source = new Source(generatedFileName, newText);
 
                     var generatedMappedFragments = new List<MappedFragment>(generatedRawMappedFragments.Count);
                     foreach (var rawMappedFragment in generatedRawMappedFragments)
                         generatedMappedFragments.Add(rawMappedFragment.ToMappedFragment(source));
 
-                    _fragmentFinders.Add(Path.GetFileName(generatedFile),
+                    _fragmentFinders.Add(shortGeneratedFileName,
                         new FragmentMapper(Result.ParserGeneratedState.Runtime, source, generatedMappedFragments));
                 }
+                else
+                {
+                    source = new Source(shortGeneratedFileName, text);
+                }
+
+                _runtimeFileSources.Add(shortGeneratedFileName, source);
             }
         }
 
@@ -286,7 +229,14 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             string code = File.ReadAllText(Path.Combine(RuntimeDir, CurrentRuntimeInfo.MainFile));
             string? packageName = Result.ParserGeneratedState.PackageName;
 
-            code = code.Replace(TemplateGrammarName, Grammar.Name);
+            var grammarType = GrammarCheckedState.GrammarProjectType;
+            var lexerName = Result.ParserGeneratedState.LexerName;
+            if (lexerName != null)
+                code = code.Replace(TemplateLexerName, lexerName);
+
+            var parserName = Result.ParserGeneratedState.ParserName;
+            if (parserName != null)
+                code = code.Replace(TemplateParserName, parserName);
 
             bool isPackageNameEmpty = string.IsNullOrWhiteSpace(packageName);
             bool removePackageNameCode = isPackageNameEmpty;
@@ -297,7 +247,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
                 if (runtime == Runtime.Dart)
                 {
-                    removePackageNameCode = Grammar.Type != GrammarType.Lexer;
+                    removePackageNameCode = grammarType != GrammarProjectType.Lexer;
                 }
             }
 
@@ -305,7 +255,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             {
                 RemoveCodeWithinMarkOrRemoveMark(ref code,
                     new OpenCloseMark("PackageNameParser", CurrentRuntimeInfo),
-                    isPackageNameEmpty || Grammar.Type == GrammarType.Lexer);
+                    isPackageNameEmpty || grammarType == GrammarProjectType.Lexer);
             }
             RemoveCodeWithinMarkOrRemoveMark(ref code, _packageNameMark, removePackageNameCode);
 
@@ -321,11 +271,11 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             else if (runtime == Runtime.Dart)
             {
                 code = code.Replace(new SingleMark("Part", CurrentRuntimeInfo).ToString(),
-                    Grammar.Type == GrammarType.Lexer && !isPackageNameEmpty
-                    ? $"part '{Grammar.Name}Lexer.dart';" : "");
+                    grammarType == GrammarProjectType.Lexer && !isPackageNameEmpty
+                    ? $"part '{lexerName}.dart';" : "");
             }
 
-            if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            if (CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 string antlrInputStream = CurrentRuntimeInfo.AntlrInputStream;
                 string caseInsensitiveStream = "AntlrCaseInsensitiveInputStream";
@@ -350,7 +300,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 }
 
                 var antlrInputStreamRegex = new Regex($@"{antlrInputStream}\(([^\)]+)\)");
-                string isLowerBool = (Grammar.CaseInsensitiveType == CaseInsensitiveType.Lower).ToString();
+                string isLowerBool = (CaseInsensitiveType == CaseInsensitiveType.Lower).ToString();
                 if (runtime != Runtime.Python)
                 {
                     isLowerBool = isLowerBool.ToLowerInvariant();
@@ -363,15 +313,15 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                     code = code.Replace("from antlr4.InputStream import InputStream", "");
             }
 
-            RemoveCodeWithinMarkOrRemoveMark(ref code, _caseInsensitiveMark, Grammar.CaseInsensitiveType == CaseInsensitiveType.None);
+            RemoveCodeWithinMarkOrRemoveMark(ref code, _caseInsensitiveMark, CaseInsensitiveType == CaseInsensitiveType.None);
 
             if (runtime == Runtime.Dart)
             {
                 RemoveCodeWithinMarkOrRemoveMark(ref code, _lexerIncludeMark, !isPackageNameEmpty);
             }
 
-            RemoveCodeWithinMarkOrRemoveMark(ref code, _parserIncludeMark, Grammar.Type == GrammarType.Lexer);
-            RemoveCodeWithinMarkOrRemoveMark(ref code, _parserPartMark, Grammar.Type == GrammarType.Lexer);
+            RemoveCodeWithinMarkOrRemoveMark(ref code, _parserIncludeMark, grammarType == GrammarProjectType.Lexer);
+            RemoveCodeWithinMarkOrRemoveMark(ref code, _parserPartMark, grammarType == GrammarProjectType.Lexer);
 
             File.WriteAllText(templateFile, code);
         }
@@ -470,15 +420,9 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 return new Diagnosis(mappedResult.TextSpanInGrammar, message, WorkflowStage.ParserCompiled, type);
             }
 
-            var grammarFilesData = Result.ParserGeneratedState.GrammarCheckedState.GrammarInfos;
-            Source grammarSource =
-                grammarFilesData
-                    .FirstOrDefault(file => file.Key.EndsWith(codeFileName, StringComparison.OrdinalIgnoreCase))
-                    .Value
-                    .Source;
-
-            var textSpan = new LineColumnTextSpan(line, column, grammarSource).ToLinear();
-            return new Diagnosis(textSpan, message, WorkflowStage.ParserCompiled, type);
+            var source = _runtimeFileSources[codeFileName];
+            var position = source.LineColumnToPosition(line, column);
+            return new Diagnosis(new TextSpan(position, 0, source), message, WorkflowStage.ParserCompiled, type);
         }
 
         protected void AddToBuffer(string data)

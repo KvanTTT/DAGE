@@ -29,7 +29,7 @@
         </StackPanel>
         <StackPanel Grid.Column="6" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal" >
           <TextBlock HorizontalAlignment="Right" Text="Runtime" />
-          <ComboBox Width="100" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding Runtimes}"></ComboBox>
+          <ComboBox Width="100" SelectedItem="{Binding SelectedRuntime, Mode=TwoWay}" Items="{Binding SupportedRuntimes}"></ComboBox>
         </StackPanel>
       </Grid>
 
@@ -65,7 +65,7 @@
         <ComboBox Grid.Column="7" SelectedItem="{Binding PredictionMode}" Items="{Binding PredictionModes}" />
         <StackPanel Grid.Column="8" HorizontalAlignment="Right" IsVisible="{Binding IsParserExists}" Spacing="4" Orientation="Horizontal" >
             <TextBlock HorizontalAlignment="Right" Text="Root" />
-            <ComboBox Width="150" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding Rules}" ></ComboBox>
+            <ComboBox Width="150" SelectedItem="{Binding Root, Mode=TwoWay}" Items="{Binding ParserRules}" ></ComboBox>
         </StackPanel>
       </Grid>
 
@@ -99,7 +99,7 @@
         <TextBlock Grid.Column="0" Text="Position: "/>
         <TextBlock Grid.Column="1" Text="{Binding TextCursorPosition}" />
         <TextBlock Grid.Column="2" Text="Runtime: " />
-        <TextBlock Grid.Column="3" Text="{Binding DetectedRuntime}"></TextBlock>
+        <!-- <TextBlock Grid.Column="3" Text="{Binding DetectedRuntime}"></TextBlock> -->
       </Grid>
     </Grid>
   </Grid>

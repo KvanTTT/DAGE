@@ -15,7 +15,8 @@ namespace AntlrGrammarEditor.Processors
         private Grammar _grammar;
         private Runtime? _runtime;
         private string? _root;
-        private PredictionMode? _predictionMode = Processors.PredictionMode.LL;
+        private CaseInsensitiveType? _caseInsensitiveType;
+        private PredictionMode? _predictionMode;
         private string? _textFileName;
         private string? _packageName;
         private string? _generatorTool;
@@ -58,7 +59,19 @@ namespace AntlrGrammarEditor.Processors
             }
         }
 
-        public Runtime DetectedRuntime { get; private set; }
+        public CaseInsensitiveType? CaseInsensitiveType
+        {
+            get => _caseInsensitiveType;
+            set
+            {
+                if (_caseInsensitiveType != value)
+                {
+                    StopIfRequired();
+                    _caseInsensitiveType = value;
+                    RollbackToStage(WorkflowStage.ParserGenerated);
+                }
+            }
+        }
 
         public string? Root
         {
@@ -156,11 +169,20 @@ namespace AntlrGrammarEditor.Processors
             return Task.Run(func);
         }
 
+        public GrammarCheckedState GetGrammarCheckedState()
+        {
+            if (_currentState.Stage == WorkflowStage.Input)
+                ProcessOneStep();
+
+            return _currentState.GetState<GrammarCheckedState>()!;
+        }
+
         public WorkflowState.WorkflowState Process()
         {
             _cancellationTokenSource = new CancellationTokenSource();
 
-            while (!_currentState.HasErrors && _currentState.Stage < WorkflowStage.TextParsed && _currentState.Stage < EndStage)
+            while (!_currentState.HasErrors && _currentState.Stage < WorkflowStage.TextParsed &&
+                   _currentState.Stage < EndStage)
             {
                 ProcessOneStep();
             }
@@ -232,35 +254,40 @@ namespace AntlrGrammarEditor.Processors
                     break;
 
                 case GrammarCheckedState grammarCheckedState:
-                    DetectedRuntime = Runtime ?? grammarCheckedState.Runtime ?? AntlrGrammarEditor.Runtime.Java;
-                    DetectedRuntimeEvent?.Invoke(this, DetectedRuntime);
-
-                    var parserGenerator = new ParserGenerator(grammarCheckedState, DetectedRuntime,
-                        !string.IsNullOrWhiteSpace(PackageName) ? PackageName : grammarCheckedState.Package,
-                        GenerateListener ?? grammarCheckedState.Listener ?? false,
-                        GenerateVisitor ?? grammarCheckedState.Visitor ?? false)
+                    var parserGenerator = new ParserGenerator(
+                        grammarCheckedState,
+                        Runtime,
+                        PackageName,
+                        GenerateListener,
+                        GenerateVisitor)
                     {
                         DiagnosisEvent = DiagnosisEvent,
                         GeneratorTool = GeneratorTool
                     };
+                    DetectedRuntimeEvent?.Invoke(this, parserGenerator.Runtime);
                     _currentState = parserGenerator.Generate(_cancellationTokenSource?.Token ?? default);
                     break;
 
                 case ParserGeneratedState parserGeneratedState:
                     var parserCompiler =
-                        ParserCompilerFactory.Create(parserGeneratedState, RuntimeLibrary, DiagnosisEvent);
+                        ParserCompilerFactory.Create(
+                            parserGeneratedState,
+                            CaseInsensitiveType,
+                            RuntimeLibrary,
+                            DiagnosisEvent);
                     _currentState = parserCompiler.Compile(_cancellationTokenSource?.Token ?? default);
                     break;
 
                 case ParserCompiledState parserCompiledState:
-                    var localGrammarCheckedState = parserCompiledState.ParserGeneratedState.GrammarCheckedState;
-                    var textParser = new TextParser(parserCompiledState, TextFileName,
-                        !string.IsNullOrWhiteSpace(Root) ? Root : localGrammarCheckedState.Root)
+                    var textParser = new TextParser(
+                        parserCompiledState,
+                        TextFileName,
+                        Root,
+                        PredictionMode)
                     {
                         OnlyTokenize = EndStage < WorkflowStage.TextParsed,
                         RuntimeLibrary = RuntimeLibrary,
                         DiagnosisEvent = DiagnosisEvent,
-                        PredictionMode = PredictionMode ?? localGrammarCheckedState.PredictionMode ?? Processors.PredictionMode.LL
                     };
                     textParser.TextParsedOutputEvent += TextParsedOutputEvent;
                     _currentState = textParser.Parse(_cancellationTokenSource?.Token ?? default);

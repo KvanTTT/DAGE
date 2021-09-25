@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace AntlrGrammarEditor
@@ -102,6 +101,21 @@ namespace AntlrGrammarEditor
         public static bool IsCSharpRuntime(this Runtime runtime)
         {
             return runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard;
+        }
+
+        public static bool IsParser(this GrammarFileType grammarFileType)
+        {
+            return grammarFileType == GrammarFileType.Combined || grammarFileType == GrammarFileType.Parser;
+        }
+
+        public static bool IsParser(this GrammarProjectType grammarProjectType)
+        {
+            return grammarProjectType == GrammarProjectType.Combined || grammarProjectType == GrammarProjectType.Separated;
+        }
+
+        public static RuntimeInfo GetRuntimeInfo(this Runtime runtime)
+        {
+            return RuntimeInfo.InitOrGetRuntimeInfo(runtime);
         }
     }
 }

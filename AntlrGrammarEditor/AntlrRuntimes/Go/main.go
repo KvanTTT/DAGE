@@ -31,7 +31,7 @@ func main() {
 
 	code := string(bytes)
 	codeStream := antlr.NewInputStream(code)
-	lexer := /*$PackageName2$*/New__TemplateGrammarName__Lexer(codeStream)
+	lexer := /*$PackageName2$*/New__TemplateLexerName__(codeStream)
 	tokensStream := antlr.NewCommonTokenStream(lexer, 0)
 	tokensStream.Fill()
 	allTokens := tokensStream.GetAllTokens()
@@ -52,7 +52,7 @@ func main() {
 		}
 	}
 
-	parser := /*$PackageName2$*/New__TemplateGrammarName__Parser(tokensStream)
+	parser := /*$PackageName2$*/New__TemplateParserName__(tokensStream)
 
 	var predictionMode int
 	if mode == "sll" {

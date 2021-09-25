@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using AntlrGrammarEditor.Diagnoses;
-using AntlrGrammarEditor.Processors.TextParsing;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
@@ -13,9 +13,9 @@ namespace AntlrGrammarEditor.Processors
     {
         public override string Name => nameof(Grammar.CaseInsensitiveType);
 
-        protected override GrammarType OptionGrammarType => GrammarType.Lexer;
+        protected override GrammarFileType OptionGrammarType => GrammarFileType.Lexer;
 
-        public CaseInsensitiveTypeOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
+        public CaseInsensitiveTypeOptionMatcher(Source source, GrammarFileType grammarType, Action<Diagnosis> diagnosisEvent) :
             base(source, grammarType, diagnosisEvent)
         {
         }
@@ -25,9 +25,9 @@ namespace AntlrGrammarEditor.Processors
     {
         public override string Name => "Language";
 
-        protected override GrammarType OptionGrammarType => GrammarType.Combined;
+        protected override GrammarFileType OptionGrammarType => GrammarFileType.Combined;
 
-        public RuntimeOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+        public RuntimeOptionMatcher(Source source, GrammarFileType grammarType, Action<Diagnosis> diagnosisEvent)
             : base(source, grammarType, diagnosisEvent)
         {
         }
@@ -37,9 +37,9 @@ namespace AntlrGrammarEditor.Processors
     {
         public override string Name => nameof(GrammarCheckedState.Package);
 
-        protected override GrammarType OptionGrammarType => GrammarType.Combined;
+        protected override GrammarFileType OptionGrammarType => GrammarFileType.Combined;
 
-        public PackageOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+        public PackageOptionMatcher(Source source, GrammarFileType grammarType, Action<Diagnosis> diagnosisEvent)
             : base(source, grammarType, diagnosisEvent)
         {
         }
@@ -47,11 +47,11 @@ namespace AntlrGrammarEditor.Processors
 
     public sealed class VisitorOptionMatcher : OptionMatcher<bool>
     {
-        public override string Name => nameof(GrammarCheckedState.Visitor);
+        public override string Name => "visitor";
 
-        protected override GrammarType OptionGrammarType => GrammarType.Separated;
+        protected override GrammarFileType OptionGrammarType => GrammarFileType.Parser;
 
-        public VisitorOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
+        public VisitorOptionMatcher(Source source, GrammarFileType grammarType, Action<Diagnosis> diagnosisEvent) :
             base(source, grammarType, diagnosisEvent)
         {
         }
@@ -59,11 +59,11 @@ namespace AntlrGrammarEditor.Processors
 
     public sealed class ListenerOptionMatcher : OptionMatcher<bool>
     {
-        public override string Name => nameof(GrammarCheckedState.Listener);
+        public override string Name => "listener";
 
-        protected override GrammarType OptionGrammarType => GrammarType.Separated;
+        protected override GrammarFileType OptionGrammarType => GrammarFileType.Combined;
 
-        public ListenerOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent) :
+        public ListenerOptionMatcher(Source source, GrammarFileType grammarType, Action<Diagnosis> diagnosisEvent) :
             base(source, grammarType, diagnosisEvent)
         {
         }
@@ -73,11 +73,11 @@ namespace AntlrGrammarEditor.Processors
     {
         public override string Name => nameof(TextParsedState.Root);
 
-        protected override GrammarType OptionGrammarType => GrammarType.Separated;
+        protected override GrammarFileType OptionGrammarType => GrammarFileType.Parser;
 
-        private List<string> ExistingRules { get; }
+        private IReadOnlyList<string> ExistingRules { get; }
 
-        public RootOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent, List<string> existingRules)
+        public RootOptionMatcher(Source source, GrammarFileType grammarType, Action<Diagnosis> diagnosisEvent, IReadOnlyList<string> existingRules)
             : base(source, grammarType, diagnosisEvent)
         {
             ExistingRules = existingRules;
@@ -85,7 +85,7 @@ namespace AntlrGrammarEditor.Processors
 
         protected override bool AdditionalCheck(IToken token, Group group)
         {
-            if (GrammarType != GrammarType.Lexer && !ExistingRules.Contains(group.Value))
+            if (GrammarType != GrammarFileType.Lexer && !ExistingRules.Contains(group.Value))
             {
                 ReportWarning($"Root {group.Value} is not exist", token, group, Source);
                 return false;
@@ -99,9 +99,9 @@ namespace AntlrGrammarEditor.Processors
     {
         public override string Name => nameof(GrammarCheckedState.PredictionMode);
 
-        protected override GrammarType OptionGrammarType => GrammarType.Separated;
+        protected override GrammarFileType OptionGrammarType => GrammarFileType.Combined;
 
-        public PredictionModeOptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+        public PredictionModeOptionMatcher(Source source, GrammarFileType grammarType, Action<Diagnosis> diagnosisEvent)
             : base(source, grammarType, diagnosisEvent)
         {
         }
@@ -115,15 +115,15 @@ namespace AntlrGrammarEditor.Processors
 
         public Source Source { get; }
 
-        public GrammarType GrammarType { get; }
+        public GrammarFileType GrammarType { get; }
 
-        protected abstract GrammarType OptionGrammarType { get; }
+        protected abstract GrammarFileType OptionGrammarType { get; }
 
         private bool IsAlreadyDefined { get; set; }
 
         public Action<Diagnosis> ErrorAction { get; }
 
-        protected OptionMatcher(Source source, GrammarType grammarType, Action<Diagnosis> diagnosisEvent)
+        protected OptionMatcher(Source source, GrammarFileType grammarType, Action<Diagnosis> diagnosisEvent)
         {
             Regex = new Regex($@"({Name})\s*=\s*(\w+);", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             Source = source ?? throw new ArgumentNullException(nameof(source));
@@ -184,11 +184,11 @@ namespace AntlrGrammarEditor.Processors
                 bool parserWarning = false;
                 bool lexerWarning = false;
 
-                if (OptionGrammarType == GrammarType.Lexer && GrammarType == GrammarType.Separated)
+                if (OptionGrammarType == GrammarFileType.Lexer && GrammarType == GrammarFileType.Parser)
                 {
                     parserWarning = true;
                 }
-                else if (OptionGrammarType == GrammarType.Separated && GrammarType == GrammarType.Lexer)
+                else if (OptionGrammarType == GrammarFileType.Parser && GrammarType == GrammarFileType.Lexer)
                 {
                     lexerWarning = true;
                 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using AntlrGrammarEditor.Processors;
 using AntlrGrammarEditor.Sources;
 
@@ -11,11 +10,13 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public override WorkflowState PreviousState => ParserCompiledState;
 
+        public ParserCompiledState ParserCompiledState { get; }
+
         public Source? TextSource { get; }
 
-        public string? Root { get; set; }
+        public string Root { get; }
 
-        public ParserCompiledState ParserCompiledState { get; }
+        public PredictionMode PredictionMode { get; }
 
         public TimeSpan LexerTime { get; set; }
 
@@ -25,12 +26,14 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public string? Tree { get; set; }
 
-        public string RootOrDefault =>
-            Root ?? (ParserCompiledState.ParserGeneratedState.GrammarCheckedState.Rules.FirstOrDefault() ?? "");
-
-        public TextParsedState(ParserCompiledState parserCompiledState, Source? textSource)
+        public TextParsedState(ParserCompiledState parserCompiledState,
+            string root,
+            PredictionMode predictionMode,
+            Source? textSource)
         {
             ParserCompiledState = parserCompiledState;
+            Root = root;
+            PredictionMode = predictionMode;
             TextSource = textSource;
         }
     }

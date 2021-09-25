@@ -8,7 +8,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerCSharp : ParserCompiler
     {
-        public ParserCompilerCSharp(ParserGeneratedState state) : base(state)
+        public ParserCompilerCSharp(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
+            : base(state, caseInsensitiveType)
         {
         }
 
@@ -20,7 +21,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         protected override string PrepareFilesAndGetArguments()
         {
             string antlrCaseInsensitivePath = Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.cs");
-            if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            if (CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.Copy(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath, true);
             }
@@ -31,7 +32,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             var projectContent = File.ReadAllText(Path.Combine(RuntimeDir, "Project.csproj"));
             projectContent = projectContent.Replace("<DefineConstants></DefineConstants>",
                 $"<DefineConstants>{CurrentRuntimeInfo.Runtime}</DefineConstants>");
-            File.WriteAllText(Path.Combine(WorkingDirectory, $"{Grammar.Name}.csproj"), projectContent);
+            File.WriteAllText(Path.Combine(WorkingDirectory, $"{GrammarName}.csproj"), projectContent);
 
             return "build";
         }

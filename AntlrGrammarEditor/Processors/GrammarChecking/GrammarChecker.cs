@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading;
 using Antlr4.Runtime;
 using AntlrGrammarEditor.Diagnoses;
-using AntlrGrammarEditor.Processors.TextParsing;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
@@ -24,9 +23,12 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
             var grammar = _result.InputState.Grammar;
             try
             {
-                foreach (string grammarFileName in grammar.Files)
+                var currentGrammarInfo = ProcessGrammarFile(grammar, cancellationToken);
+                while (currentGrammarInfo.TokenVocab != null) // TODO: consider imported grammars
                 {
-                    ProcessGrammarFile(grammar, grammarFileName, cancellationToken);
+                    var newGrammar = new Grammar(currentGrammarInfo.TokenVocab, grammar.Directory,
+                        grammar.Root, grammar.Package, grammar.CaseInsensitiveType, grammar.TextExtension);
+                    currentGrammarInfo = ProcessGrammarFile(newGrammar, cancellationToken);
                 }
             }
             catch (Exception ex)
@@ -41,17 +43,12 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
             return _result;
         }
 
-        private void ProcessGrammarFile(Grammar grammar, string grammarFileName, CancellationToken cancellationToken)
+        private GrammarInfo ProcessGrammarFile(Grammar grammar, CancellationToken cancellationToken)
         {
-            string grammarCode = File.ReadAllText(Path.Combine(grammar.Directory, grammarFileName));
+            var fullFileName = grammar.FullFileName;
+            string grammarCode = File.ReadAllText(fullFileName);
             var inputStream = new AntlrInputStream(grammarCode);
-            var grammarCodeSource = new Source(grammarFileName, grammarCode);
-
-            string extension = Path.GetExtension(grammarFileName);
-            if (extension != Grammar.AntlrDotExt)
-            {
-                return;
-            }
+            var grammarCodeSource = new Source(fullFileName, grammarCode);
 
             var antlrErrorListener = new AntlrErrorListener(grammarCodeSource);
             antlrErrorListener.ErrorEvent += DiagnosisEvent;
@@ -75,25 +72,19 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
 
             var tree = antlr4Parser.grammarSpec();
 
-            var grammarInfoCollectorListener = new GrammarInfoCollectorListener(antlrErrorListener.Source, _currentFragmentNumber);
-            grammarInfoCollectorListener.CollectInfo(tree);
-            _currentFragmentNumber = grammarInfoCollectorListener.CurrentFragmentNumber;
+            var infoListener = new GrammarInfoCollectorListener(antlrErrorListener.Source, _currentFragmentNumber);
+            infoListener.CollectInfo(tree);
+            _currentFragmentNumber = infoListener.CurrentFragmentNumber;
+            var grammarType = infoListener.GrammarType;
 
-            _result.GrammarInfos.Add(grammarFileName,
-                new GrammarInfo(grammarCodeSource, grammarInfoCollectorListener.Fragments));
-
-            var grammarType = grammarInfoCollectorListener.GrammarType;
-
-            if (grammarType == GrammarType.Lexer || grammarType == GrammarType.Combined)
-            {
-                _result.LexerSuperClass = grammarInfoCollectorListener.SuperClass;
-            }
-
-            if (grammarType == GrammarType.Separated || grammarType == GrammarType.Combined)
-            {
-                _result.ParserSuperClass = grammarInfoCollectorListener.SuperClass;
-                _result.Rules = grammarInfoCollectorListener.Rules;
-            }
+            var grammarInfo = new GrammarInfo(grammarCodeSource,
+                grammarType,
+                infoListener.GrammarName,
+                infoListener.TokenVocab,
+                infoListener.SuperClass,
+                infoListener.Rules,
+                infoListener.Fragments);
+            _result.GrammarInfos.Insert(0, grammarInfo);
 
             void DiagnosisAction(Diagnosis diagnosis)
             {
@@ -106,7 +97,8 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
             var visitorOptionMatcher = new VisitorOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
             var listenerOptionMatcher = new ListenerOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
             var packageOptionMatcher = new PackageOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
-            var rootOptionMatcher = new RootOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction, _result.Rules);
+            var rootOptionMatcher = new RootOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction,
+                grammarInfo.Rules);
             var predictionOptionMatcher = new PredictionModeOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
 
             foreach (IToken token in tokens)
@@ -133,13 +125,13 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
 
                     if (visitorOptionMatcher.Match(token, out bool generateVisitor))
                     {
-                        _result.Visitor = generateVisitor;
+                        _result.GenerateVisitor = generateVisitor;
                         continue;
                     }
 
                     if (listenerOptionMatcher.Match(token, out bool generateListener))
                     {
-                        _result.Listener = generateListener;
+                        _result.GenerateListener = generateListener;
                         continue;
                     }
 
@@ -156,6 +148,8 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
                     }
                 }
             }
+
+            return grammarInfo;
         }
     }
 }

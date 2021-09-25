@@ -6,24 +6,11 @@ using System.Linq;
 using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors;
 using AntlrGrammarEditor.Processors.ParserGeneration;
-using AntlrGrammarEditor.Processors.TextParsing;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Tests
 {
-    public enum SupportedRuntime
-    {
-        CSharpOptimized = Runtime.CSharpOptimized,
-        CSharpStandard = Runtime.CSharpStandard,
-        Java = Runtime.Java,
-        Python = Runtime.Python,
-        JavaScript = Runtime.JavaScript,
-        Go = Runtime.Go,
-        Php = Runtime.Php,
-        Dart = Runtime.Dart
-    }
-
     [TestFixture]
     public class WorkflowTests
     {
@@ -57,7 +44,7 @@ namespace AntlrGrammarEditor.Tests
                 string message;
                 if (runtime != Runtime.CPlusPlus && runtime != Runtime.Swift)
                 {
-                    RuntimeInfo runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
+                    var runtimeInfo = runtime.GetRuntimeInfo();
                     Assert.IsFalse(string.IsNullOrEmpty(runtimeInfo.Version), $"Failed to initialize {runtime} runtime");
                     message = $"{runtime}: {runtimeInfo.RuntimeToolName} {runtimeInfo.Version}";
                 }
@@ -233,13 +220,13 @@ TEST: 'test';";
         public void ParserCompiledStageErrors([Values] SupportedRuntime runtime)
         {
             var grammarText =
-@"grammar Test;
-start:  DIGIT+ {i^;};
+$@"grammar {TestGrammarName};
+start:  DIGIT+ {{i^;}};
 CHAR:   [a-z]+;
 DIGIT:  [0-9]+; 
 WS:     [ \r\n\t]+ -> skip;";
 
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "Test", ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
             var workflow = new Workflow(grammar) { Runtime = (Runtime)runtime };
 
             var state = workflow.Process();
@@ -335,6 +322,7 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             char д = lowerCase ? 'д' : 'Д';
             var grammarText =
 $@"grammar {TestGrammarName};
+// caseInsensitiveType={(lowerCase ? CaseInsensitiveType.Lower : CaseInsensitiveType.Upper)};
 start:  A A B D D DIGIT;
 A:      '{a}';
 B:      'ß';    // No transformation into SS here (result's char length is more than 1)
@@ -342,7 +330,6 @@ D:      '{д}';  // Should work fine for non latin chars too (if result's char l
 DIGIT:  [0-9]+;
 WS:     [ \r\n\t]+ -> skip;";
             var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            grammar.CaseInsensitiveType = lowerCase ? CaseInsensitiveType.Lower : CaseInsensitiveType.Upper;
             File.WriteAllText(TestTextName, @"A a ß Д д 1234");
 
             var workflow = new Workflow(grammar);
@@ -441,31 +428,27 @@ root2: 'V2';";
         {
             const string packageName = "TestLanguage";
 
-            string lexerGrammarText, parserGrammarText;
-            GrammarType grammarType;
+            Grammar grammar;
             if (lexerOnly)
             {
-                lexerGrammarText =
-$@"lexer grammar {TestGrammarName}Lexer;
+                var grammarContent =
+$@"lexer grammar {TestGrammarName};
 TOKEN: 'a';";
-                parserGrammarText = "";
-                grammarType = GrammarType.Lexer;
+                grammar = GrammarFactory.CreateDefaultLexerAndFill(grammarContent, TestGrammarName, ".");
             }
             else
             {
-                lexerGrammarText = "";
-                parserGrammarText =
+                var grammarContent =
 $@"grammar {TestGrammarName};
 root:  TOKEN;
 TOKEN:  'a';";
-                grammarType = GrammarType.Combined;
+                grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarContent, TestGrammarName, ".");
             }
 
-            var grammar = GrammarFactory.CreateDefaultAndFill(grammarType, lexerGrammarText, parserGrammarText, TestGrammarName, ".");
-            grammar.CaseInsensitiveType = CaseInsensitiveType.Lower;
             var workflow = new Workflow(grammar)
             {
                 Runtime = runtime,
+                CaseInsensitiveType = CaseInsensitiveType.Lower,
                 PackageName = packageName,
                 TextFileName = TestTextName
             };
@@ -520,7 +503,7 @@ Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
         public void CheckLexerOnlyGrammar([Values] SupportedRuntime runtime)
         {
             var grammarText =
-$"lexer grammar {TestGrammarName}Lexer;" +
+$"lexer grammar {TestGrammarName};" +
 "T1: 'T1';" +
 "Digit: [0-9]+;" +
 "Space: ' '+ -> channel(HIDDEN);";
@@ -571,8 +554,8 @@ TOKEN: 'token';";
             Assert.AreEqual(CaseInsensitiveType.Lower, grammarCheckedState.CaseInsensitiveType);
             Assert.AreEqual(Runtime.JavaScript, grammarCheckedState.Runtime);
             Assert.AreEqual("package", grammarCheckedState.Package);
-            Assert.AreEqual(true, grammarCheckedState.Listener);
-            Assert.AreEqual(true, grammarCheckedState.Visitor);
+            Assert.AreEqual(true, grammarCheckedState.GenerateListener);
+            Assert.AreEqual(true, grammarCheckedState.GenerateVisitor);
             Assert.AreEqual("root", grammarCheckedState.Root);
             Assert.AreEqual(PredictionMode.SLL, grammarCheckedState.PredictionMode);
 
@@ -639,7 +622,7 @@ TOKEN: [a-z]+;";
             ParserCompiledState parserCompiledState = (ParserCompiledState)state;
             var errors = parserCompiledState.Diagnoses;
 
-            var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(runtime);
+            var runtimeInfo = runtime.GetRuntimeInfo();
             if (!runtimeInfo.Interpreted)
             {
                 if (runtime.IsCSharpRuntime())
@@ -764,7 +747,7 @@ WS:     [ \r\n\t]+ -> skip;";
                 Assert.True(errors.Any(e => Compare(e, 4, 11)));
                 Assert.True(errors.Any(e => Compare(e, 5, 11)));
             }
-            else if (RuntimeInfo.InitOrGetRuntimeInfo(runtime).Interpreted)
+            else if (runtime.GetRuntimeInfo().Interpreted)
             {
                 Assert.True(errors.Any(e => Compare(e, 5, 1)));
             }

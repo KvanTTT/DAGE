@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using AntlrGrammarEditor.Fragments;
 using AntlrGrammarEditor.Processors;
 using AntlrGrammarEditor.Sources;
@@ -14,6 +13,10 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public GrammarCheckedState GrammarCheckedState { get; }
 
+        public string? LexerName { get; }
+
+        public string? ParserName { get; }
+
         public Runtime Runtime { get; }
 
         public string? PackageName { get; }
@@ -26,18 +29,29 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public IReadOnlyDictionary<string, Source> GrammarSources { get; }
 
-        public ParserGeneratedState(GrammarCheckedState grammarCheckedState, string? packageName, Runtime runtime,
-            bool includeListener, bool includeVisitor,
+        public IReadOnlyDictionary<string, RuntimeFileInfo> RuntimeFileInfos { get; }
+
+        public ParserGeneratedState(GrammarCheckedState grammarCheckedState,
+            string? packageName,
+            Runtime runtime,
+            bool includeListener,
+            bool includeVisitor,
+            string? lexerName,
+            string? parserName,
             IReadOnlyList<MappedFragment> mappedFragments,
-            IReadOnlyDictionary<string, Source> grammarSources)
+            IReadOnlyDictionary<string, Source> grammarSources,
+            IReadOnlyDictionary<string, RuntimeFileInfo> runtimeFileInfos)
         {
-            GrammarCheckedState = grammarCheckedState ?? throw new ArgumentNullException(nameof(grammarCheckedState));
+            GrammarCheckedState = grammarCheckedState;
             PackageName = packageName;
             Runtime = runtime;
             IncludeListener = includeListener;
             IncludeVisitor = includeVisitor;
+            LexerName = lexerName;
+            ParserName = parserName;
             MappedFragments = mappedFragments;
             GrammarSources = grammarSources;
+            RuntimeFileInfos = runtimeFileInfos;
         }
 
         public TextSpan GetOriginalTextSpanForLineColumn(string grammarFileName, int line, int column)

@@ -1,5 +1,6 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor.WorkflowState
 {
@@ -11,10 +12,17 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public ParserGeneratedState ParserGeneratedState { get; }
 
-        public ParserCompiledState(ParserGeneratedState parserGeneratedState)
+        public CaseInsensitiveType CaseInsensitiveType { get; }
+
+        public IReadOnlyDictionary<string, Source> RuntimeFileSources { get; }
+
+        public ParserCompiledState(ParserGeneratedState parserGeneratedState,
+            CaseInsensitiveType caseInsensitiveType,
+            IReadOnlyDictionary<string, Source> runtimeFileSources)
         {
-            ParserGeneratedState =
-                parserGeneratedState ?? throw new ArgumentNullException(nameof(parserGeneratedState));
+            CaseInsensitiveType = caseInsensitiveType;
+            ParserGeneratedState = parserGeneratedState;
+            RuntimeFileSources = runtimeFileSources;
         }
     }
 }

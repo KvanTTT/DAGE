@@ -8,7 +8,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerJava : ParserCompiler
     {
-        public ParserCompilerJava(ParserGeneratedState state) : base(state)
+        public ParserCompilerJava(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
+            : base(state, caseInsensitiveType)
         {
         }
 
@@ -25,7 +26,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
             compiledFiles.Append('"' + CurrentRuntimeInfo.MainFile + '"');
 
-            if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            if (CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 compiledFiles.Append(" \"AntlrCaseInsensitiveInputStream.java\"");
                 File.Copy(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.java"),

@@ -8,7 +8,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerPhp : ParserCompiler
     {
-        public ParserCompilerPhp(ParserGeneratedState state) : base(state)
+        public ParserCompilerPhp(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
+            : base(state, caseInsensitiveType)
         {
         }
 
@@ -25,7 +26,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             stringBuilder.AppendLine();
             stringBuilder.AppendLine($"require_once '{GetPhpAutoloadPath()}';");
 
-            foreach (string file in GeneratedFiles)
+            foreach (string file in Result.ParserGeneratedState.RuntimeFileInfos.Keys)
             {
                 var shortFileName = Path.GetFileNameWithoutExtension(file);
                 stringBuilder.AppendLine($"require_once '{shortFileName}.php';");
@@ -33,7 +34,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
             string compileTestFileName = CreateHelperFile(stringBuilder);
 
-            if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            if (CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.Copy(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.php"),
                     Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.php"), true);

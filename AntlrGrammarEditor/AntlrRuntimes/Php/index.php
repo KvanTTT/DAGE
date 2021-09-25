@@ -1,16 +1,16 @@
 <?php
 
 require_once '__RuntimesPath__';
-require_once '__TemplateGrammarName__Lexer.php';
-/*$ParserInclude*/require_once '__TemplateGrammarName__Parser.php';/*ParserInclude$*/
+require_once '__TemplateLexerName__.php';
+/*$ParserInclude*/require_once '__TemplateParserName__.php';/*ParserInclude$*/
 /*$AntlrCaseInsensitive*/require_once 'AntlrCaseInsensitiveInputStream.php';/*AntlrCaseInsensitive$*/
 
 use Antlr\Antlr4\Runtime\CommonTokenStream;
 use Antlr\Antlr4\Runtime\InputStream;
 use Antlr\Antlr4\Runtime\Error\Listeners\ConsoleErrorListener;
 use Antlr\Antlr4\Runtime\Atn\PredictionMode as PredictionMode;
-/*$PackageName*/use __PackageName__\__TemplateGrammarName__Lexer;/*PackageName$*/
-/*$PackageNameParser*/use __PackageName__\__TemplateGrammarName__Parser;/*PackageNameParser$*/
+/*$PackageName*/use __PackageName__\__TemplateLexerName__;/*PackageName$*/
+/*$PackageNameParser*/use __PackageName__\__TemplateParserName__;/*PackageNameParser$*/
 
 $fileName = "../../Text";
 
@@ -19,7 +19,7 @@ if ($argvSize > 1)
     $fileName = $argv[1];
 
 $input = InputStream::fromPath($fileName);
-$lexer = new __TemplateGrammarName__Lexer($input);
+$lexer = new __TemplateLexerName__($input);
 $consoleErrorListener = new ConsoleErrorListener();
 $lexer->addErrorListener($consoleErrorListener);
 $tokens = new CommonTokenStream($lexer);
@@ -37,7 +37,7 @@ if ($argvSize > 2) {
     }
 }
 
-$parser = new __TemplateGrammarName__Parser($tokens);
+$parser = new __TemplateParserName__($tokens);
 $predictionMode = $mode == "ll"
     ? PredictionMode::LL
     : ($mode == "sll"
@@ -46,7 +46,7 @@ $predictionMode = $mode == "ll"
 $parser->getInterpreter()->setPredictionMode($predictionMode);
 $parser->addErrorListener($consoleErrorListener);
 
-$ruleName = $rootRule == null ? __TemplateGrammarName__Parser::RULE_NAMES[0] : $rootRule;
+$ruleName = $rootRule == null ? __TemplateParserName__::RULE_NAMES[0] : $rootRule;
 $tree = $parser->{$ruleName}();
 
 print('Tree ' . $tree->toStringTree($parser->getRuleNames()));

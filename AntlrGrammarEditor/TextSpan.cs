@@ -16,7 +16,7 @@ namespace AntlrGrammarEditor
 
         public ReadOnlySpan<Char> Span => Source.Text.AsSpan().Slice(Start, Length);
 
-        public static TextSpan GetEmpty(Source source) => new TextSpan(0, 0, source);
+        public static TextSpan GetEmpty(Source source) => new (0, 0, source);
 
         public TextSpan(int start, int length, Source source)
         {

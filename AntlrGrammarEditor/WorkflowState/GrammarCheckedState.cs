@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using AntlrGrammarEditor.Processors;
-using AntlrGrammarEditor.Processors.TextParsing;
 
 namespace AntlrGrammarEditor.WorkflowState
 {
@@ -13,17 +13,15 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public InputState InputState { get; }
 
-        public Dictionary<string, GrammarInfo> GrammarInfos { get; } = new();
+        public List<GrammarInfo> GrammarInfos { get; } = new();
 
-        public CaseInsensitiveType CaseInsensitiveType { get; set; }
-
-        public GrammarType GrammarType { get; set; }
+        public CaseInsensitiveType? CaseInsensitiveType { get; set; }
 
         public Runtime? Runtime { get; set; }
 
-        public bool? Listener { get; set; }
+        public bool? GenerateListener { get; set; }
 
-        public bool? Visitor { get; set; }
+        public bool? GenerateVisitor { get; set; }
 
         public string? Package { get; set; }
 
@@ -31,11 +29,25 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public PredictionMode? PredictionMode { get; set; }
 
-        public List<string> Rules { get; set; } = new();
+        public string MainGrammarName => GrammarInfos.LastOrDefault()?.Name ??
+                                     throw new InvalidOperationException("Invalid grammar name");
 
-        public string? LexerSuperClass { get; set; }
+        public GrammarProjectType GrammarProjectType
+        {
+            get
+            {
+                if (GrammarInfos.Any(info => info.Type == GrammarFileType.Combined))
+                    return GrammarProjectType.Combined;
 
-        public string? ParserSuperClass { get; set; }
+                if (GrammarInfos.Any(info => info.Type == GrammarFileType.Parser))
+                    return GrammarProjectType.Separated;
+
+                if (GrammarInfos.Any(info => info.Type == GrammarFileType.Lexer))
+                    return GrammarProjectType.Lexer;
+
+                throw new NotImplementedException("Unsupported or invalid grammar type");
+            }
+        }
 
         public GrammarCheckedState(InputState inputState)
         {

@@ -9,7 +9,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerJavaScript : ParserCompiler
     {
-        public ParserCompilerJavaScript(ParserGeneratedState state) : base(state)
+        public ParserCompilerJavaScript(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
+            : base(state, caseInsensitiveType)
         {
         }
 
@@ -37,7 +38,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         protected override string PrepareFilesAndGetArguments()
         {
             var stringBuilder = new StringBuilder();
-            foreach (string file in GeneratedFiles)
+            foreach (string file in Result.ParserGeneratedState.RuntimeFileInfos.Keys)
             {
                 var shortFileName = Path.GetFileNameWithoutExtension(file);
                 stringBuilder.AppendLine($"import {shortFileName} from './{shortFileName}.js';");
@@ -46,7 +47,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             string compileTestFileName = CreateHelperFile(stringBuilder);
 
             File.Copy(Path.Combine(RuntimeDir, "package.json"), Path.Combine(WorkingDirectory, "package.json"), true);
-            if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            if (CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.Copy(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.js"),
                     Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);

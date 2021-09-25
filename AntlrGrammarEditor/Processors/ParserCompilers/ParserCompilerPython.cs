@@ -9,7 +9,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerPython : ParserCompiler
     {
-        public ParserCompilerPython(ParserGeneratedState state) : base(state)
+        public ParserCompilerPython(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
+            : base(state, caseInsensitiveType)
         {
         }
 
@@ -27,13 +28,13 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         {
             var stringBuilder = new StringBuilder();
 
-            foreach (string file in GeneratedFiles)
+            foreach (string file in Result.ParserGeneratedState.RuntimeFileInfos.Keys)
             {
                 var shortFileName = Path.GetFileNameWithoutExtension(file);
                 stringBuilder.AppendLine($"from {shortFileName} import {shortFileName}");
             }
 
-            if (Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
+            if (CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 File.WriteAllText(Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.py"),
                     File.ReadAllText(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.py")));

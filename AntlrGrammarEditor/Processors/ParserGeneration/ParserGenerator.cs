@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -37,33 +38,59 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
         };
 
         private readonly Grammar _grammar;
+        private readonly string _runtimeDirectoryName;
         private readonly List<MappedFragment> _mappedFragments = new();
         private readonly Dictionary<string, Source> _grammarSources = new();
+        private readonly Dictionary<string, RuntimeFileInfo> _runtimeFileInfos = new();
         private readonly ParserGeneratedState _result;
 
-        private string _runtimeDirectoryName = "";
+        public Runtime Runtime => _result.Runtime;
 
-        public Runtime Runtime { get; }
-
-        public string? PackageName { get; }
-
-        public bool GenerateListener { get; }
-
-        public bool GenerateVisitor { get; }
+        public string? PackageName => _result.PackageName;
 
         public string? GeneratorTool { get; set; }
 
         public Encoding Encoding { get; }
 
-        public ParserGenerator(GrammarCheckedState state, Runtime runtime, string? packageName, bool generateListener, bool generateVisitor,
+        public ParserGenerator(GrammarCheckedState state,
+            Runtime? runtime,
+            string? packageName,
+            bool? generateListener,
+            bool? generateVisitor,
             Encoding encoding = Encoding.Utf8)
         {
-            PackageName = packageName;
-            GenerateListener = generateListener;
-            GenerateVisitor = generateVisitor;
             _grammar = state.InputState.Grammar;
-            _result = new ParserGeneratedState(state, packageName, runtime, generateListener, generateVisitor, _mappedFragments, _grammarSources);
-            Runtime = runtime;
+            var definedPackageName = packageName ?? state.Package;
+            var definedGenerateListener = generateListener ?? state.GenerateListener ?? false;
+            var definedGenerateVisitor = generateVisitor ?? state.GenerateVisitor ?? false;
+            var detectedRuntime = runtime ?? state.Runtime ?? Runtime.Java;
+            _runtimeDirectoryName = Path.Combine(HelperDirectoryName, _grammar.Name, detectedRuntime.ToString());
+            if ((detectedRuntime == Runtime.Java || detectedRuntime == Runtime.Go) && !string.IsNullOrWhiteSpace(definedPackageName))
+                _runtimeDirectoryName = Path.Combine(_runtimeDirectoryName, definedPackageName);
+
+            string? lexerName, parserName;
+            if (state.GrammarProjectType == GrammarProjectType.Combined)
+            {
+                var grammarInfo = state.GrammarInfos.First(info => info.Type == GrammarFileType.Combined);
+                lexerName = grammarInfo.Name + Grammar.LexerPostfix;
+                parserName = grammarInfo.Name + Grammar.ParserPostfix;
+            }
+            else
+            {
+                lexerName = state.GrammarInfos.FirstOrDefault(info => info.Type == GrammarFileType.Lexer)?.Name;
+                parserName = state.GrammarInfos.FirstOrDefault(info => info.Type == GrammarFileType.Parser)?.Name;
+            }
+
+            _result = new ParserGeneratedState(state,
+                definedPackageName,
+                detectedRuntime,
+                definedGenerateListener,
+                definedGenerateVisitor,
+                lexerName,
+                parserName,
+                _mappedFragments,
+                _grammarSources,
+                _runtimeFileInfos);
             Encoding = encoding;
         }
 
@@ -82,11 +109,6 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
 
             try
             {
-                _runtimeDirectoryName = Path.Combine(HelperDirectoryName, _grammar.Name, Runtime.ToString());
-
-                if ((Runtime == Runtime.Java || Runtime == Runtime.Go) && !string.IsNullOrWhiteSpace(PackageName))
-                    _runtimeDirectoryName = Path.Combine(_runtimeDirectoryName, PackageName);
-
                 if (Directory.Exists(_runtimeDirectoryName))
                     Directory.Delete(_runtimeDirectoryName, true);
 
@@ -94,25 +116,24 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Runtime);
+                var runtimeInfo = Runtime.GetRuntimeInfo();
 
                 var jarGenerator = GeneratorTool ?? Path.Combine("Generators", runtimeInfo.JarGenerator);
-                foreach (string grammarFileName in state.InputState.Grammar.Files)
+                foreach (var grammarInfo in state.GrammarInfos)
                 {
-                    string extension = Path.GetExtension(grammarFileName);
-                    if (extension != Grammar.AntlrDotExt)
-                        continue;
-
-                    var grammarInfo = state.GrammarInfos[grammarFileName];
-                    var (grammarPath, outputDirectory) = InsertFragmentMarks(grammarFileName, grammarInfo);
+                    var (grammarFileName, outputDirectory) = InsertFragmentMarks(grammarInfo);
 
                     var arguments = new StringBuilder();
-                    arguments.Append($@"-jar ""{jarGenerator}"" ""{grammarPath}""");
+                    arguments.Append($@"-jar ""{jarGenerator}"" ""{grammarFileName}""");
                     arguments.Append($@" -o ""{outputDirectory}""");
                     arguments.Append($" -Dlanguage={runtimeInfo.DLanguage}");
                     arguments.Append($" -encoding {Encodings[Encoding]}");
-                    arguments.Append(GenerateVisitor ? " -visitor" : " -no-visitor");
-                    arguments.Append(GenerateListener ? " -listener" : " -no-listener");
+
+                    if (grammarInfo.Type.IsParser())
+                    {
+                        arguments.Append(_result.IncludeVisitor ? " -visitor" : " -no-visitor");
+                        arguments.Append(_result.IncludeListener ? " -listener" : " -no-listener");
+                    }
 
                     if (!string.IsNullOrWhiteSpace(PackageName))
                     {
@@ -134,16 +155,10 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
                         arguments.Append(" -package main");
                     }
 
-                    if (grammarFileName.Contains(Grammar.LexerPostfix) && state.LexerSuperClass != null)
+                    if (grammarInfo.SuperClass != null)
                     {
                         arguments.Append(" -DsuperClass=");
-                        arguments.Append(state.LexerSuperClass);
-                    }
-
-                    if (grammarFileName.Contains(Grammar.ParserPostfix) && state.ParserSuperClass != null)
-                    {
-                        arguments.Append(" -DsuperClass=");
-                        arguments.Append(state.ParserSuperClass);
+                        arguments.Append(grammarInfo.SuperClass);
                     }
 
                     var argumentsString = arguments.ToString();
@@ -154,6 +169,8 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
                     processor.OutputDataReceived += ParserGeneration_OutputDataReceived;
 
                     processor.Start();
+
+                    AddGeneratedFiles(grammarInfo);
 
                     cancellationToken.ThrowIfCancellationRequested();
                 }
@@ -211,7 +228,7 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
             }
         }
 
-        private (string, string) InsertFragmentMarks(string grammarFileName, GrammarInfo grammarInfo)
+        private (string GrammarFileName, string OutputDirectory) InsertFragmentMarks(GrammarInfo grammarInfo)
         {
             var sourceSpan = grammarInfo.Source.Text.AsSpan();
             StringBuilder? result = null;
@@ -225,8 +242,7 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
                 offsets.Add(result.Length);
             }
 
-            var fileName = grammarInfo.Source.Name;
-            var runtimeInfo = RuntimeInfo.InitOrGetRuntimeInfo(Runtime.Java);
+            var runtimeInfo = Runtime.Java.GetRuntimeInfo();
             var rawFragments = new List<RawMappedFragment>(grammarInfo.Fragments.Count);
             foreach (var fragment in grammarInfo.Fragments)
             {
@@ -244,35 +260,123 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
                 previousIndex = textSpan.End;
             }
 
-            string grammarPath, outputDirectory;
+            string grammarFileName = Path.GetFileName(grammarInfo.Source.Name);
+            string newGrammarFileName, outputDirectory;
             Source source;
 
             if (result != null)
             {
                 result.Append(sourceSpan.Slice(previousIndex));
                 var newCode = result.ToString();
-                source = new SourceWithMarks(fileName, newCode, offsets.ToArray(), FragmentMarkLength,
+                source = new SourceWithMarks(grammarFileName, newCode, offsets.ToArray(), FragmentMarkLength,
                     grammarInfo.Source);
 
                 foreach (var rawFragment in rawFragments)
                     _mappedFragments.Add(rawFragment.ToMappedFragment(source));
 
-                grammarPath = Path.Combine(_runtimeDirectoryName, grammarFileName);
+                newGrammarFileName = Path.Combine(_runtimeDirectoryName, grammarFileName);
                 if (!Directory.Exists(_runtimeDirectoryName))
                     Directory.CreateDirectory(_runtimeDirectoryName);
-                File.WriteAllText(grammarPath, newCode);
+                File.WriteAllText(newGrammarFileName, newCode);
                 outputDirectory = ".";
             }
             else
             {
                 source = grammarInfo.Source;
-                grammarPath = Path.Combine(_grammar.Directory, grammarFileName);
+                newGrammarFileName = Path.Combine(_grammar.Directory, grammarFileName);
                 outputDirectory = _runtimeDirectoryName;
             }
 
-            _grammarSources.Add(fileName, source);
+            _grammarSources.Add(grammarFileName, source);
 
-            return (grammarPath, outputDirectory);
+            return (newGrammarFileName, outputDirectory);
+        }
+
+        private void AddGeneratedFiles(GrammarInfo grammarInfo)
+        {
+            if (_result.HasErrors)
+                return;
+
+            var runtimeInfo = Runtime.GetRuntimeInfo();
+            var grammarName = grammarInfo.Name ?? "";
+            var generatedGrammarName = Runtime != Runtime.Go ? grammarName : grammarName.ToLowerInvariant();
+            string? lexerFileName = null, parserFileName = null;
+
+            string NormalizeFileName(string fileName, bool lexer)
+            {
+                string originalPostfix, resultFilePostfix;
+                if (lexer)
+                {
+                    originalPostfix = Grammar.LexerPostfix;
+                    resultFilePostfix = runtimeInfo.LexerFilePostfix;
+                }
+                else
+                {
+                    originalPostfix = Grammar.ParserPostfix;
+                    resultFilePostfix = runtimeInfo.ParserFilePostfix;
+                }
+                if (Runtime == Runtime.Go && fileName.EndsWith(originalPostfix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return fileName.Remove(fileName.Length - originalPostfix.Length) + resultFilePostfix;
+                }
+                return fileName;
+            }
+
+            if (grammarInfo.Type == GrammarFileType.Combined)
+            {
+                lexerFileName = generatedGrammarName + runtimeInfo.LexerFilePostfix;
+                parserFileName = generatedGrammarName + runtimeInfo.ParserFilePostfix;
+            }
+            else
+            {
+                if (grammarInfo.Type == GrammarFileType.Lexer)
+                {
+                    lexerFileName = NormalizeFileName(generatedGrammarName, true);
+                }
+                else
+                {
+                    parserFileName = NormalizeFileName(generatedGrammarName, false);
+                }
+            }
+
+            if (lexerFileName != null)
+            {
+                _runtimeFileInfos.Add(
+                    Path.Combine(_runtimeDirectoryName, lexerFileName + "." + runtimeInfo.MainExtension),
+                    new RuntimeFileInfo(RuntimeFileType.Generated, grammarInfo));
+            }
+
+            if (parserFileName != null)
+            {
+                _runtimeFileInfos.Add(
+                    Path.Combine(_runtimeDirectoryName, parserFileName + "." + runtimeInfo.MainExtension),
+                    new RuntimeFileInfo(RuntimeFileType.Generated, grammarInfo));
+            }
+
+            if (grammarInfo.Type.IsParser())
+            {
+                void GetGeneratedListenerOrVisitorFiles(bool visitor)
+                {
+                    string postfix = visitor ? runtimeInfo.VisitorPostfix : runtimeInfo.ListenerPostfix;
+                    string? basePostfix = visitor ? runtimeInfo.BaseVisitorPostfix : runtimeInfo.BaseListenerPostfix;
+
+                    _runtimeFileInfos.Add(
+                        Path.Combine(_runtimeDirectoryName, generatedGrammarName + postfix + "." + runtimeInfo.MainExtension),
+                        new RuntimeFileInfo(RuntimeFileType.GeneratedHelper, grammarInfo));
+                    if (basePostfix != null)
+                    {
+                        _runtimeFileInfos.Add(
+                            Path.Combine(_runtimeDirectoryName, generatedGrammarName + basePostfix + "." + runtimeInfo.MainExtension),
+                            new RuntimeFileInfo(RuntimeFileType.GeneratedHelper, grammarInfo));
+                    }
+                }
+
+                if (_result.IncludeListener)
+                    GetGeneratedListenerOrVisitorFiles(false);
+
+                if (_result.IncludeVisitor)
+                    GetGeneratedListenerOrVisitorFiles(true);
+            }
         }
     }
 }

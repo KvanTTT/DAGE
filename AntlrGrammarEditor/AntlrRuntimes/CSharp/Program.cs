@@ -28,7 +28,7 @@ class Program
 
             var code = File.ReadAllText(fileName);
             var codeStream = new AntlrInputStream(code);
-            var lexer = new __TemplateGrammarName__Lexer(codeStream);
+            var lexer = new __TemplateLexerName__(codeStream);
             lexer.RemoveErrorListeners();
             lexer.AddErrorListener(new LexerErrorListener());
 
@@ -60,7 +60,7 @@ class Program
             {
                 var tokensSource = new ListTokenSource(tokens);
                 var tokensStream = new CommonTokenStream(tokensSource);
-                var parser = new __TemplateGrammarName__Parser(tokensStream);
+                var parser = new __TemplateParserName__(tokensStream);
                 parser.RemoveErrorListeners();
                 parser.AddErrorListener(new ParserErrorListener());
                 parser.Interpreter.PredictionMode = predictionMode == "sll" ?
@@ -84,8 +84,8 @@ class Program
                     ;
 
                 stopwatch.Restart();
-                string ruleName = rootRule == null ? __TemplateGrammarName__Parser.ruleNames[0] : rootRule;
-                var rootMethod = typeof(__TemplateGrammarName__Parser).GetMethod(ruleName);
+                string ruleName = rootRule == null ? __TemplateParserName__.ruleNames[0] : rootRule;
+                var rootMethod = typeof(__TemplateParserName__).GetMethod(ruleName);
                 var ast = (ParserRuleContext)rootMethod.Invoke(parser, new object[0]);
                 stopwatch.Stop();
 
@@ -132,7 +132,7 @@ public static class ParseTreeFormatter
         var resultString = new StringBuilder();
         foreach (var token in tokens)
         {
-            string symbolicName = __TemplateGrammarName__Lexer.DefaultVocabulary.GetSymbolicName(token.Type);
+            string symbolicName = __TemplateLexerName__.DefaultVocabulary.GetSymbolicName(token.Type);
             string value = token.Text ?? "";
             value = value.Replace("\r", "").Replace("\n", "");
             if (string.Compare(symbolicName, value, StringComparison.OrdinalIgnoreCase) != 0)

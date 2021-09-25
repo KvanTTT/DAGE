@@ -82,7 +82,7 @@ namespace AntlrGrammarEditor.Sources
             return result;
         }
 
-        public bool Equals(Source other) => Name.Equals(other.Name) && Text == other.Text;
+        public bool Equals(Source other) => /*Name.Equals(other.Name) &&*/ Text == other.Text;
 
         public override string ToString() => Name;
     }

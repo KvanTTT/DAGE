@@ -3,14 +3,14 @@
 import 'dart:mirrors';
 import 'package:antlr4/antlr4.dart';
 
-/*$LexerInclude*/import '__TemplateGrammarName__Lexer.dart';/*LexerInclude$*/
-/*$ParserInclude*/import '__TemplateGrammarName__Parser.dart';/*ParserInclude$*/
+/*$LexerInclude*/import '__TemplateLexerName__.dart';/*LexerInclude$*/
+/*$ParserInclude*/import '__TemplateParserName__.dart';/*ParserInclude$*/
 /*$AntlrCaseInsensitive*/import 'AntlrCaseInsensitiveInputStream.dart';/*AntlrCaseInsensitive$*/
 
 /*$Part$*/
 
 void main(List<String> arguments) async {
-  __TemplateGrammarName__Lexer.checkVersion();
+  __TemplateLexerName__.checkVersion();
   var fileName = "../../Text";
 
   if (arguments.length > 0) {
@@ -18,7 +18,7 @@ void main(List<String> arguments) async {
   }
 
   final input = await InputStream.fromPath(fileName);
-  final lexer = __TemplateGrammarName__Lexer(input);
+  final lexer = __TemplateLexerName__(input);
   final tokens = CommonTokenStream(lexer);
 
 /*$ParserPart*/
@@ -34,8 +34,8 @@ void main(List<String> arguments) async {
     }
   }
 
-  __TemplateGrammarName__Parser.checkVersion();
-  final parser = __TemplateGrammarName__Parser(tokens);
+  __TemplateParserName__.checkVersion();
+  final parser = __TemplateParserName__(tokens);
   parser.buildParseTree = true;
   parser.interpreter.predictionMode = mode == "sll"
       ? PredictionMode.SLL
