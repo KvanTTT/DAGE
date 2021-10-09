@@ -1,7 +1,6 @@
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.WorkflowState;
 using static AntlrGrammarEditor.Helpers;
 

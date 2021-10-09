@@ -1,5 +1,4 @@
 using System;
-using AntlrGrammarEditor.Diagnoses;
 
 namespace AntlrGrammarEditor.Processors
 {

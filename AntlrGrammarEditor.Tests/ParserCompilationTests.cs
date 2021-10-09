@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Processors.ParserCompilation;
+using AntlrGrammarEditor.Processors.ParserGeneration;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 using NUnit.Framework;
@@ -33,7 +34,7 @@ WS:     [ \r\n\t]+ -> skip;";
             var firstDiagnosis = parserCompiledState.Diagnoses[0];
             Assert.AreEqual(WorkflowStage.ParserCompiled, firstDiagnosis.WorkflowStage);
             Assert.AreEqual(DiagnosisType.Error, firstDiagnosis.Type);
-            var textSpan = firstDiagnosis.TextSpan;
+            var textSpan = ((ParserCompilationDiagnosis)firstDiagnosis).GrammarTextSpan;
             Assert.AreEqual(2, textSpan?.LineColumn.BeginLine);
         }
 
@@ -51,8 +52,8 @@ TEST: {{'}};";
             var parserGeneratedState = (ParserGeneratedState)state;
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new Diagnosis(1, 1, "syntax error: mismatched character '<EOF>' expecting '''", grammarSource, WorkflowStage.ParserGenerated),
-                    new Diagnosis(2, 11, "syntax error: '<EOF>' came as a complete surprise to me while matching a lexer rule", grammarSource, WorkflowStage.ParserGenerated),
+                    new ParserGenerationDiagnosis(1, 1, "syntax error: mismatched character '<EOF>' expecting '''", grammarSource),
+                    new ParserGenerationDiagnosis(2, 11, "syntax error: '<EOF>' came as a complete surprise to me while matching a lexer rule", grammarSource),
                 },
                 parserGeneratedState.Diagnoses);
         }
@@ -72,7 +73,7 @@ TEST: 'test';";
             var parserGeneratedState = (ParserGeneratedState)state;
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new Diagnosis( "Package name (invalid package) should contain only latin letter, digits, and underscore", WorkflowStage.ParserGenerated),
+                    new ParserGenerationDiagnosis( "Package name (invalid package) should contain only latin letter, digits, and underscore"),
                 },
                 parserGeneratedState.Diagnoses);
         }
@@ -237,11 +238,17 @@ WS:     [ \r\n\t]+ -> skip;";
 
         static bool Compare(Diagnosis diagnosis, int line, int column)
         {
-            if (!diagnosis.TextSpan.HasValue)
-                return false;
-            var textSpan = diagnosis.TextSpan.Value;
-            var lineColumn = textSpan.LineColumn;
-            return lineColumn.BeginLine == line && lineColumn.BeginColumn == column;
+            if (diagnosis is ParserCompilationDiagnosis parserCompilationDiagnosis)
+            {
+                var grammarTextSpan = parserCompilationDiagnosis.GrammarTextSpan;
+                if (grammarTextSpan is null)
+                    return false;
+
+                var lineColumn = grammarTextSpan.Value.LineColumn;
+                return lineColumn.BeginLine == line && lineColumn.BeginColumn == column;
+            }
+
+            return false;
         }
     }
 }

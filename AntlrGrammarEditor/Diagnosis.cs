@@ -2,44 +2,43 @@
 using AntlrGrammarEditor.Processors;
 using AntlrGrammarEditor.Sources;
 
-namespace AntlrGrammarEditor.Diagnoses
+namespace AntlrGrammarEditor
 {
-    public class Diagnosis
+    public abstract class Diagnosis
     {
+        public abstract WorkflowStage WorkflowStage { get; }
+
         public TextSpan? TextSpan { get; }
 
         public string Message { get; }
 
         public DiagnosisType Type { get; }
 
-        public WorkflowStage WorkflowStage { get; }
-
-        public Diagnosis(Exception ex, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
-            : this(ex.ToString(), stage, type)
+        protected Diagnosis(Exception ex, DiagnosisType type = DiagnosisType.Error)
+            : this(ex.ToString(), type)
         {
         }
 
-        public Diagnosis(int line, int column, string message, Source source, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
-            : this(new LineColumnTextSpan(line, column, source).ToLinear(), message, stage, type)
+        protected Diagnosis(int line, int column, string message, Source source, DiagnosisType type = DiagnosisType.Error)
+            : this(new LineColumnTextSpan(line, column, source).ToLinear(), message, type)
         {
         }
 
-        public Diagnosis(int beginLine, int beginColumn, int endLine, int endColumn,
-            string message, Source source, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
-            : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, source).ToLinear(), message, stage, type)
+        protected Diagnosis(int beginLine, int beginColumn, int endLine, int endColumn,
+            string message, Source source, DiagnosisType type = DiagnosisType.Error)
+            : this(new LineColumnTextSpan(beginLine, beginColumn, endLine, endColumn, source).ToLinear(), message, type)
         {
         }
 
-        public Diagnosis(TextSpan textSpan, string message, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
-            : this(message, stage, type)
+        protected Diagnosis(TextSpan textSpan, string message, DiagnosisType type = DiagnosisType.Error)
+            : this(message, type)
         {
             TextSpan = textSpan;
         }
 
-        public Diagnosis(string message, WorkflowStage stage, DiagnosisType type = DiagnosisType.Error)
+        protected Diagnosis(string message, DiagnosisType type = DiagnosisType.Error)
         {
             Message = message;
-            WorkflowStage = stage;
             Type = type;
         }
 

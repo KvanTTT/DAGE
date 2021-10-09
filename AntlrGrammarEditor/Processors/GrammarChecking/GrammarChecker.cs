@@ -2,7 +2,6 @@
 using System.IO;
 using System.Threading;
 using Antlr4.Runtime;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
@@ -35,8 +34,9 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
             {
                 if (!(ex is OperationCanceledException))
                 {
-                    _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.GrammarChecked));
-                    DiagnosisEvent?.Invoke(this, new Diagnosis(ex, WorkflowStage.GrammarChecked));
+                    var diagnosis = new GrammarCheckingDiagnosis(ex);
+                    _result.AddDiagnosis(diagnosis);
+                    DiagnosisEvent?.Invoke(this, diagnosis);
                 }
             }
 

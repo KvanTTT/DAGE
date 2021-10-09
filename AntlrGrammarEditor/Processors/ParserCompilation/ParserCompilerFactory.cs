@@ -1,5 +1,4 @@
 using System;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Processors.ParserCompilers

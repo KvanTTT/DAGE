@@ -5,7 +5,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors.ParserCompilers;
 using AntlrGrammarEditor.Processors.ParserGeneration;
 using AntlrGrammarEditor.Sources;
@@ -48,7 +47,7 @@ namespace AntlrGrammarEditor.Processors.TextParsing
         {
             if (_result.TextSource == null)
             {
-                _result.AddDiagnosis(new Diagnosis("File to parse is not specified", WorkflowStage.TextParsed));
+                _result.AddDiagnosis(new TextParsingDiagnosis("File to parse is not specified"));
                 return _result;
             }
 
@@ -105,7 +104,7 @@ namespace AntlrGrammarEditor.Processors.TextParsing
             }
             catch (Exception ex)
             {
-                AddDiagnosis(new Diagnosis(ex, WorkflowStage.TextParsed));
+                AddDiagnosis(new TextParsingDiagnosis(ex));
             }
             finally
             {
@@ -152,16 +151,16 @@ namespace AntlrGrammarEditor.Processors.TextParsing
                         var textSource = _result.TextSource!;
                         int start = textSource.LineColumnToPosition(beginLine, beginColumn);
                         var textSpan = AntlrHelper.ExtractTextSpanFromErrorMessage(start, message, textSource);
-                        diagnosis = new Diagnosis(textSpan, message, WorkflowStage.TextParsed);
+                        diagnosis = new TextParsingDiagnosis(textSpan, message);
                     }
                     else
                     {
-                        diagnosis = new Diagnosis(e.Data, WorkflowStage.TextParsed);
+                        diagnosis = new TextParsingDiagnosis(e.Data);
                     }
                 }
                 catch
                 {
-                    diagnosis = new Diagnosis(e.Data, WorkflowStage.TextParsed);
+                    diagnosis = new TextParsingDiagnosis(e.Data);
                 }
 
                 AddDiagnosis(diagnosis);
@@ -199,7 +198,7 @@ namespace AntlrGrammarEditor.Processors.TextParsing
                 }
                 else
                 {
-                    AddDiagnosis(new Diagnosis(e.Data, WorkflowStage.TextParsed));
+                    AddDiagnosis(new TextParsingDiagnosis(e.Data));
                 }
             }
         }

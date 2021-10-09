@@ -2,8 +2,8 @@
 using System;
 using System.IO;
 using System.Linq;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors;
+using AntlrGrammarEditor.Processors.GrammarChecking;
 using AntlrGrammarEditor.Processors.ParserGeneration;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
@@ -97,13 +97,9 @@ WS:    [ \r\n\t]+ -> skip;";
             CollectionAssert.AreEquivalent(
                 new[]
                 {
-                    new Diagnosis(3, 10, 3, 12, "token recognition error at: '-z'", grammarSource,
-                        WorkflowStage.GrammarChecked),
-                    new Diagnosis(3, 12, 3, 13, "token recognition error at: ']'", grammarSource,
-                        WorkflowStage.GrammarChecked),
-                    new Diagnosis(3, 13, 3, 14,
-                        "mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", grammarSource,
-                        WorkflowStage.GrammarChecked)
+                    new GrammarCheckingDiagnosis(3, 10, 3, 12, "token recognition error at: '-z'", grammarSource),
+                    new GrammarCheckingDiagnosis(3, 12, 3, 13, "token recognition error at: ']'", grammarSource),
+                    new GrammarCheckingDiagnosis(3, 13, 3, 14, "mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", grammarSource)
                 },
                 grammarCheckedState.Diagnoses);
         }
@@ -129,7 +125,7 @@ WS:     [ \r\n\t]+ -> skip;";
             var parserGeneratedState = (ParserGeneratedState)state;
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new Diagnosis(2, 17, "reference to undefined rule: rule1", grammarSource, WorkflowStage.ParserGenerated),
+                    new ParserGenerationDiagnosis(2, 17, "reference to undefined rule: rule1", grammarSource),
                 },
                 parserGeneratedState.Diagnoses);
         }
@@ -159,10 +155,10 @@ start: DIGIT+;
             var grammarCheckedState = (GrammarCheckedState)state;
             var expectedDiagnoses = new[]
             {
-                new Diagnosis(2, 10, 2, 12, "token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
-                new Diagnosis(2, 12, 2, 13, "token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
-                new Diagnosis(2, 13, 2, 14, "mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", testLexerSource, WorkflowStage.GrammarChecked),
-                new Diagnosis(4, 1, 4, 2, "extraneous input '#' expecting {<EOF>, 'mode'}", testParserSource, WorkflowStage.GrammarChecked)
+                new GrammarCheckingDiagnosis(2, 10, 2, 12, "token recognition error at: '-z'", testLexerSource),
+                new GrammarCheckingDiagnosis(2, 12, 2, 13, "token recognition error at: ']'", testLexerSource),
+                new GrammarCheckingDiagnosis(2, 13, 2, 14, "mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", testLexerSource),
+                new GrammarCheckingDiagnosis(4, 1, 4, 2, "extraneous input '#' expecting {<EOF>, 'mode'}", testParserSource)
             };
             CollectionAssert.AreEquivalent(expectedDiagnoses, grammarCheckedState.Diagnoses);
         }

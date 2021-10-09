@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
-using AntlrGrammarEditor.Diagnoses;
+using AntlrGrammarEditor.Processors.ParserGeneration;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
 
@@ -217,7 +217,7 @@ namespace AntlrGrammarEditor.Processors
         protected void ReportWarning(string message, IToken token, Group group, Source source)
         {
             var textSpan = new TextSpan(token.StartIndex + group.Index, group.Length, source);
-            var error = new Diagnosis(textSpan, message, WorkflowStage.GrammarChecked, DiagnosisType.Warning);
+            var error = new ParserGenerationDiagnosis(textSpan, message, DiagnosisType.Warning);
             ErrorAction(error);
         }
     }

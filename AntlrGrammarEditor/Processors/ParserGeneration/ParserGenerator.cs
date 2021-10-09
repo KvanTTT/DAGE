@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Fragments;
 using AntlrGrammarEditor.Processors.ParserCompilers;
 using AntlrGrammarEditor.Sources;
@@ -140,9 +139,8 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
                     {
                         if (!PackageRegex.IsMatch(PackageName))
                         {
-                            var invalidPackageNameDiagnosis = new Diagnosis(
-                                $"Package name ({PackageName}) should contain only latin letter, digits, and underscore",
-                                WorkflowStage.ParserGenerated);
+                            var invalidPackageNameDiagnosis = new ParserGenerationDiagnosis(
+                                $"Package name ({PackageName}) should contain only latin letter, digits, and underscore");
 
                             _result.AddDiagnosis(invalidPackageNameDiagnosis);
                             DiagnosisEvent?.Invoke(this, invalidPackageNameDiagnosis);
@@ -180,8 +178,9 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
             {
                 if (!(ex is OperationCanceledException))
                 {
-                    _result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.ParserGenerated));
-                    DiagnosisEvent?.Invoke(this, new Diagnosis(ex, WorkflowStage.ParserGenerated));
+                    var diagnosis = new ParserGenerationDiagnosis(ex);
+                    _result.AddDiagnosis(diagnosis);
+                    DiagnosisEvent?.Invoke(this, diagnosis);
                 }
             }
             finally
@@ -210,11 +209,11 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
                         : DiagnosisType.Error;
 
                     var textSpan = _result.GetOriginalTextSpanForLineColumn(grammarFileName, line, column);
-                    diagnosis = new Diagnosis(textSpan, message, WorkflowStage.ParserGenerated, diagnosisType);
+                    diagnosis = new ParserGenerationDiagnosis(textSpan, message, diagnosisType);
                 }
                 else
                 {
-                    diagnosis = new Diagnosis("Unknown error: " + e.Data, WorkflowStage.ParserGenerated);
+                    diagnosis = new ParserGenerationDiagnosis("Unknown error: " + e.Data);
                 }
 
                 _result.AddDiagnosis(diagnosis);

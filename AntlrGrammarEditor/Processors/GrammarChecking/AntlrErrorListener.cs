@@ -1,6 +1,5 @@
 ﻿using System;
 using Antlr4.Runtime;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Sources;
 
 namespace AntlrGrammarEditor.Processors.GrammarChecking
@@ -21,8 +20,7 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
         {
             int column = charPositionInLine + LineColumnTextSpan.StartColumn;
             var start = Source.LineColumnToPosition(line, column);
-            var parserError = new Diagnosis(AntlrHelper.ExtractTextSpanFromErrorMessage(start, msg, Source), msg,
-                WorkflowStage.GrammarChecked);
+            var parserError = new GrammarCheckingDiagnosis(AntlrHelper.ExtractTextSpanFromErrorMessage(start, msg, Source), msg);
             ErrorEvent?.Invoke(this, parserError);
         }
 
@@ -30,8 +28,7 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
             string msg, RecognitionException e)
         {
             var textSpan = TextSpan.FromBounds(offendingSymbol.StartIndex, offendingSymbol.StopIndex + 1, Source);
-            var lexerError = new Diagnosis(textSpan, msg, WorkflowStage.GrammarChecked);
-            ErrorEvent?.Invoke(this, lexerError);
+            ErrorEvent?.Invoke(this, new GrammarCheckingDiagnosis(textSpan, msg));
         }
     }
 }

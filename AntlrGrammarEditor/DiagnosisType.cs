@@ -1,4 +1,4 @@
-namespace AntlrGrammarEditor.Diagnoses
+namespace AntlrGrammarEditor
 {
     public enum DiagnosisType
     {

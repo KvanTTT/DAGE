@@ -6,8 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Fragments;
+using AntlrGrammarEditor.Processors.ParserCompilation;
 using AntlrGrammarEditor.Processors.ParserGeneration;
 using AntlrGrammarEditor.Sources;
 using AntlrGrammarEditor.WorkflowState;
@@ -123,7 +123,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             }
             catch (Exception ex)
             {
-                Result.AddDiagnosis(new Diagnosis(ex, WorkflowStage.ParserCompiled));
+                Result.AddDiagnosis(new ParserCompilationDiagnosis(ex));
             }
             finally
             {
@@ -415,21 +415,21 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             return (message, 0);
         }
 
-        protected Diagnosis CreateMappedGrammarDiagnosis(string? codeFileName, int line, int column,
+        protected ParserCompilationDiagnosis CreateMappedGrammarDiagnosis(string? codeFileName, int line, int column,
             string message, DiagnosisType type)
         {
             if (codeFileName == null)
-                return new Diagnosis(message, WorkflowStage.ParserCompiled, type);
+                return new ParserCompilationDiagnosis(message, type);
 
             if (_fragmentMappers.TryGetValue(codeFileName, out FragmentMapper fragmentMapper))
             {
                 var mappedResult = fragmentMapper.Map(line, column);
-                return new Diagnosis(mappedResult.TextSpanInGrammar, message, WorkflowStage.ParserCompiled, type);
+                return new ParserCompilationDiagnosis(mappedResult.TextSpanInGrammar, mappedResult.TextSpanInGenerated, message, type);
             }
 
             var source = _runtimeFiles[codeFileName].Item1;
             var position = source.LineColumnToPosition(line, column);
-            return new Diagnosis(new TextSpan(position, 0, source), message, WorkflowStage.ParserCompiled, type);
+            return new ParserCompilationDiagnosis(null, new TextSpan(position, 0, source), message, type);
         }
 
         protected void AddToBuffer(string data)

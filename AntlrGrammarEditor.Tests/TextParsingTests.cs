@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
-using AntlrGrammarEditor.Diagnoses;
 using AntlrGrammarEditor.Processors;
 using AntlrGrammarEditor.Processors.ParserCompilers;
+using AntlrGrammarEditor.Processors.TextParsing;
 using AntlrGrammarEditor.WorkflowState;
 using NUnit.Framework;
 
@@ -66,11 +66,11 @@ error 123 456 ;   // mismatched input '123' expecting Id");
             var textSource = textParsedState.TextSource!;
             CollectionAssert.AreEquivalent(
                 new [] {
-                    new Diagnosis(1, 1, 1, 2, "token recognition error at: '#'", textSource, WorkflowStage.TextParsed),
-                    new Diagnosis(2, 10, 2, 11, "missing '))' at ';'", textSource, WorkflowStage.TextParsed),
-                    new Diagnosis(3, 11, 3, 14, "extraneous input 'id2' expecting ';'", textSource, WorkflowStage.TextParsed),
-                    new Diagnosis(4, 5, 4, 7, "no viable alternative at input 'aa  dd'", textSource, WorkflowStage.TextParsed),
-                    new Diagnosis(5, 7, 5, 10, "mismatched input '123' expecting Id", textSource, WorkflowStage.TextParsed)
+                    new TextParsingDiagnosis(1, 1, 1, 2, "token recognition error at: '#'", textSource),
+                    new TextParsingDiagnosis(2, 10, 2, 11, "missing '))' at ';'", textSource),
+                    new TextParsingDiagnosis(3, 11, 3, 14, "extraneous input 'id2' expecting ';'", textSource),
+                    new TextParsingDiagnosis(4, 5, 4, 7, "no viable alternative at input 'aa  dd'", textSource),
+                    new TextParsingDiagnosis(5, 7, 5, 10, "mismatched input '123' expecting Id", textSource)
                 },
                 textParsedState.Diagnoses);
 

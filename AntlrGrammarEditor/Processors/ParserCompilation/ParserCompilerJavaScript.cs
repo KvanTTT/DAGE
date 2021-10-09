@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using AntlrGrammarEditor.Diagnoses;
+using AntlrGrammarEditor.Processors.ParserCompilation;
 using AntlrGrammarEditor.WorkflowState;
 using static AntlrGrammarEditor.Helpers;
 
@@ -58,14 +58,14 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         protected override void ProcessReceivedData(string data)
         {
-            var match = Helpers.JavaScriptWarningMarker.Match(data);
+            var match = JavaScriptWarningMarker.Match(data);
             if (match.Success)
             {
-                AddDiagnosis(new Diagnosis(match.Groups[Helpers.MessageMark].Value, WorkflowStage.ParserCompiled, DiagnosisType.Warning));
+                AddDiagnosis(new ParserCompilationDiagnosis(match.Groups[MessageMark].Value, DiagnosisType.Warning));
             }
             else
             {
-                if (data != Helpers.JavaScriptIgnoreMessage)
+                if (data != JavaScriptIgnoreMessage)
                 {
                     AddToBuffer(data);
                 }
