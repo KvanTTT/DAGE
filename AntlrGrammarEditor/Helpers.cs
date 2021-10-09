@@ -26,6 +26,17 @@ namespace AntlrGrammarEditor
         public const string JavaScriptIgnoreMessage =
             "(Use `node --trace-warnings ...` to show where the warning was created)";
 
+        public static readonly Runtime[] SupportedRuntimes = {
+            Runtime.CSharpOptimized,
+            Runtime.CSharpStandard,
+            Runtime.Java,
+            Runtime.Python,
+            Runtime.JavaScript,
+            Runtime.Go,
+            Runtime.Php,
+            Runtime.Dart
+        };
+
         static Helpers()
         {
             GetRuntimesPath();
@@ -106,11 +117,6 @@ namespace AntlrGrammarEditor
         public static bool IsParser(this GrammarFileType grammarFileType)
         {
             return grammarFileType == GrammarFileType.Combined || grammarFileType == GrammarFileType.Parser;
-        }
-
-        public static bool IsParser(this GrammarProjectType grammarProjectType)
-        {
-            return grammarProjectType == GrammarProjectType.Combined || grammarProjectType == GrammarProjectType.Separated;
         }
 
         public static RuntimeInfo GetRuntimeInfo(this Runtime runtime)

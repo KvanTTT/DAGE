@@ -36,8 +36,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         private readonly OpenCloseMark _parserIncludeMark;
         private readonly OpenCloseMark _caseInsensitiveMark;
 
-        private readonly Dictionary<string, FragmentMapper> _fragmentFinders = new ();
-        private readonly Dictionary<string, Source> _runtimeFileSources = new();
+        private readonly Dictionary<string, FragmentMapper> _fragmentMappers = new ();
+        private readonly Dictionary<string, (Source, RuntimeFileInfo)> _runtimeFiles = new();
 
         protected readonly GrammarCheckedState GrammarCheckedState;
         protected readonly RuntimeInfo CurrentRuntimeInfo;
@@ -79,7 +79,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             GrammarCheckedState = state.GrammarCheckedState;
             var definedCaseInsensitiveType = caseInsensitiveType ??
                                              state.GrammarCheckedState.CaseInsensitiveType ?? CaseInsensitiveType.None;
-            Result = new ParserCompiledState(state, definedCaseInsensitiveType, _runtimeFileSources);
+            Result = new ParserCompiledState(state, definedCaseInsensitiveType, _runtimeFiles);
             CurrentRuntimeInfo = Result.ParserGeneratedState.Runtime.GetRuntimeInfo();
             string runtimeSource = state.Runtime.GetGeneralRuntimeName();
             RuntimeDir = Path.Combine(RuntimesDirName, runtimeSource);
@@ -99,18 +99,15 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             Processor? processor = null;
             try
             {
-                //CopyCompiledSources();
-
-                _runtimeFileSources.Clear();
+                _runtimeFiles.Clear();
                 PreprocessGeneratedFiles();
+                CopyHelperFiles();
 
                 string arguments = PrepareFilesAndGetArguments();
-                PrepareParserCode();
+                PrepareEntryPointCode();
 
                 lock (Buffer)
-                {
                     Buffer.Clear();
-                }
 
                 Result.Command = CurrentRuntimeInfo.RuntimeCompilerToolToolName + " " + arguments;
                 processor = new Processor(CurrentRuntimeInfo.RuntimeCompilerToolToolName, arguments, WorkingDirectory);
@@ -156,11 +153,11 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         private void PreprocessGeneratedFiles()
         {
             var grammarMappedFragments = Result.ParserGeneratedState.MappedFragments;
-            foreach (var generatedFileName in Result.ParserGeneratedState.RuntimeFileInfos.Keys)
+            foreach (var (generatedFileName, runtimeFileInfo) in Result.ParserGeneratedState.RuntimeFileInfos)
             {
                 var generatedRawMappedFragments = new List<RawMappedFragment>();
 
-                var text = File.ReadAllText(generatedFileName);
+                var text = File.ReadAllText(runtimeFileInfo.FullName);
                 var textSpan = text.AsSpan();
                 StringBuilder? newTextBuilder = null;
 
@@ -194,34 +191,44 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                     beginMatch = FragmentMarkRegexBegin.Match(text, index);
                 }
 
-                var shortGeneratedFileName = Path.GetFileName(generatedFileName);
                 Source source;
-
                 if (newTextBuilder != null)
                 {
                     // Grammar contains actions and predicates
                     newTextBuilder.Append(textSpan.Slice(index));
                     var newText = newTextBuilder.ToString();
-                    File.WriteAllText(generatedFileName, newText);
-                    source = new Source(generatedFileName, newText);
+                    File.WriteAllText(runtimeFileInfo.FullName, newText);
+                    source = new Source(runtimeFileInfo.FullName, newText);
 
                     var generatedMappedFragments = new List<MappedFragment>(generatedRawMappedFragments.Count);
                     foreach (var rawMappedFragment in generatedRawMappedFragments)
                         generatedMappedFragments.Add(rawMappedFragment.ToMappedFragment(source));
 
-                    _fragmentFinders.Add(shortGeneratedFileName,
+                    _fragmentMappers.Add(generatedFileName,
                         new FragmentMapper(Result.ParserGeneratedState.Runtime, source, generatedMappedFragments));
                 }
                 else
                 {
-                    source = new Source(shortGeneratedFileName, text);
+                    source = new Source(runtimeFileInfo.FullName, text);
                 }
 
-                _runtimeFileSources.Add(shortGeneratedFileName, source);
+                _runtimeFiles.Add(generatedFileName, (source, runtimeFileInfo));
             }
         }
 
-        private void PrepareParserCode()
+        private void CopyHelperFiles()
+        {
+            foreach (var (generatedFileName, runtimeFileInfo) in Result.ParserGeneratedState.RuntimeFileInfos)
+            {
+                if (runtimeFileInfo.Type == RuntimeFileType.Helper)
+                {
+                    var outputFileName = Path.Combine(WorkingDirectory, generatedFileName);
+                    File.Copy(runtimeFileInfo.FullName, outputFileName, true);
+                }
+            }
+        }
+
+        private void PrepareEntryPointCode()
         {
             string templateFile = Path.Combine(WorkingDirectory, CurrentRuntimeInfo.MainFile);
             Runtime runtime = CurrentRuntimeInfo.Runtime;
@@ -414,13 +421,13 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             if (codeFileName == null)
                 return new Diagnosis(message, WorkflowStage.ParserCompiled, type);
 
-            if (_fragmentFinders.TryGetValue(codeFileName, out FragmentMapper fragmentMapper))
+            if (_fragmentMappers.TryGetValue(codeFileName, out FragmentMapper fragmentMapper))
             {
                 var mappedResult = fragmentMapper.Map(line, column);
                 return new Diagnosis(mappedResult.TextSpanInGrammar, message, WorkflowStage.ParserCompiled, type);
             }
 
-            var source = _runtimeFileSources[codeFileName];
+            var source = _runtimeFiles[codeFileName].Item1;
             var position = source.LineColumnToPosition(line, column);
             return new Diagnosis(new TextSpan(position, 0, source), message, WorkflowStage.ParserCompiled, type);
         }

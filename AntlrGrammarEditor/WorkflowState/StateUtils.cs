@@ -2,7 +2,7 @@ namespace AntlrGrammarEditor.WorkflowState
 {
     public static class StateUtils
     {
-        public static T? GetState<T>(this WorkflowState workflowState)
+        public static T? GetState<T>(this WorkflowState? workflowState)
             where T : WorkflowState
         {
             WorkflowState? state = workflowState;

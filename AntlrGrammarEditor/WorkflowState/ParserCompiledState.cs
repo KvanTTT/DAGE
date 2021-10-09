@@ -14,11 +14,11 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public CaseInsensitiveType CaseInsensitiveType { get; }
 
-        public IReadOnlyDictionary<string, Source> RuntimeFileSources { get; }
+        public IReadOnlyDictionary<string, (Source, RuntimeFileInfo)> RuntimeFileSources { get; }
 
         public ParserCompiledState(ParserGeneratedState parserGeneratedState,
             CaseInsensitiveType caseInsensitiveType,
-            IReadOnlyDictionary<string, Source> runtimeFileSources)
+            IReadOnlyDictionary<string, (Source, RuntimeFileInfo)> runtimeFileSources)
         {
             CaseInsensitiveType = caseInsensitiveType;
             ParserGeneratedState = parserGeneratedState;

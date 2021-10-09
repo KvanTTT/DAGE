@@ -118,14 +118,15 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
 
                 var runtimeInfo = Runtime.GetRuntimeInfo();
 
-                var jarGenerator = GeneratorTool ?? Path.Combine("Generators", runtimeInfo.JarGenerator);
+                var jarGenerator =
+                    GeneratorTool ?? Path.GetFullPath(Path.Combine("Generators", runtimeInfo.JarGenerator));
                 foreach (var grammarInfo in state.GrammarInfos)
                 {
-                    var (grammarFileName, outputDirectory) = InsertFragmentMarks(grammarInfo);
+                    var workingDirectory = InsertFragmentMarks(grammarInfo);
 
                     var arguments = new StringBuilder();
-                    arguments.Append($@"-jar ""{jarGenerator}"" ""{grammarFileName}""");
-                    arguments.Append($@" -o ""{outputDirectory}""");
+                    arguments.Append($@"-jar ""{jarGenerator}"" ""{Path.GetFileName(grammarInfo.Source.Name)}""");
+                    arguments.Append($@" -o ""{Path.GetFullPath(_runtimeDirectoryName)}""");
                     arguments.Append($" -Dlanguage={runtimeInfo.DLanguage}");
                     arguments.Append($" -encoding {Encodings[Encoding]}");
 
@@ -163,7 +164,7 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
 
                     var argumentsString = arguments.ToString();
                     _result.Command = "java " + argumentsString;
-                    processor = new Processor("java", argumentsString, ".");
+                    processor = new Processor("java", argumentsString, workingDirectory);
                     processor.CancellationToken = cancellationToken;
                     processor.ErrorDataReceived += ParserGeneration_ErrorDataReceived;
                     processor.OutputDataReceived += ParserGeneration_OutputDataReceived;
@@ -228,7 +229,7 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
             }
         }
 
-        private (string GrammarFileName, string OutputDirectory) InsertFragmentMarks(GrammarInfo grammarInfo)
+        private string InsertFragmentMarks(GrammarInfo grammarInfo)
         {
             var sourceSpan = grammarInfo.Source.Text.AsSpan();
             StringBuilder? result = null;
@@ -261,7 +262,7 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
             }
 
             string grammarFileName = Path.GetFileName(grammarInfo.Source.Name);
-            string newGrammarFileName, outputDirectory;
+            string workingDirectory;
             Source source;
 
             if (result != null)
@@ -274,22 +275,21 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
                 foreach (var rawFragment in rawFragments)
                     _mappedFragments.Add(rawFragment.ToMappedFragment(source));
 
-                newGrammarFileName = Path.Combine(_runtimeDirectoryName, grammarFileName);
+                var newGrammarFileName = Path.Combine(_runtimeDirectoryName, grammarFileName);
                 if (!Directory.Exists(_runtimeDirectoryName))
                     Directory.CreateDirectory(_runtimeDirectoryName);
                 File.WriteAllText(newGrammarFileName, newCode);
-                outputDirectory = ".";
+                workingDirectory = _runtimeDirectoryName;
             }
             else
             {
                 source = grammarInfo.Source;
-                newGrammarFileName = Path.Combine(_grammar.Directory, grammarFileName);
-                outputDirectory = _runtimeDirectoryName;
+                workingDirectory = Path.GetDirectoryName(grammarInfo.Source.Name) ?? grammarInfo.Source.Name;
             }
 
             _grammarSources.Add(grammarFileName, source);
 
-            return (newGrammarFileName, outputDirectory);
+            return Path.GetFullPath(workingDirectory);
         }
 
         private void AddGeneratedFiles(GrammarInfo grammarInfo)
@@ -302,7 +302,55 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
             var generatedGrammarName = Runtime != Runtime.Go ? grammarName : grammarName.ToLowerInvariant();
             string? lexerFileName = null, parserFileName = null;
 
-            string NormalizeFileName(string fileName, bool lexer)
+            if (grammarInfo.Type == GrammarFileType.Combined)
+            {
+                lexerFileName = generatedGrammarName + runtimeInfo.LexerFilePostfix;
+                parserFileName = generatedGrammarName + runtimeInfo.ParserFilePostfix;
+            }
+            else
+            {
+                if (grammarInfo.Type == GrammarFileType.Lexer)
+                    lexerFileName = NormalizeFileName(generatedGrammarName, true, runtimeInfo);
+                else
+                    parserFileName = NormalizeFileName(generatedGrammarName, false, runtimeInfo);
+            }
+
+            InitializeRuntimeFileInfo(lexerFileName, grammarInfo, runtimeInfo);
+            InitializeRuntimeFileInfo(parserFileName, grammarInfo, runtimeInfo);
+
+            if (grammarInfo.Type.IsParser())
+            {
+                void GetGeneratedListenerOrVisitorFiles(bool visitor)
+                {
+                    string postfix = visitor ? runtimeInfo.VisitorPostfix : runtimeInfo.ListenerPostfix;
+                    string? basePostfix = visitor ? runtimeInfo.BaseVisitorPostfix : runtimeInfo.BaseListenerPostfix;
+
+                    var shortFileName = generatedGrammarName + postfix + "." + runtimeInfo.MainExtension;
+                    _runtimeFileInfos.Add(
+                        shortFileName,
+                        new RuntimeFileInfo(Path.GetFullPath(Path.Combine(_runtimeDirectoryName, shortFileName)),
+                            RuntimeFileType.GeneratedHelper, grammarInfo));
+                    if (basePostfix != null)
+                    {
+                        shortFileName = generatedGrammarName + basePostfix + "." + runtimeInfo.MainExtension;
+                        _runtimeFileInfos.Add(
+                            shortFileName,
+                            new RuntimeFileInfo(Path.GetFullPath(Path.Combine(_runtimeDirectoryName, shortFileName)),
+                                RuntimeFileType.GeneratedHelper, grammarInfo));
+                    }
+                }
+
+                if (_result.IncludeListener)
+                    GetGeneratedListenerOrVisitorFiles(false);
+
+                if (_result.IncludeVisitor)
+                    GetGeneratedListenerOrVisitorFiles(true);
+            }
+        }
+
+        private string NormalizeFileName(string fileName, bool lexer, RuntimeInfo runtimeInfo)
+        {
+            if (Runtime == Runtime.Go)
             {
                 string originalPostfix, resultFilePostfix;
                 if (lexer)
@@ -315,67 +363,47 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
                     originalPostfix = Grammar.ParserPostfix;
                     resultFilePostfix = runtimeInfo.ParserFilePostfix;
                 }
-                if (Runtime == Runtime.Go && fileName.EndsWith(originalPostfix, StringComparison.OrdinalIgnoreCase))
+
+                if (fileName.EndsWith(originalPostfix, StringComparison.OrdinalIgnoreCase))
+                    fileName = fileName.Remove(fileName.Length - originalPostfix.Length);
+
+                return fileName + resultFilePostfix;
+            }
+            return fileName;
+        }
+
+        private void InitializeRuntimeFileInfo(string? shortFileName, GrammarInfo grammarInfo, RuntimeInfo runtimeInfo)
+        {
+            if (shortFileName == null)
+                return;
+
+            var shortFileNameWithExtension = shortFileName + "." + runtimeInfo.MainExtension;
+            _runtimeFileInfos.Add(
+                shortFileNameWithExtension,
+                new RuntimeFileInfo(Path.GetFullPath(Path.Combine(_runtimeDirectoryName, shortFileNameWithExtension)),
+                    RuntimeFileType.Generated, grammarInfo));
+            if (grammarInfo.SuperClass != null)
+            {
+                var superClassShortName = grammarInfo.SuperClass + "." + runtimeInfo.MainExtension;
+                var grammarDirectory = Path.GetDirectoryName(grammarInfo.Source.Name) ?? "";
+                var superClassFileName = Path.Combine(grammarDirectory, superClassShortName);
+                if (!File.Exists(superClassFileName))
                 {
-                    return fileName.Remove(fileName.Length - originalPostfix.Length) + resultFilePostfix;
-                }
-                return fileName;
-            }
-
-            if (grammarInfo.Type == GrammarFileType.Combined)
-            {
-                lexerFileName = generatedGrammarName + runtimeInfo.LexerFilePostfix;
-                parserFileName = generatedGrammarName + runtimeInfo.ParserFilePostfix;
-            }
-            else
-            {
-                if (grammarInfo.Type == GrammarFileType.Lexer)
-                {
-                    lexerFileName = NormalizeFileName(generatedGrammarName, true);
-                }
-                else
-                {
-                    parserFileName = NormalizeFileName(generatedGrammarName, false);
-                }
-            }
-
-            if (lexerFileName != null)
-            {
-                _runtimeFileInfos.Add(
-                    Path.Combine(_runtimeDirectoryName, lexerFileName + "." + runtimeInfo.MainExtension),
-                    new RuntimeFileInfo(RuntimeFileType.Generated, grammarInfo));
-            }
-
-            if (parserFileName != null)
-            {
-                _runtimeFileInfos.Add(
-                    Path.Combine(_runtimeDirectoryName, parserFileName + "." + runtimeInfo.MainExtension),
-                    new RuntimeFileInfo(RuntimeFileType.Generated, grammarInfo));
-            }
-
-            if (grammarInfo.Type.IsParser())
-            {
-                void GetGeneratedListenerOrVisitorFiles(bool visitor)
-                {
-                    string postfix = visitor ? runtimeInfo.VisitorPostfix : runtimeInfo.ListenerPostfix;
-                    string? basePostfix = visitor ? runtimeInfo.BaseVisitorPostfix : runtimeInfo.BaseListenerPostfix;
-
-                    _runtimeFileInfos.Add(
-                        Path.Combine(_runtimeDirectoryName, generatedGrammarName + postfix + "." + runtimeInfo.MainExtension),
-                        new RuntimeFileInfo(RuntimeFileType.GeneratedHelper, grammarInfo));
-                    if (basePostfix != null)
+                    var runtimeName = runtimeInfo.Name;
+                    if (runtimeInfo.Runtime.IsCSharpRuntime())
                     {
-                        _runtimeFileInfos.Add(
-                            Path.Combine(_runtimeDirectoryName, generatedGrammarName + basePostfix + "." + runtimeInfo.MainExtension),
-                            new RuntimeFileInfo(RuntimeFileType.GeneratedHelper, grammarInfo));
+                        runtimeName = "CSharp";
                     }
+                    else if (runtimeInfo.Runtime == Runtime.Python)
+                    {
+                        runtimeName = "Python";
+                    }
+
+                    superClassFileName = Path.Combine(grammarDirectory, runtimeName, superClassShortName);
                 }
 
-                if (_result.IncludeListener)
-                    GetGeneratedListenerOrVisitorFiles(false);
-
-                if (_result.IncludeVisitor)
-                    GetGeneratedListenerOrVisitorFiles(true);
+                _runtimeFileInfos.Add(superClassShortName,
+                    new RuntimeFileInfo(Path.GetFullPath(superClassFileName), RuntimeFileType.Helper, grammarInfo));
             }
         }
     }

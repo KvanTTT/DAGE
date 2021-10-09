@@ -169,7 +169,7 @@ namespace AntlrGrammarEditor.Processors
             return Task.Run(func);
         }
 
-        public GrammarCheckedState GetGrammarCheckedState()
+        public GrammarCheckedState CheckGrammar()
         {
             if (_currentState.Stage == WorkflowStage.Input)
                 ProcessOneStep();

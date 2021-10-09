@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AntlrGrammarEditor
 {
@@ -9,6 +10,8 @@ namespace AntlrGrammarEditor
         public Grammar Grammar { get; }
 
         public GrammarProjectType GrammarProjectType { get; }
+
+        public static readonly Regex GrammarNameRegex = new Regex(@"grammar\s+(\w+);", RegexOptions.Compiled);
 
         public static Grammar GetGrammarWithNotConflictingName(string directory, string defaultName = "TestGrammar",
             GrammarProjectType grammarProjectType = GrammarProjectType.Combined)
@@ -74,17 +77,21 @@ namespace AntlrGrammarEditor
             foreach (var (grammarFileType, fileName) in fileNamesWithTypes)
             {
                 string grammarContent;
+                string grammarFileName;
                 if (grammarFileType == GrammarFileType.Lexer && lexerContent != null)
                 {
                     grammarContent = lexerContent;
+                    grammarFileName = ExtractGrammarName(lexerContent) + Grammar.AntlrDotExt;
                 }
                 else if (grammarFileType == GrammarFileType.Parser && parserContent != null)
                 {
                     grammarContent = parserContent;
+                    grammarFileName = ExtractGrammarName(parserContent) + Grammar.AntlrDotExt;
                 }
                 else if (grammarFileType == GrammarFileType.Combined && combinedContent != null)
                 {
                     grammarContent = combinedContent;
+                    grammarFileName = ExtractGrammarName(combinedContent) + Grammar.AntlrDotExt;
                 }
                 else
                 {
@@ -133,9 +140,10 @@ namespace AntlrGrammarEditor
                     }
 
                     grammarContent = content.ToString();
+                    grammarFileName = Grammar.Name;
                 }
 
-                File.WriteAllText(fileName, grammarContent);
+                File.WriteAllText(grammarFileName, grammarContent);
             }
         }
 
@@ -160,6 +168,11 @@ namespace AntlrGrammarEditor
             }
 
             return result;
+        }
+
+        public static string ExtractGrammarName(string content)
+        {
+            return GrammarNameRegex.Match(content).Groups[1].Value;
         }
     }
 }

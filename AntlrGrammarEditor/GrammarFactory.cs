@@ -55,23 +55,23 @@ namespace AntlrGrammarEditor
             return new Grammar(grammarName, directoryName, root, packageName, caseInsensitiveType);
         }
 
-        public static Grammar CreateDefaultCombinedAndFill(string content, string name, string directory)
+        public static Grammar CreateDefaultCombinedAndFill(string content, string directory)
         {
-            var grammar = new Grammar(name, directory);
+            var grammar = new Grammar(GrammarFilesManager.ExtractGrammarName(content), directory);
             new GrammarFilesManager(grammar, GrammarProjectType.Combined).CreateFiles(combinedContent: content);
             return grammar;
         }
 
-        public static Grammar CreateDefaultSeparatedAndFill(string lexerContent, string parserContent, string name, string directory)
+        public static Grammar CreateDefaultSeparatedAndFill(string lexerContent, string parserContent, string directory)
         {
-            var grammar = new Grammar(name, directory);
+            var grammar = new Grammar(GrammarFilesManager.ExtractGrammarName(parserContent), directory);
             new GrammarFilesManager(grammar, GrammarProjectType.Separated).CreateFiles(lexerContent, parserContent);
             return grammar;
         }
 
-        public static Grammar CreateDefaultLexerAndFill(string lexerContent, string name, string directory)
+        public static Grammar CreateDefaultLexerAndFill(string lexerContent, string directory)
         {
-            var grammar = new Grammar(name, directory);
+            var grammar = new Grammar(GrammarFilesManager.ExtractGrammarName(lexerContent), directory);
             new GrammarFilesManager(grammar, GrammarProjectType.Lexer).CreateFiles(lexerContent);
             return grammar;
         }

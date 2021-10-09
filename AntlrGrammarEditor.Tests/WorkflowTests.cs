@@ -1,6 +1,5 @@
 ﻿using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using AntlrGrammarEditor.Diagnoses;
@@ -12,18 +11,8 @@ using AntlrGrammarEditor.WorkflowState;
 namespace AntlrGrammarEditor.Tests
 {
     [TestFixture]
-    public class WorkflowTests
+    public class WorkflowTests : TestsBase
     {
-        private const string TestGrammarName = "test";
-        private static readonly string TestTextName = Path.Combine(Environment.CurrentDirectory, "Text");
-
-        [SetUp]
-        public void Init()
-        {
-            var assemblyPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            Directory.SetCurrentDirectory(assemblyPath);
-        }
-
         [Test]
         public void RuntimesExist()
         {
@@ -67,7 +56,7 @@ CHAR:  [a-z]+;
 DIGIT: [0-9]+;
 WS:    [ \r\n\t]+ -> skip;";
 
-            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
+            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "."));
             workflow.EndStage = WorkflowStage.ParserGenerated;
             foreach (Runtime runtime in runtimes)
             {
@@ -98,7 +87,7 @@ CHAR:   a-z]+;
 DIGIT: [0-9]+;
 WS:    [ \r\n\t]+ -> skip;";
 
-            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
+            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "."));
 
             var state = workflow.Process();
             Assert.IsInstanceOf<GrammarCheckedState>(state, state.DiagnosisMessage);
@@ -120,48 +109,17 @@ WS:    [ \r\n\t]+ -> skip;";
         }
 
         [Test]
-        public void SeparatedLexerAndParserErrors()
-        {
-            var lexerText =
-$@"lexer grammar {TestGrammarName};
-CHAR:   a-z]+;
-DIGIT: [0-9]+;
-WS:    [ \r\n\t]+ -> skip;";
-
-            var parserText =
-$@"parser grammar {TestGrammarName};
-start: DIGIT+;
-#";
-            var workflow = new Workflow(GrammarFactory.CreateDefaultSeparatedAndFill(lexerText, parserText, TestGrammarName, "."));
-
-            var state = workflow.Process();
-
-            var testLexerSource = new Source(TestGrammarName + "Lexer.g4", File.ReadAllText(TestGrammarName + "Lexer.g4"));
-            var testParserSource = new Source(TestGrammarName + "Parser.g4", File.ReadAllText(TestGrammarName + "Parser.g4"));
-            Assert.IsInstanceOf<GrammarCheckedState>(state, state.DiagnosisMessage);
-            var grammarCheckedState = (GrammarCheckedState)state;
-            var expectedDiagnoses = new[]
-            {
-                new Diagnosis(2, 10, 2, 12, "token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
-                new Diagnosis(2, 12, 2, 13, "token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
-                new Diagnosis(2, 13, 2, 14, "mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", testLexerSource, WorkflowStage.GrammarChecked),
-                new Diagnosis(3, 1, 3, 2, "extraneous input '#' expecting {<EOF>, 'mode'}", testParserSource, WorkflowStage.GrammarChecked)
-            };
-            CollectionAssert.AreEquivalent(expectedDiagnoses, grammarCheckedState.Diagnoses);
-        }
-
-        [Test]
         public void ParserGeneratedStageErrors()
         {
             var grammarText =
-$@"grammar {TestGrammarName};
+                $@"grammar {TestGrammarName};
 start:  {{true}}? rule1+;
 rule:   DIGIT;
 CHAR:   [a-z]+;
 DIGIT:  [0-9]+;
 WS:     [ \r\n\t]+ -> skip;";
 
-            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
+            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "."));
 
             var state = workflow.Process();
 
@@ -177,171 +135,36 @@ WS:     [ \r\n\t]+ -> skip;";
         }
 
         [Test]
-        public void ParserGeneratedStageSyntaxErrors()
+        public void SeparatedLexerAndParserErrors()
         {
-            var grammarText =
-$@"lexer grammar {TestGrammarName};
-TEST: {{'}};";
+            var lexerGrammarName = $"{TestGrammarName}{Grammar.LexerPostfix}";
+            var lexerContent =
+$@"lexer grammar {lexerGrammarName};
+CHAR:   a-z]+;
+DIGIT: [0-9]+;
+WS:    [ \r\n\t]+ -> skip;";
 
-            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
-            var state = workflow.Process();
-            var grammarSource = new Source(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
-            Assert.IsInstanceOf<ParserGeneratedState>(state, state.DiagnosisMessage);
-            var parserGeneratedState = (ParserGeneratedState)state;
-            CollectionAssert.AreEquivalent(
-                new [] {
-                    new Diagnosis(1, 1, "syntax error: mismatched character '<EOF>' expecting '''", grammarSource, WorkflowStage.ParserGenerated),
-                    new Diagnosis(2, 11, "syntax error: '<EOF>' came as a complete surprise to me while matching a lexer rule", grammarSource, WorkflowStage.ParserGenerated),
-                },
-                parserGeneratedState.Diagnoses);
-        }
-
-        [Test]
-        public void ParserGeneratedStageInvalidPackageError()
-        {
-            var grammarText =
-$@"lexer grammar {TestGrammarName};
-TEST: 'test';";
-
-            var workflow = new Workflow(GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, "."));
-            workflow.PackageName = "invalid package";
-            var state = workflow.Process();
-            var grammarSource = new Source(TestGrammarName + ".g4", File.ReadAllText(TestGrammarName + ".g4"));
-            Assert.IsInstanceOf<ParserGeneratedState>(state, state.DiagnosisMessage);
-            var parserGeneratedState = (ParserGeneratedState)state;
-            CollectionAssert.AreEquivalent(
-                new [] {
-                    new Diagnosis( "Package name (invalid package) should contain only latin letter, digits, and underscore", WorkflowStage.ParserGenerated),
-                },
-                parserGeneratedState.Diagnoses);
-        }
-
-        [Test]
-        public void ParserCompiledStageErrors([Values] SupportedRuntime runtime)
-        {
-            var grammarText =
-$@"grammar {TestGrammarName};
-start:  DIGIT+ {{i^;}};
-CHAR:   [a-z]+;
-DIGIT:  [0-9]+; 
-WS:     [ \r\n\t]+ -> skip;";
-
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            var workflow = new Workflow(grammar) { Runtime = (Runtime)runtime };
+            var parserContent =
+$@"parser grammar {TestGrammarName}{Grammar.ParserPostfix};
+options {{ tokenVocab={lexerGrammarName}; }}
+start: DIGIT+;
+#";
+            var workflow = new Workflow(GrammarFactory.CreateDefaultSeparatedAndFill(lexerContent, parserContent, "."));
 
             var state = workflow.Process();
-            Assert.IsInstanceOf<ParserCompiledState>(state, state.DiagnosisMessage);
-            var parserCompiledState = (ParserCompiledState)state;
-            Assert.GreaterOrEqual(parserCompiledState.Diagnoses.Count, 1);
-            var firstDiagnosis = parserCompiledState.Diagnoses[0];
-            Assert.AreEqual(WorkflowStage.ParserCompiled, firstDiagnosis.WorkflowStage);
-            Assert.AreEqual(DiagnosisType.Error, firstDiagnosis.Type);
-            var textSpan = firstDiagnosis.TextSpan;
-            Assert.AreEqual(2, textSpan?.LineColumn.BeginLine);
-        }
 
-        [Test]
-        public void TextParsedStageErrors([Values] SupportedRuntime runtime)
-        {
-            var grammarText =
-$@"grammar {TestGrammarName};
-
-root
-    : missingToken extraneousToken noViableAlternative mismatchedInput EOF
-    ;
-
-missingToken
-    : Error LParen RParen Semi
-    ;
-
-extraneousToken
-    : Error Id Semi
-    ;
-
-mismatchedInput
-    : Error Id Semi
-    ;
-
-noViableAlternative
-    : AA BB
-    | AA CC
-    ;
-    
-AA: 'aa';
-BB: 'bb';
-CC: 'cc';
-DD: 'dd';
-LParen     : '((';
-RParen     : '))';
-Semi       : ';';
-Error      : 'error';
-Id         : [A-Za-z][A-Za-z0-9]+;
-Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
-Comment    : '//' ~[\r\n]* -> channel(HIDDEN);
-Number     : [0-9']+;";
-
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            File.WriteAllText(TestTextName,
-@"#                       // token recognition error at: '#'
-error (( ;        // missing '))' at ';'
-error id1 id2 ;   // extraneous input 'id2' expecting ';'
-aa  dd            // no viable alternative at input 'aa  dd'
-error 123 456 ;   // mismatched input '123' expecting Id");
-
-            var workflow = new Workflow(grammar) {Runtime = (Runtime)runtime, TextFileName = TestTextName};
-
-            var state = workflow.Process();
-            Assert.IsInstanceOf<TextParsedState>(state, state.DiagnosisMessage);
-            TextParsedState textParsedState = (TextParsedState)state;
-            var textSource = textParsedState.TextSource!;
-            CollectionAssert.AreEquivalent(
-                new [] {
-                    new Diagnosis(1, 1, 1, 2, "token recognition error at: '#'", textSource, WorkflowStage.TextParsed),
-                    new Diagnosis(2, 10, 2, 11, "missing '))' at ';'", textSource, WorkflowStage.TextParsed),
-                    new Diagnosis(3, 11, 3, 14, "extraneous input 'id2' expecting ';'", textSource, WorkflowStage.TextParsed),
-                    new Diagnosis(4, 5, 4, 7, "no viable alternative at input 'aa  dd'", textSource, WorkflowStage.TextParsed),
-                    new Diagnosis(5, 7, 5, 10, "mismatched input '123' expecting Id", textSource, WorkflowStage.TextParsed)
-                },
-                textParsedState.Diagnoses);
-
-            // TODO: unify in different runtimes
-            //Assert.AreEqual("(root (missingToken error (( <missing '))'> ;) (extraneousToken error id1 id2 ;) (noViableAlternative aa dd) (mismatchedInput error 123 456 ;) EOF)", textParsedState.Tree);
-        }
-
-        [Test]
-        public void CaseInsensitive([Values] SupportedRuntime supportedRuntime)
-        {
-            var runtime = (Runtime)supportedRuntime;
-            CheckCaseInsensitiveWorkflow(runtime, true);
-            CheckCaseInsensitiveWorkflow(runtime, false);
-        }
-
-        private static void CheckCaseInsensitiveWorkflow(Runtime runtime, bool lowerCase)
-        {
-            char a = lowerCase ? 'a' : 'A';
-            char д = lowerCase ? 'д' : 'Д';
-            var grammarText =
-$@"grammar {TestGrammarName};
-// caseInsensitiveType={(lowerCase ? CaseInsensitiveType.Lower : CaseInsensitiveType.Upper)};
-start:  A A B D D DIGIT;
-A:      '{a}';
-B:      'ß';    // No transformation into SS here (result's char length is more than 1)
-D:      '{д}';  // Should work fine for non latin chars too (if result's char length is 1)
-DIGIT:  [0-9]+;
-WS:     [ \r\n\t]+ -> skip;";
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            File.WriteAllText(TestTextName, @"A a ß Д д 1234");
-
-            var workflow = new Workflow(grammar);
-            workflow.Runtime = runtime;
-            workflow.TextFileName = TestTextName;
-
-            var state = workflow.Process();
-            Assert.IsInstanceOf<TextParsedState>(state, state.DiagnosisMessage);
-            var textParsedState = (TextParsedState)state;
-            Assert.AreEqual(0, textParsedState.Diagnoses.Count, textParsedState.DiagnosisMessage);
-            if (runtime != Runtime.Php)
-                Assert.AreEqual("(start A a ß Д д 1234)", textParsedState.Tree);
+            var testLexerSource = new Source(TestGrammarName + "Lexer.g4", File.ReadAllText(TestGrammarName + "Lexer.g4"));
+            var testParserSource = new Source(TestGrammarName + "Parser.g4", File.ReadAllText(TestGrammarName + "Parser.g4"));
+            Assert.IsInstanceOf<GrammarCheckedState>(state, state.DiagnosisMessage);
+            var grammarCheckedState = (GrammarCheckedState)state;
+            var expectedDiagnoses = new[]
+            {
+                new Diagnosis(2, 10, 2, 12, "token recognition error at: '-z'", testLexerSource, WorkflowStage.GrammarChecked),
+                new Diagnosis(2, 12, 2, 13, "token recognition error at: ']'", testLexerSource, WorkflowStage.GrammarChecked),
+                new Diagnosis(2, 13, 2, 14, "mismatched input '+' expecting {ASSIGN, PLUS_ASSIGN}", testLexerSource, WorkflowStage.GrammarChecked),
+                new Diagnosis(4, 1, 4, 2, "extraneous input '#' expecting {<EOF>, 'mode'}", testParserSource, WorkflowStage.GrammarChecked)
+            };
+            CollectionAssert.AreEquivalent(expectedDiagnoses, grammarCheckedState.Diagnoses);
         }
 
         [Test]
@@ -351,7 +174,7 @@ WS:     [ \r\n\t]+ -> skip;";
 $@"grammar {TestGrammarName};
 t: T;
 T:  ['' ]+;";
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, ".");
             File.WriteAllText(TestTextName, " ");
 
             var workflow = new Workflow(grammar);
@@ -364,23 +187,23 @@ T:  ['' ]+;";
             Assert.IsTrue(textParsedState.ParserCompiledState.ParserGeneratedState.Diagnoses[0].Type == DiagnosisType.Warning);
         }
 
-        [Test]
-        public void CheckListenersAndVisitors([Values] SupportedRuntime runtime)
+        [TestCaseSource(nameof(SupportedRuntimes))]
+        public void CheckListenersAndVisitors(Runtime runtime)
         {
             var grammarText =
 $@"grammar {TestGrammarName};
 t: T;
 T: [a-z]+;";
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, ".");
             File.WriteAllText(TestTextName, @"asdf");
 
             var workflow = new Workflow(grammar)
             {
                 GenerateListener = true,
-                GenerateVisitor = true
+                GenerateVisitor = true,
+                Runtime = runtime,
+                TextFileName = TestTextName
             };
-            workflow.Runtime = (Runtime)runtime;
-            workflow.TextFileName = TestTextName;
 
             var state = workflow.Process();
             Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
@@ -389,132 +212,6 @@ T: [a-z]+;";
 
             Assert.IsTrue(allFiles.Any(file => file.Contains("listener", StringComparison.OrdinalIgnoreCase)));
             Assert.IsTrue(allFiles.Any(file => file.Contains("visitor", StringComparison.OrdinalIgnoreCase)));
-        }
-
-        [Test]
-        public void CheckCustomRoot([Values] SupportedRuntime runtime)
-        {
-            var grammarText =
-@$"grammar {TestGrammarName};
-root1: 'V1';
-root2: 'V2';";
-
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            var workflow = new Workflow(grammar) {Runtime = (Runtime)runtime, TextFileName = TestTextName, Root = null};
-
-            File.WriteAllText(TestTextName, "V1");
-            var state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
-
-            workflow.Root = "root1";
-            state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
-
-            workflow.Root = "root2";
-            File.WriteAllText(TestTextName, "V2");
-            state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
-        }
-
-        [Test]
-        public void CheckPackageName([Values] SupportedRuntime supportedRuntime)
-        {
-            var runtime = (Runtime)supportedRuntime;
-            CheckPackageName(runtime, false);
-            CheckPackageName(runtime, true);
-        }
-
-        private static void CheckPackageName(Runtime runtime, bool lexerOnly)
-        {
-            const string packageName = "TestLanguage";
-
-            Grammar grammar;
-            if (lexerOnly)
-            {
-                var grammarContent =
-$@"lexer grammar {TestGrammarName};
-TOKEN: 'a';";
-                grammar = GrammarFactory.CreateDefaultLexerAndFill(grammarContent, TestGrammarName, ".");
-            }
-            else
-            {
-                var grammarContent =
-$@"grammar {TestGrammarName};
-root:  TOKEN;
-TOKEN:  'a';";
-                grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarContent, TestGrammarName, ".");
-            }
-
-            var workflow = new Workflow(grammar)
-            {
-                Runtime = runtime,
-                CaseInsensitiveType = CaseInsensitiveType.Lower,
-                PackageName = packageName,
-                TextFileName = TestTextName
-            };
-
-            File.WriteAllText(TestTextName, "A");
-            var state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
-        }
-
-        [Test]
-        public void CheckPredictionMode([Values] SupportedRuntime runtime)
-        {
-            var grammarText =
-$@"grammar {TestGrammarName};
-
-root
-    : (stmt1 | stmt2) EOF
-    ;
-    
-stmt1
-    : name
-    ;
-
-stmt2
-    : 'static' name '.' Id
-    ;
-
-name
-    : Id ('.' Id)*
-    ;
-
-Dot        : '.';
-Static     : 'static';
-Id         : [A-Za-z]+;
-Whitespace : [ \t\r\n]+ -> channel(HIDDEN);
-";
-
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
-            var workflow = new Workflow(grammar) {Runtime = (Runtime)runtime, TextFileName = TestTextName};
-            File.WriteAllText(TestTextName, @"static a.b");
-
-            workflow.PredictionMode = PredictionMode.LL;
-            var llState = workflow.Process();
-            Assert.IsTrue((llState as TextParsedState)?.HasErrors == false, llState.DiagnosisMessage);
-
-            workflow.PredictionMode = PredictionMode.SLL;
-            var sllState = workflow.Process();
-            Assert.IsTrue((sllState as TextParsedState)?.HasErrors == true, sllState.DiagnosisMessage);
-        }
-
-        [Test]
-        public void CheckLexerOnlyGrammar([Values] SupportedRuntime runtime)
-        {
-            var grammarText =
-$"lexer grammar {TestGrammarName};" +
-"T1: 'T1';" +
-"Digit: [0-9]+;" +
-"Space: ' '+ -> channel(HIDDEN);";
-
-            var grammar = GrammarFactory.CreateDefaultLexerAndFill(grammarText, TestGrammarName, ".");
-            File.WriteAllText(TestTextName, "T1 1234");
-
-            var workflow = new Workflow(grammar) {Runtime = (Runtime)runtime, TextFileName = TestTextName};
-
-            var state = workflow.Process();
-            Assert.IsTrue((state as TextParsedState)?.HasErrors == false, state.DiagnosisMessage);
         }
 
         [Test]
@@ -543,7 +240,7 @@ root:
 
 TOKEN: 'token';";
 
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, TestGrammarName, ".");
+            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, ".");
             var workflow = new Workflow(grammar);
             workflow.TextFileName = TestTextName;
             workflow.EndStage = WorkflowStage.GrammarChecked;
@@ -595,175 +292,6 @@ TOKEN: 'token';";
             {
                 Assert.IsTrue(state.Diagnoses.Any(error => error.Message.Contains($"Option {optionName} is already defined")), state.DiagnosisMessage);
             }
-        }
-
-        [Test]
-        public void GeneratedToGrammarCorrectMapping([Values] SupportedRuntime supportedRuntime)
-        {
-            var grammarText =
-@"grammar test;
-rootRule
-    : {a====0}? tokensOrRules* EOF {a+++;}
-    ;
-tokensOrRules
-    : {a====0}? TOKEN+ {a+++;}
-    ;
-TOKEN: [a-z]+;";
-
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "test", ".");
-            var runtime = (Runtime)supportedRuntime;
-            var workflow = new Workflow(grammar)
-            {
-                Runtime = runtime
-            };
-
-            var state = workflow.Process();
-            Assert.IsInstanceOf<ParserCompiledState>(state, state.DiagnosisMessage);
-            ParserCompiledState parserCompiledState = (ParserCompiledState)state;
-            var errors = parserCompiledState.Diagnoses;
-
-            var runtimeInfo = runtime.GetRuntimeInfo();
-            if (!runtimeInfo.Interpreted)
-            {
-                if (runtime.IsCSharpRuntime())
-                {
-                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 11)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 41)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 11)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 29)));
-                }
-                else if (runtime == Runtime.Java)
-                {
-                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 8)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 37)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 8)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 25)));
-                }
-                else if (runtime == Runtime.Dart)
-                {
-                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 9)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 37)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 41)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 9)));
-                }
-                else if (runtime == Runtime.Go)
-                {
-                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 11)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 3, 40)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 11)));
-                    Assert.IsTrue(errors.Any(e => Compare(e, 6, 28)));
-                }
-                else
-                {
-                    throw new NotSupportedException($"Not completed runtime: {supportedRuntime}");
-                }
-            }
-            else
-            {
-                Assert.GreaterOrEqual(errors.Count, 1);
-                Assert.IsTrue(errors.Any(e => Compare(e, 3, 8)));
-            }
-        }
-
-        [Test]
-        public void GeneratedToGrammarCorrectMultilineMapping([Values] SupportedRuntime supportedRuntime)
-        {
-            var cSharpCode =
-@"void Test() {
-    Console.WriteLine(error1);
-    Console.WriteLine(error2);
-}";
-
-            var fragmentsMap = new Dictionary<SupportedRuntime, string>
-            {
-                [SupportedRuntime.CSharpStandard] = cSharpCode,
-                [SupportedRuntime.CSharpOptimized] = cSharpCode,
-                [SupportedRuntime.Java] =
-@"void test() {
-    System.out.println(error1);
-    System.out.println(error2);
-}",
-                [SupportedRuntime.Python] =
-@"def test():
-    print(""test"")
-    error~",
-                [SupportedRuntime.JavaScript] =
-@"function test() {
-    print(""test"");
-    error~
-}",
-                [SupportedRuntime.Go] =
-@"func test() {
-    println(error1)
-    println(error2)
-}",
-                [SupportedRuntime.Php] =
-@"function test() {
-    print('test');
-    error~
-}",
-                [SupportedRuntime.Dart] =
-@"void test() {
-    print(error1);
-    print(error2);
-}"
-            };
-
-            var grammarText =
-$@"grammar test;
-
-@lexer::members {{{fragmentsMap[supportedRuntime]}}}
-
-start: CHAR+;
-CHAR:   [a-z]+;
-WS:     [ \r\n\t]+ -> skip;";
-
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, "test", ".");
-            var runtime = (Runtime)supportedRuntime;
-            var workflow = new Workflow(grammar) { Runtime = runtime };
-
-            var state = workflow.Process();
-            Assert.IsInstanceOf<ParserCompiledState>(state, state.DiagnosisMessage);
-            ParserCompiledState parserCompiledState = (ParserCompiledState)state;
-            var errors = parserCompiledState.Diagnoses;
-
-            if (runtime.IsCSharpRuntime())
-            {
-                Assert.True(errors.Any(e => Compare(e, 4, 23)));
-                Assert.True(errors.Any(e => Compare(e, 5, 23)));
-            }
-            else if (runtime == Runtime.Java)
-            {
-                Assert.True(errors.Any(e => Compare(e, 4, 1)));
-                Assert.True(errors.Any(e => Compare(e, 5, 1)));
-            }
-            else if (runtime == Runtime.Go)
-            {
-                Assert.True(errors.Any(e => Compare(e, 4, 13)));
-                Assert.True(errors.Any(e => Compare(e, 5, 13)));
-            }
-            else if (runtime == Runtime.Dart)
-            {
-                Assert.True(errors.Any(e => Compare(e, 4, 11)));
-                Assert.True(errors.Any(e => Compare(e, 5, 11)));
-            }
-            else if (runtime.GetRuntimeInfo().Interpreted)
-            {
-                Assert.True(errors.Any(e => Compare(e, 5, 1)));
-            }
-            else
-            {
-                throw new NotSupportedException($"Not completed runtime: {supportedRuntime}");
-            }
-        }
-
-        static bool Compare(Diagnosis diagnosis, int line, int column)
-        {
-            if (!diagnosis.TextSpan.HasValue)
-                return false;
-            var textSpan = diagnosis.TextSpan.Value;
-            var lineColumn = textSpan.LineColumn;
-            return lineColumn.BeginLine == line && lineColumn.BeginColumn == column;
         }
     }
 }
