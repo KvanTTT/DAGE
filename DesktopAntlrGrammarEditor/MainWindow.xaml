@@ -16,13 +16,19 @@
   </Window.Styles>
 
   <Grid ColumnDefinitions="*,Auto,*" Margin="8">
-    <Grid Grid.Column="0" RowDefinitions="35,*,Auto,40" Margin="0,0,2,0">
+    <Grid Grid.Column="0" RowDefinitions="35,3*,Auto,*,40" Margin="0,0,2,0">
       <Grid Grid.Row="0"  ColumnDefinitions="70,60,60,Auto,Auto,*,*" Margin="0,3,0,3" >
         <TextBlock Grid.Column="0" Text="GRAMMAR" />
         <Button Grid.Column="1" Margin="0,0,5,0" Command="{Binding NewGrammarCommand}" >New</Button>
         <Button Grid.Column="2" Margin="0,0,5,0" Command="{Binding OpenGrammarCommand}" >Open</Button>
         <TextBlock Grid.Column="3" Margin="5,0,10,0" HorizontalAlignment="Right" Text="File" />
-        <ComboBox Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarFile, Mode=TwoWay}" Items ="{Binding GrammarFiles}" />
+        <ComboBox Grid.Column="4" Width="150" SelectedItem="{Binding OpenedGrammarOrRuntimeFile, Mode=TwoWay}" Items ="{Binding GrammarOrRuntimeFiles}" >
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding ShortFileName}" Foreground="{Binding Foreground}"></TextBlock>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
         <StackPanel Grid.Column="5" HorizontalAlignment="Right" Spacing="4" Orientation="Horizontal">
           <TextBlock Text="Package" />
           <TextBox Width="90" Text="{Binding PackageName}"/>
@@ -33,16 +39,16 @@
         </StackPanel>
       </Grid>
 
-     <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790" >
-        <ae:TextEditor Name="GrammarTextBox" FontFamily="Consolas" FontSize="12" ShowLineNumbers="True" />
+      <Border Grid.Row="1" BorderThickness="1" BorderBrush="#FF828790" >
+        <ae:TextEditor Name="GrammarTextBox" FontFamily="Consolas" FontSize="12" ShowLineNumbers="True" IsReadOnly="{Binding IsReadOnlyGrammarOrRuntimeFile}" />
       </Border>
 
-      <Expander Grid.Row="2" Header="{Binding GrammarErrorsText}" IsExpanded="{Binding GrammarErrorsExpanded}">
-        <ListBox Name="GrammarErrorsListBox" MinHeight="120" Items="{Binding GrammarErrors}" />
-      </Expander>
+      <GridSplitter Grid.Row="2" Height="2" Margin="0,0,0,2" />
 
-      <Grid Grid.Row="3" ColumnDefinitions="120,120,120,120,120,120">
-        <Button Grid.Column="0" Margin="5" Command="{Binding ProcessCommand}">Process</Button>
+      <ListBox Grid.Row="3" Name="GrammarErrorsListBox" MinHeight="120" Items="{Binding GrammarErrors}" Margin="0,2,0,0" />
+
+      <Grid Grid.Row="4" ColumnDefinitions="120,120,120,120,120,120">
+        <Button Grid.Column="0" Margin="5" Command="{Binding ProcessCommand}">Run</Button>
         <CheckBox Grid.Column="1" IsChecked="{Binding AutoProcessing}" >Auto</CheckBox>
         <TextBlock Grid.Column="2" Text="Current Stage:" />
         <TextBlock Grid.Column="3" Text="{Binding CurrentState}" />

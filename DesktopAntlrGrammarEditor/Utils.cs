@@ -27,8 +27,7 @@ namespace DesktopAntlrGrammarEditor
             }
             else
             {
-                textBox.SyntaxHighlighting =
-                    HighlightingManager.Instance.GetDefinitionByExtension(extension);
+                textBox.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(extension);
             }
         }
     }
