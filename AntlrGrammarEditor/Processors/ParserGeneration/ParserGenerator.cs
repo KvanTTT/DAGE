@@ -389,7 +389,7 @@ namespace AntlrGrammarEditor.Processors.ParserGeneration
                 if (!File.Exists(superClassFileName))
                 {
                     var runtimeName = runtimeInfo.Name;
-                    if (runtimeInfo.Runtime.IsCSharpRuntime())
+                    if (runtimeInfo.Runtime == Runtime.CSharp)
                     {
                         runtimeName = "CSharp";
                     }

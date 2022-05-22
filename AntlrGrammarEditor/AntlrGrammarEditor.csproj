@@ -51,13 +51,7 @@
     <None Update="AntlrRuntimes\Java\Main.java">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="AntlrRuntimes\Python\AntlrCaseInsensitiveInputStream.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="AntlrRuntimes\Python\main.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="AntlrRuntimes\Php\AntlrCaseInsensitiveInputStream.php">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="AntlrRuntimes\Php\index.php">

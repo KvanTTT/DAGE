@@ -27,8 +27,7 @@ namespace AntlrGrammarEditor
             "(Use `node --trace-warnings ...` to show where the warning was created)";
 
         public static readonly Runtime[] SupportedRuntimes = {
-            Runtime.CSharpOptimized,
-            Runtime.CSharpStandard,
+            Runtime.CSharp,
             Runtime.Java,
             Runtime.Python,
             Runtime.JavaScript,
@@ -97,21 +96,6 @@ namespace AntlrGrammarEditor
             }
 
             return false;
-        }
-
-        public static string GetGeneralRuntimeName(this Runtime runtime)
-        {
-            if (runtime.IsCSharpRuntime())
-            {
-                return "CSharp";
-            }
-
-            return runtime.ToString();
-        }
-
-        public static bool IsCSharpRuntime(this Runtime runtime)
-        {
-            return runtime == Runtime.CSharpOptimized || runtime == Runtime.CSharpStandard;
         }
 
         public static bool IsParser(this GrammarFileType grammarFileType)

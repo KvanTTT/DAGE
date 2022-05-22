@@ -13,8 +13,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             ParserCompiler result;
             switch (state.Runtime)
             {
-                case Runtime.CSharpStandard:
-                case Runtime.CSharpOptimized:
+                case Runtime.CSharp:
                     result = new ParserCompilerCSharp(state, caseInsensitiveType);
                     break;
                 case Runtime.Java:

@@ -4,14 +4,9 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputPath>bin</OutputPath>
-    <DefineConstants></DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(DefineConstants.Contains(CSharpOptimized))">
-    <PackageReference Include="Antlr4.Runtime" Version="4.6.6" />
-  </ItemGroup>
-
-  <ItemGroup Condition="!$(DefineConstants.Contains(CSharpOptimized))">
+  <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.10.1" />
   </ItemGroup>
 

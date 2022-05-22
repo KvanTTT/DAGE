@@ -105,7 +105,7 @@ TOKEN: [a-z]+;";
             var runtimeInfo = runtime.GetRuntimeInfo();
             if (!runtimeInfo.Interpreted)
             {
-                if (runtime.IsCSharpRuntime())
+                if (runtime == Runtime.CSharp)
                 {
                     Assert.IsTrue(errors.Any(e => Compare(e, 3, 11)));
                     Assert.IsTrue(errors.Any(e => Compare(e, 3, 41)));
@@ -148,16 +148,12 @@ TOKEN: [a-z]+;";
         [TestCaseSource(nameof(SupportedRuntimes))]
         public void GeneratedToGrammarCorrectMultilineMapping(Runtime runtime)
         {
-            var cSharpCode =
-                @"void Test() {
-    Console.WriteLine(error1);
-    Console.WriteLine(error2);
-}";
-
             var fragmentsMap = new Dictionary<Runtime, string>
             {
-                [Runtime.CSharpStandard] = cSharpCode,
-                [Runtime.CSharpOptimized] = cSharpCode,
+                [Runtime.CSharp] = @"void Test() {
+    Console.WriteLine(error1);
+    Console.WriteLine(error2);
+}",
                 [Runtime.Java] =
                     @"void test() {
     System.out.println(error1);
@@ -206,7 +202,7 @@ WS:     [ \r\n\t]+ -> skip;";
             ParserCompiledState parserCompiledState = (ParserCompiledState)state;
             var errors = parserCompiledState.Diagnoses;
 
-            if (runtime.IsCSharpRuntime())
+            if (runtime == Runtime.CSharp)
             {
                 Assert.True(errors.Any(e => Compare(e, 4, 23)));
                 Assert.True(errors.Any(e => Compare(e, 5, 23)));

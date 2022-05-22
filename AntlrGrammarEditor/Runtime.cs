@@ -3,8 +3,7 @@
     public enum Runtime
     {
         Java,
-        CSharpStandard,
-        CSharpOptimized,
+        CSharp,
         Python,
         JavaScript,
         CPlusPlus,

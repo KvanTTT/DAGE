@@ -8,22 +8,9 @@ namespace AntlrGrammarEditor
     {
         public static readonly Dictionary<Runtime, RuntimeInfo> Runtimes = new()
         {
-            [Runtime.CSharpOptimized] = new RuntimeInfo
+            [Runtime.CSharp] = new RuntimeInfo
             (
-                runtime: Runtime.CSharpOptimized,
-                name: "C# Optimized",
-                dLanguage: "CSharp_v4_5",
-                runtimeLibrary: "Antlr4.Runtime.dll",
-                extensions: new[] { "cs" },
-                mainFile: "Program.cs",
-                antlrInputStream: "AntlrInputStream",
-                runtimeToolName: "dotnet",
-                versionArg: "--version",
-                jarGenerator: "antlr-4.6.6-csharp-optimized.jar"
-            ),
-            [Runtime.CSharpStandard] = new RuntimeInfo
-            (
-                runtime: Runtime.CSharpStandard,
+                runtime: Runtime.CSharp,
                 name: "C# Standard",
                 dLanguage: "CSharp",
                 runtimeLibrary: "Antlr4.Runtime.Standard.dll",

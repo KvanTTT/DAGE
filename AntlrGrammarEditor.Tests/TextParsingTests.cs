@@ -261,7 +261,7 @@ public abstract class {parserSuperclassName} extends Parser {{
 }}",
 $"{predicateName}()"),
 
-                [Runtime.CSharpStandard] = (
+                [Runtime.CSharp] = (
 $@"using System.IO;
 using Antlr4.Runtime;
 
@@ -274,22 +274,6 @@ public abstract class {parserSuperclassName} : Parser
     protected bool {predicateName}()
     {{
         return TokenStream.LT(1).Text == ""OK"";
-    }}
-}}",
-$"{predicateName}()"),
-
-                [Runtime.CSharpOptimized] = (
-$@"using Antlr4.Runtime;
-
-public abstract class {parserSuperclassName} : Parser
-{{
-    protected testParserBase(ITokenStream input) : base(input)
-    {{
-    }}
-
-    protected bool {predicateName}()
-    {{
-        return _input.Lt(1).Text == ""OK"";
     }}
 }}",
 $"{predicateName}()"),

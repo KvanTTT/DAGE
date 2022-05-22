@@ -67,8 +67,7 @@ namespace AntlrGrammarEditor.Processors.TextParsing
 
                 string args = runtime switch
                 {
-                    Runtime.CSharpOptimized => PrepareCSharpArgs(grammar),
-                    Runtime.CSharpStandard => PrepareCSharpArgs(grammar),
+                    Runtime.CSharp => PrepareCSharpArgs(grammar),
                     Runtime.Java => PrepareJavaArgs(runtimeLibraryPath),
                     Runtime.Go => "",
                     _ => runtimeInfo.MainFile

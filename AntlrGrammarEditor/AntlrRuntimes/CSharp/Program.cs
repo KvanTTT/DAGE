@@ -7,9 +7,6 @@ using System.Diagnostics;
 using System.Text;
 using System.IO;
 /*$PackageName*/using __PackageName__;/*PackageName$*/
-#if CSharpOptimized
-using Antlr4.Runtime.Misc;
-#endif
 
 class Program
 {
@@ -63,25 +60,12 @@ class Program
                 var parser = new __TemplateParserName__(tokensStream);
                 parser.RemoveErrorListeners();
                 parser.AddErrorListener(new ParserErrorListener());
-                parser.Interpreter.PredictionMode = predictionMode == "sll" ?
-#if CSharpOptimized
-                    PredictionMode.Sll
-#else
-                    PredictionMode.SLL
-#endif
-                    : predictionMode == "ll" ?
-#if CSharpOptimized
-                    PredictionMode.Ll
-#else
-                    PredictionMode.LL
-#endif
-                    :
-#if CSharpOptimized
-                    PredictionMode.LlExactAmbigDetection
-#else
-                    PredictionMode.LL_EXACT_AMBIG_DETECTION
-#endif
-                    ;
+                parser.Interpreter.PredictionMode = predictionMode == "sll"
+                        ? PredictionMode.SLL
+                        : predictionMode == "ll"
+                            ? PredictionMode.LL
+                            : PredictionMode.LL_EXACT_AMBIG_DETECTION
+                            ;
 
                 stopwatch.Restart();
                 string ruleName = rootRule == null ? __TemplateParserName__.ruleNames[0] : rootRule;
@@ -102,11 +86,7 @@ class Program
 
     class LexerErrorListener : IAntlrErrorListener<int>
     {
-#if CSharpOptimized
-        public void SyntaxError([NotNull] IRecognizer recognizer, [Nullable] int offendingSymbol, int line, int charPositionInLine, [NotNull] string msg, [Nullable] RecognitionException e)
-#else
         public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
-#endif
         {
             Console.Error.WriteLine($"line {line}:{charPositionInLine} {msg}");
         }
@@ -114,11 +94,7 @@ class Program
 
     class ParserErrorListener : IAntlrErrorListener<IToken>
     {
-#if CSharpOptimized
-        public void SyntaxError([NotNull] IRecognizer recognizer, [Nullable] IToken offendingSymbol, int line, int charPositionInLine, [NotNull] string msg, [Nullable] RecognitionException e)
-#else
         public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
-#endif
         {
             Console.Error.WriteLine($"line {line}:{charPositionInLine} {msg}");
         }

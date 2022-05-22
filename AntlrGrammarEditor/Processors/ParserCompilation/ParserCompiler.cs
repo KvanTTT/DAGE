@@ -81,7 +81,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                                              state.GrammarCheckedState.CaseInsensitiveType ?? CaseInsensitiveType.None;
             Result = new ParserCompiledState(state, definedCaseInsensitiveType, _runtimeFiles);
             CurrentRuntimeInfo = Result.ParserGeneratedState.Runtime.GetRuntimeInfo();
-            string runtimeSource = state.Runtime.GetGeneralRuntimeName();
+            string runtimeSource = state.Runtime.ToString();
             RuntimeDir = Path.Combine(RuntimesDirName, runtimeSource);
             RuntimeLibraryPath = RuntimeLibrary ?? Path.Combine(RuntimeDir, CurrentRuntimeInfo.RuntimeLibrary);
             WorkingDirectory = Path.Combine(ParserGenerator.HelperDirectoryName,
@@ -384,7 +384,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 if (_ignoreDiagnosis)
                     return;
 
-                if (CurrentRuntimeInfo.Runtime.IsCSharpRuntime() && CSharpStopStringRegex.IsMatch(data))
+                if (CurrentRuntimeInfo.Runtime == Runtime.CSharp && CSharpStopStringRegex.IsMatch(data))
                     _ignoreDiagnosis = true;
             }
 
