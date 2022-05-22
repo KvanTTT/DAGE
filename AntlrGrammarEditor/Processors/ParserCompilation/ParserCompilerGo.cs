@@ -30,6 +30,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 }
             }
 
+            File.Copy(Path.Combine(RuntimeDir, "go.mod"), Path.Combine(WorkingDirectory, "go.mod"));
+
             if (CaseInsensitiveType != CaseInsensitiveType.None)
             {
                 compiledFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
@@ -39,6 +41,12 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
                 File.Copy(sourceFileName, destFileName, true);
             }
+
+            // Get dependencies
+            var dependenciesProcessor = new Processor(CurrentRuntimeInfo.RuntimeToolName, "get",
+                WorkingDirectory);
+            // TODO: handle dependencies warnings and errors
+            dependenciesProcessor.Start();
 
             return "build " + compiledFiles;
         }

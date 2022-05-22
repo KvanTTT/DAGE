@@ -4,17 +4,35 @@ namespace AntlrGrammarEditor
 {
     public abstract class LexerAdaptor : Lexer
     {
-        private const int InvalidType = -1;
-        private int _currentRuleType = InvalidType;
+        private static readonly int PREQUEL_CONSTRUCT = -10;
+        private static readonly int OPTIONS_CONSTRUCT = -11;
 
-        public LexerAdaptor(ICharStream charStream)
-            : base(charStream)
+        protected LexerAdaptor(ICharStream input)
+            : base(input)
         {
+            CurrentRuleType = TokenConstants.InvalidType;
+            _insideOptionsBlock = false;
         }
+
+        /**
+         * Track whether we are inside of a rule and whether it is lexical parser. _currentRuleType==TokenConstants.InvalidType
+         * means that we are outside of a rule. At the first sign of a rule name reference and _currentRuleType==invalid, we
+         * can assume that we are starting a parser rule. Similarly, seeing a token reference when not already in rule means
+         * starting a token rule. The terminating ';' of a rule, flips this back to invalid type.
+         *
+         * This is not perfect logic but works. For example, "grammar T;" means that we start and stop a lexical rule for
+         * the "T;". Dangerous but works.
+         *
+         * The whole point of this state information is to distinguish between [..arg actions..] and [charsets]. Char sets
+         * can only occur in lexical rules and arg actions cannot occur.
+         */
+        private int CurrentRuleType { get; set; } = TokenConstants.InvalidType;
+
+        private bool _insideOptionsBlock;
 
         protected void handleBeginArgument()
         {
-            if (_currentRuleType == ANTLRv4Lexer.TOKEN_REF)
+            if (InLexerRule)
             {
                 PushMode(ANTLRv4Lexer.LexerCharSet);
                 More();
@@ -30,48 +48,95 @@ namespace AntlrGrammarEditor
             PopMode();
             if (_modeStack.Count > 0)
             {
-                _type = ANTLRv4Lexer.ARGUMENT_CONTENT;
+                Type = ANTLRv4Lexer.ARGUMENT_CONTENT;
             }
         }
 
         protected void handleEndAction()
         {
-            PopMode();
-            if (_modeStack.Count > 0)
+            var oldMode = _mode;
+            var newMode = PopMode();
+
+            if (_modeStack.Count > 0 && newMode == ANTLRv4Lexer.Argument && oldMode == newMode)
             {
-                _type = ANTLRv4Lexer.ACTION_CONTENT;
+                Type = ANTLRv4Lexer.ACTION_CONTENT;
             }
         }
 
-        public override void Emit(IToken token)
+        private bool InLexerRule
         {
-            if (_type == ANTLRv4Lexer.ID)
+            get { return CurrentRuleType == ANTLRv4Lexer.TOKEN_REF; }
+        }
+
+        public override IToken Emit()
+        {
+            if ((Type == ANTLRv4Lexer.OPTIONS || Type == ANTLRv4Lexer.TOKENS || Type == ANTLRv4Lexer.CHANNELS) &&
+                CurrentRuleType == TokenConstants.InvalidType)
             {
-                var tokenText = _input.GetText(new Antlr4.Runtime.Misc.Interval(_tokenStartCharIndex, _tokenStartCharIndex));
-                if (char.IsUpper(tokenText[0]))
+                // enter prequel construct ending with an RBRACE
+                CurrentRuleType = PREQUEL_CONSTRUCT;
+            }
+            else if (Type == ANTLRv4Lexer.OPTIONS && CurrentRuleType == ANTLRv4Lexer.TOKEN_REF)
+            {
+                CurrentRuleType = OPTIONS_CONSTRUCT;
+            }
+            else if (Type == ANTLRv4Lexer.RBRACE && CurrentRuleType == PREQUEL_CONSTRUCT)
+            {
+                // exit prequel construct
+                CurrentRuleType = TokenConstants.InvalidType;
+            }
+            else if (Type == ANTLRv4Lexer.RBRACE && CurrentRuleType == OPTIONS_CONSTRUCT)
+            {
+                // exit options
+                CurrentRuleType = ANTLRv4Lexer.TOKEN_REF;
+            }
+            else if (Type == ANTLRv4Lexer.AT && CurrentRuleType == TokenConstants.InvalidType)
+            {
+                // enter action
+                CurrentRuleType = ANTLRv4Lexer.AT;
+            }
+            else if (Type == ANTLRv4Lexer.SEMI && CurrentRuleType == OPTIONS_CONSTRUCT)
+            {
+                // ';' in options { .... }. Don't change anything.
+            }
+            else if (Type == ANTLRv4Lexer.END_ACTION && CurrentRuleType == ANTLRv4Lexer.AT)
+            {
+                // exit action
+                CurrentRuleType = TokenConstants.InvalidType;
+            }
+            else if (Type == ANTLRv4Lexer.ID)
+            {
+                var firstChar =
+                    _input.GetText(new Antlr4.Runtime.Misc.Interval(_tokenStartCharIndex, _tokenStartCharIndex))[0];
+                if (char.IsUpper(firstChar))
                 {
-                    _type = ANTLRv4Lexer.TOKEN_REF;
-                }
-                else
-                {
-                    _type = ANTLRv4Lexer.RULE_REF;
+                    Type = ANTLRv4Lexer.TOKEN_REF;
                 }
 
-                if (_currentRuleType == InvalidType)
+                if (char.IsLower(firstChar))
                 {
-                    _currentRuleType = _type;
+                    Type = ANTLRv4Lexer.RULE_REF;
                 }
 
-                base.Emit(new CommonToken(token) { Type = _type });
-            }
-            else 
-            {
-                if (_type == ANTLRv4Lexer.SEMI)
+                if (CurrentRuleType == TokenConstants.InvalidType)
                 {
-                    _currentRuleType = InvalidType;
+                    // if outside of rule def
+                    CurrentRuleType = Type; // set to inside lexer or parser rule
                 }
-                base.Emit(token);
             }
+            else if (Type == ANTLRv4Lexer.SEMI)
+            {
+                CurrentRuleType = TokenConstants.InvalidType;
+            }
+
+            return base.Emit();
+        }
+
+        public override void Reset()
+        {
+            CurrentRuleType = TokenConstants.InvalidType;
+            _insideOptionsBlock = false;
+            base.Reset();
         }
     }
 }

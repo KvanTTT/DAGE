@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="!$(DefineConstants.Contains(CSharpOptimized))">
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.2" />
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.10.1" />
   </ItemGroup>
 
 </Project>

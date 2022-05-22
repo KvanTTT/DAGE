@@ -37,7 +37,7 @@ void main(List<String> arguments) async {
   __TemplateParserName__.checkVersion();
   final parser = __TemplateParserName__(tokens);
   parser.buildParseTree = true;
-  parser.interpreter.predictionMode = mode == "sll"
+  parser.interpreter?.predictionMode = mode == "sll"
       ? PredictionMode.SLL
       : mode == "ll"
       ? PredictionMode.LL

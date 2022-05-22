@@ -1,6 +1,6 @@
 import fs from 'fs';
 import antlr4 from 'antlr4';
-import PredictionMode from 'antlr4/atn/PredictionMode.js';
+import PredictionMode from 'antlr4/src/antlr4/atn/PredictionMode.js';
 import __TemplateLexerName__ from './__TemplateLexerName__.js';
 /*$ParserInclude*/import __TemplateParserName__ from './__TemplateParserName__.js';/*ParserInclude$*/
 /*$AntlrCaseInsensitive*/import AntlrCaseInsensitiveInputStream from './AntlrCaseInsensitiveInputStream.js';/*AntlrCaseInsensitive$*/
@@ -31,10 +31,10 @@ if (process.argv.length > 3) {
 }
 var parser = new __TemplateParserName__(tokensStream);
 parser._interp.predictionMode = mode === "sll"
-    ? PredictionMode.PredictionMode.SLL
+    ? PredictionMode.SLL
     : mode === "ll"
-        ? PredictionMode.PredictionMode.LL
-        : PredictionMode.PredictionMode.LL_EXACT_AMBIG_DETECTION;
+        ? PredictionMode.LL
+        : PredictionMode.LL_EXACT_AMBIG_DETECTION;
 var ruleName = rootRule === undefined ? parser.ruleNames[0] : rootRule;
 var ast = parser[ruleName]();
 console.log("Tree " + ast.toStringTree(null, parser));

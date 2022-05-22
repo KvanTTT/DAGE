@@ -427,9 +427,14 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 return new ParserCompilationDiagnosis(mappedResult.TextSpanInGrammar, mappedResult.TextSpanInGenerated, message, type);
             }
 
-            var source = _runtimeFiles[codeFileName].Item1;
-            var position = source.LineColumnToPosition(line, column);
-            return new ParserCompilationDiagnosis(null, new TextSpan(position, 0, source), message, type);
+            if (_runtimeFiles.TryGetValue(codeFileName, out var tuple))
+            {
+                var source = tuple.Item1;
+                var position = source.LineColumnToPosition(line, column);
+                return new ParserCompilationDiagnosis(null, new TextSpan(position, 0, source), message, type);
+            }
+
+            return new ParserCompilationDiagnosis(message);
         }
 
         protected void AddToBuffer(string data)

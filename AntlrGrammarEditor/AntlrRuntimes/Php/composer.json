@@ -1,5 +1,5 @@
 {
     "require": {
-        "antlr/antlr4-php-runtime": "0.2.x-dev"
+        "antlr/antlr4-php-runtime": "^0.6.0"
     }
 }

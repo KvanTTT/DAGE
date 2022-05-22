@@ -209,7 +209,7 @@ labeledAlt
 // --------------------
 // Lexer rules
 lexerRuleSpec
-   : DOC_COMMENT* FRAGMENT? TOKEN_REF COLON lexerRuleBlock SEMI
+   : DOC_COMMENT* FRAGMENT? TOKEN_REF optionsSpec? COLON lexerRuleBlock SEMI
    ;
 
 lexerRuleBlock

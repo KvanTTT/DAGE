@@ -27,10 +27,10 @@
     <None Update="Generators\antlr-4.6.6-csharp-optimized.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Generators\antlr-4.9.2-complete.jar">
+    <None Update="Generators\antlr-4.10.1-complete.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="AntlrRuntimes\Java\antlr-runtime-4.9.2.jar">
+    <None Update="AntlrRuntimes\Java\antlr-runtime-4.10.1.jar">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="AntlrRuntimes\Go\AntlrCaseInsensitiveInputStream.go">
@@ -73,6 +73,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="AntlrRuntimes\Dart\AntlrCaseInsensitiveInputStream.dart">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="AntlrRuntimes\Go\go.mod">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
