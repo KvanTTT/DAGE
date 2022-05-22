@@ -18,22 +18,17 @@ namespace AntlrGrammarEditor
 
         public string? TextExtension { get; }
 
-        public CaseInsensitiveType CaseInsensitiveType { get; }
-
         public string FullFileName => Path.Combine(Directory, Name + AntlrDotExt);
 
         public string ExamplesDirectory => Path.Combine(Directory, "examples");
 
         public string DotTextExtension => string.IsNullOrEmpty(TextExtension) ? "" : "." + TextExtension;
 
-        public Grammar(string name, string directory,
-            string? root = null, string? package = null, CaseInsensitiveType caseInsensitiveType = CaseInsensitiveType.None,
-            string? textExtension = null)
+        public Grammar(string name, string directory, string? root = null, string? package = null, string? textExtension = null)
         {
             Name = name;
             Directory = directory;
             TextExtension = textExtension;
-            CaseInsensitiveType = caseInsensitiveType;
             Root = root;
             Package = package;
         }

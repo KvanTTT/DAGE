@@ -97,41 +97,6 @@ error 123 456 ;   // mismatched input '123' expecting Id");
         }
 
         [TestCaseSource(nameof(SupportedRuntimes))]
-        public void CaseInsensitive(Runtime runtime)
-        {
-            CheckCaseInsensitiveWorkflow(runtime, true);
-            CheckCaseInsensitiveWorkflow(runtime, false);
-        }
-
-        private static void CheckCaseInsensitiveWorkflow(Runtime runtime, bool lowerCase)
-        {
-            char a = lowerCase ? 'a' : 'A';
-            char д = lowerCase ? 'д' : 'Д';
-            var grammarText =
-$@"grammar {TestGrammarName};
-// caseInsensitiveType={(lowerCase ? CaseInsensitiveType.Lower : CaseInsensitiveType.Upper)};
-start:  A A B D D DIGIT;
-A:      '{a}';
-B:      'ß';    // No transformation into SS here (result's char length is more than 1)
-D:      '{д}';  // Should work fine for non latin chars too (if result's char length is 1)
-DIGIT:  [0-9]+;
-WS:     [ \r\n\t]+ -> skip;";
-            var grammar = GrammarFactory.CreateDefaultCombinedAndFill(grammarText, ".");
-            File.WriteAllText(TestTextName, @"A a ß Д д 1234");
-
-            var workflow = new Workflow(grammar);
-            workflow.Runtime = runtime;
-            workflow.TextFileName = TestTextName;
-
-            var state = workflow.Process();
-            Assert.IsInstanceOf<TextParsedState>(state, state.DiagnosisMessage);
-            var textParsedState = (TextParsedState)state;
-            Assert.AreEqual(0, textParsedState.Diagnoses.Count, textParsedState.DiagnosisMessage);
-            if (runtime != Runtime.Php)
-                Assert.AreEqual("(start A a ß Д д 1234)", textParsedState.Tree);
-        }
-
-        [TestCaseSource(nameof(SupportedRuntimes))]
         public void CheckCustomRoot(Runtime runtime)
         {
             var grammarText =
@@ -228,7 +193,6 @@ TOKEN:  'a';";
             var workflow = new Workflow(grammar)
             {
                 Runtime = runtime,
-                CaseInsensitiveType = CaseInsensitiveType.Lower,
                 PackageName = packageName,
                 TextFileName = TestTextName
             };

@@ -8,8 +8,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerCSharp : ParserCompiler
     {
-        public ParserCompilerCSharp(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
-            : base(state, caseInsensitiveType)
+        public ParserCompilerCSharp(ParserGeneratedState state)
+            : base(state)
         {
         }
 
@@ -20,12 +20,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 
         protected override string PrepareFilesAndGetArguments()
         {
-            string antlrCaseInsensitivePath = Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.cs");
-            if (CaseInsensitiveType != CaseInsensitiveType.None)
-            {
-                File.Copy(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.cs"), antlrCaseInsensitivePath, true);
-            }
-
             File.Copy(Path.Combine(RuntimeDir, "Program.cs"), Path.Combine(WorkingDirectory, "Program.cs"), true);
             File.Copy(Path.Combine(RuntimeDir, "AssemblyInfo.cs"), Path.Combine(WorkingDirectory, "AssemblyInfo.cs"), true);
 

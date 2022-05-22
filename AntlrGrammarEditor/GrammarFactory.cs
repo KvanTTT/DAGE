@@ -10,7 +10,6 @@ namespace AntlrGrammarEditor
         {
             string grammarName;
             string directoryName;
-            var caseInsensitiveType = CaseInsensitiveType.None;
             string? packageName = null;
             string? root = null;
 
@@ -28,17 +27,10 @@ namespace AntlrGrammarEditor
             if (File.Exists(pomFile))
             {
                 string content = File.ReadAllText(pomFile);
+
                 // TODO: fix with XMLParser and XPath
-                var caseInsensitiveRegex = new Regex("<caseInsensitiveType>(\\w+)</caseInsensitiveType>");
-
-                var match = caseInsensitiveRegex.Match(content);
-                if (match.Success)
-                {
-                    Enum.TryParse(match.Groups[1].Value, out caseInsensitiveType);
-                }
-
                 var entryPointRegex = new Regex("<entryPoint>(\\w+)</entryPoint>");
-                match = entryPointRegex.Match(content);
+                var match = entryPointRegex.Match(content);
                 if (match.Success)
                 {
                     root = match.Groups[1].Value;
@@ -52,7 +44,7 @@ namespace AntlrGrammarEditor
                 }
             }
 
-            return new Grammar(grammarName, directoryName, root, packageName, caseInsensitiveType);
+            return new Grammar(grammarName, directoryName, root, packageName);
         }
 
         public static Grammar CreateDefaultCombinedAndFill(string content, string directory)

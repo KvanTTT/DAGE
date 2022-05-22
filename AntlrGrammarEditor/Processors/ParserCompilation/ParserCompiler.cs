@@ -34,7 +34,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         private readonly OpenCloseMark _parserPartMark;
         private readonly OpenCloseMark _lexerIncludeMark;
         private readonly OpenCloseMark _parserIncludeMark;
-        private readonly OpenCloseMark _caseInsensitiveMark;
 
         private readonly Dictionary<string, FragmentMapper> _fragmentMappers = new ();
         private readonly Dictionary<string, (Source, RuntimeFileInfo)> _runtimeFiles = new();
@@ -51,8 +50,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
         public string? RuntimeLibrary { get; set; }
 
         public string GrammarName => Result.ParserGeneratedState.GrammarCheckedState.MainGrammarName;
-
-        public CaseInsensitiveType CaseInsensitiveType => Result.CaseInsensitiveType;
 
         protected abstract Regex ParserCompilerMessageRegex { get; }
 
@@ -74,12 +71,10 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             FragmentMarkRegexEnd = new Regex(fragmentRegexStringEnd, RegexOptions.Compiled);
         }
 
-        protected ParserCompiler(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
+        protected ParserCompiler(ParserGeneratedState state)
         {
             GrammarCheckedState = state.GrammarCheckedState;
-            var definedCaseInsensitiveType = caseInsensitiveType ??
-                                             state.GrammarCheckedState.CaseInsensitiveType ?? CaseInsensitiveType.None;
-            Result = new ParserCompiledState(state, definedCaseInsensitiveType, _runtimeFiles);
+            Result = new ParserCompiledState(state, _runtimeFiles);
             CurrentRuntimeInfo = Result.ParserGeneratedState.Runtime.GetRuntimeInfo();
             string runtimeSource = state.Runtime.ToString();
             RuntimeDir = Path.Combine(RuntimesDirName, runtimeSource);
@@ -91,7 +86,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             _parserPartMark = new OpenCloseMark("ParserPart", CurrentRuntimeInfo);
             _lexerIncludeMark = new OpenCloseMark("LexerInclude", CurrentRuntimeInfo);
             _parserIncludeMark = new OpenCloseMark("ParserInclude", CurrentRuntimeInfo);
-            _caseInsensitiveMark = new OpenCloseMark("AntlrCaseInsensitive", CurrentRuntimeInfo);
         }
 
         public ParserCompiledState Compile(CancellationToken cancellationToken = default)
@@ -281,46 +275,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                     grammarType == GrammarProjectType.Lexer && !isPackageNameEmpty
                     ? $"part '{lexerName}.dart';" : "");
             }
-
-            if (CaseInsensitiveType != CaseInsensitiveType.None)
-            {
-                string antlrInputStream = CurrentRuntimeInfo.AntlrInputStream;
-                string caseInsensitiveStream = "AntlrCaseInsensitiveInputStream";
-
-                if (runtime == Runtime.Java)
-                {
-                    caseInsensitiveStream = "new " + caseInsensitiveStream;
-                }
-                else if (runtime == Runtime.Go)
-                {
-                    caseInsensitiveStream = "New" + caseInsensitiveStream;
-                }
-                else if (runtime == Runtime.Php)
-                {
-                    antlrInputStream = antlrInputStream + "::fromPath";
-                    caseInsensitiveStream = caseInsensitiveStream + "::fromPath";
-                }
-                else if (runtime == Runtime.Dart)
-                {
-                    antlrInputStream = antlrInputStream + ".fromPath";
-                    caseInsensitiveStream = caseInsensitiveStream + ".fromPath";
-                }
-
-                var antlrInputStreamRegex = new Regex($@"{antlrInputStream}\(([^\)]+)\)");
-                string isLowerBool = (CaseInsensitiveType == CaseInsensitiveType.Lower).ToString();
-                if (runtime != Runtime.Python)
-                {
-                    isLowerBool = isLowerBool.ToLowerInvariant();
-                }
-
-                code = antlrInputStreamRegex.Replace(code,
-                    m => $"{caseInsensitiveStream}({m.Groups[1].Value}, {isLowerBool})");
-
-                if (runtime == Runtime.Python)
-                    code = code.Replace("from antlr4.InputStream import InputStream", "");
-            }
-
-            RemoveCodeWithinMarkOrRemoveMark(ref code, _caseInsensitiveMark, CaseInsensitiveType == CaseInsensitiveType.None);
 
             if (runtime == Runtime.Dart)
             {

@@ -215,7 +215,6 @@ T: [a-z]+;";
         {
             var grammarText =
 @$"grammar {TestGrammarName};
-// caseInsensitiveType=incorrect;
 // language=incorrect;
 // package=incorrect;
 // visitor=incorrect;
@@ -223,7 +222,6 @@ T: [a-z]+;";
 // root=incorrect;
 // predictionMode=incorrect;
 
-// caseInsensitiveType=lower;
 // language=JavaScript;
 // package=package;
 // visitor=true;
@@ -244,7 +242,6 @@ TOKEN: 'token';";
             Assert.IsInstanceOf<GrammarCheckedState>(state, state.DiagnosisMessage);
             var grammarCheckedState = (GrammarCheckedState)state;
 
-            Assert.AreEqual(CaseInsensitiveType.Lower, grammarCheckedState.CaseInsensitiveType);
             Assert.AreEqual(Runtime.JavaScript, grammarCheckedState.Runtime);
             Assert.AreEqual("package", grammarCheckedState.Package);
             Assert.AreEqual(true, grammarCheckedState.GenerateListener);
@@ -252,7 +249,6 @@ TOKEN: 'token';";
             Assert.AreEqual("root", grammarCheckedState.Root);
             Assert.AreEqual(PredictionMode.SLL, grammarCheckedState.PredictionMode);
 
-            CheckIncorrect("caseInsensitiveType");
             CheckIncorrect("language");
             CheckIncorrect("package", true);
             CheckIncorrect("visitor");
@@ -276,7 +272,6 @@ TOKEN: 'token';";
                 }
             }
 
-            CheckDuplication("caseInsensitiveType");
             CheckDuplication("language");
             CheckDuplication("package");
             CheckDuplication("visitor");

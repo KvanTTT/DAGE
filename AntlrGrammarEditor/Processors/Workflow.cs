@@ -14,7 +14,6 @@ namespace AntlrGrammarEditor.Processors
         private Grammar _grammar;
         private Runtime? _runtime;
         private string? _root;
-        private CaseInsensitiveType? _caseInsensitiveType;
         private PredictionMode? _predictionMode;
         private string? _textFileName;
         private string? _packageName;
@@ -54,20 +53,6 @@ namespace AntlrGrammarEditor.Processors
                     StopIfRequired();
                     _runtime = value;
                     RollbackToStage(WorkflowStage.Input);
-                }
-            }
-        }
-
-        public CaseInsensitiveType? CaseInsensitiveType
-        {
-            get => _caseInsensitiveType;
-            set
-            {
-                if (_caseInsensitiveType != value)
-                {
-                    StopIfRequired();
-                    _caseInsensitiveType = value;
-                    RollbackToStage(WorkflowStage.ParserGenerated);
                 }
             }
         }
@@ -269,11 +254,7 @@ namespace AntlrGrammarEditor.Processors
 
                 case ParserGeneratedState parserGeneratedState:
                     var parserCompiler =
-                        ParserCompilerFactory.Create(
-                            parserGeneratedState,
-                            CaseInsensitiveType,
-                            RuntimeLibrary,
-                            DiagnosisEvent);
+                        ParserCompilerFactory.Create(parserGeneratedState, RuntimeLibrary, DiagnosisEvent);
                     _currentState = parserCompiler.Compile(_cancellationTokenSource?.Token ?? default);
                     break;
 

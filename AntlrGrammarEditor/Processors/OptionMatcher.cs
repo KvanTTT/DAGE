@@ -9,18 +9,6 @@ using AntlrGrammarEditor.WorkflowState;
 
 namespace AntlrGrammarEditor.Processors
 {
-    public sealed class CaseInsensitiveTypeOptionMatcher : OptionMatcher<CaseInsensitiveType>
-    {
-        public override string Name => nameof(Grammar.CaseInsensitiveType);
-
-        protected override GrammarFileType OptionGrammarType => GrammarFileType.Lexer;
-
-        public CaseInsensitiveTypeOptionMatcher(Source source, GrammarFileType grammarType, Action<Diagnosis> diagnosisEvent) :
-            base(source, grammarType, diagnosisEvent)
-        {
-        }
-    }
-
     public sealed class RuntimeOptionMatcher : OptionMatcher<Runtime>
     {
         public override string Name => "Language";

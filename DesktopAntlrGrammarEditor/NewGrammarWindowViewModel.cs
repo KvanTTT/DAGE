@@ -18,16 +18,6 @@ namespace DesktopAntlrGrammarEditor
 
         public GrammarProjectType GrammarProjectType { get; set; } = GrammarProjectType.Combined;
 
-        public CaseInsensitiveType CaseInsensitiveType { get; set; } = CaseInsensitiveType.None;
-
-        public ObservableCollection<CaseInsensitiveType> CaseInsensitiveTypes { get; } =
-            new ObservableCollection<CaseInsensitiveType>(new List<CaseInsensitiveType>
-        {
-            CaseInsensitiveType.None,
-            CaseInsensitiveType.Lower,
-            CaseInsensitiveType.Upper
-        });
-
         public ObservableCollection<GrammarProjectType> GrammarProjectTypes { get; } =
             new ObservableCollection<GrammarProjectType>(new List<GrammarProjectType>
         {
@@ -50,7 +40,7 @@ namespace DesktopAntlrGrammarEditor
 
             OkCommand = ReactiveCommand.CreateFromTask(async () =>
             {
-                var grammar = new Grammar(GrammarName, GrammarDirectory, null, null, CaseInsensitiveType);
+                var grammar = new Grammar(GrammarName, GrammarDirectory, null, null);
                 var grammarFilesManager = new GrammarFilesManager(grammar, GrammarProjectType);
 
                 bool success = false;

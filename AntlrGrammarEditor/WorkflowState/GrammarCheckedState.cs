@@ -15,8 +15,6 @@ namespace AntlrGrammarEditor.WorkflowState
 
         public List<GrammarInfo> GrammarInfos { get; } = new();
 
-        public CaseInsensitiveType? CaseInsensitiveType { get; set; }
-
         public Runtime? Runtime { get; set; }
 
         public bool? GenerateListener { get; set; }

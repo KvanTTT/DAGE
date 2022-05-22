@@ -3,7 +3,6 @@
 require_once '__RuntimesPath__';
 require_once '__TemplateLexerName__.php';
 /*$ParserInclude*/require_once '__TemplateParserName__.php';/*ParserInclude$*/
-/*$AntlrCaseInsensitive*/require_once 'AntlrCaseInsensitiveInputStream.php';/*AntlrCaseInsensitive$*/
 
 use Antlr\Antlr4\Runtime\CommonTokenStream;
 use Antlr\Antlr4\Runtime\InputStream;

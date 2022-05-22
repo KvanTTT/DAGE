@@ -26,7 +26,7 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
                 while (currentGrammarInfo.TokenVocab != null) // TODO: consider imported grammars
                 {
                     var newGrammar = new Grammar(currentGrammarInfo.TokenVocab, grammar.Directory,
-                        grammar.Root, grammar.Package, grammar.CaseInsensitiveType, grammar.TextExtension);
+                        grammar.Root, grammar.Package, grammar.TextExtension);
                     currentGrammarInfo = ProcessGrammarFile(newGrammar, cancellationToken);
                 }
             }
@@ -92,7 +92,6 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
                 _result.AddDiagnosis(diagnosis);
             }
 
-            var caseInsensitiveTypeOptionMatcher = new CaseInsensitiveTypeOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
             var runtimeOptionMatcher = new RuntimeOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
             var visitorOptionMatcher = new VisitorOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
             var listenerOptionMatcher = new ListenerOptionMatcher(grammarCodeSource, grammarType, DiagnosisAction);
@@ -105,12 +104,6 @@ namespace AntlrGrammarEditor.Processors.GrammarChecking
             {
                 if (token.Type == ANTLRv4Lexer.LINE_COMMENT || token.Type == ANTLRv4Lexer.BLOCK_COMMENT)
                 {
-                    if (caseInsensitiveTypeOptionMatcher.Match(token, out var caseInsensitiveType))
-                    {
-                        _result.CaseInsensitiveType = caseInsensitiveType;
-                        continue;
-                    }
-
                     if (runtimeOptionMatcher.Match(token, out Runtime runtime))
                     {
                         _result.Runtime = runtime;

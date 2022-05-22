@@ -8,8 +8,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerPhp : ParserCompiler
     {
-        public ParserCompilerPhp(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
-            : base(state, caseInsensitiveType)
+        public ParserCompilerPhp(ParserGeneratedState state)
+            : base(state)
         {
         }
 
@@ -32,15 +32,7 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
                 stringBuilder.AppendLine($"require_once '{shortFileName}.php';");
             }
 
-            string compileTestFileName = CreateHelperFile(stringBuilder);
-
-            if (CaseInsensitiveType != CaseInsensitiveType.None)
-            {
-                File.Copy(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.php"),
-                    Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.php"), true);
-            }
-
-            return compileTestFileName;
+            return CreateHelperFile(stringBuilder);
         }
     }
 }

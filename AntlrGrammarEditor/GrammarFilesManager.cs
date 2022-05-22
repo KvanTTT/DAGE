@@ -108,14 +108,7 @@ namespace AntlrGrammarEditor
 
                     content.Append($"grammar {Grammar.Name};");
 
-                    if (grammarFileType != GrammarFileType.Parser &&
-                        Grammar.CaseInsensitiveType != CaseInsensitiveType.None)
-                    {
-                        content.AppendLine();
-                        content.AppendLine();
-                        content.Append($"/* CaseInsensitiveType: {Grammar.CaseInsensitiveType} */");
-                    }
-                    else if (grammarFileType == GrammarFileType.Parser)
+                    if (grammarFileType == GrammarFileType.Parser)
                     {
                         content.AppendLine();
                         content.AppendLine();

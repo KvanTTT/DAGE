@@ -9,8 +9,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerDart : ParserCompiler
     {
-        public ParserCompilerDart(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
-            : base(state, caseInsensitiveType)
+        public ParserCompilerDart(ParserGeneratedState state)
+            : base(state)
         {
         }
 
@@ -58,11 +58,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             string compileTestFileName = CreateHelperFile(stringBuilder);
 
             File.Copy(Path.Combine(RuntimeDir, "pubspec.yaml"), Path.Combine(WorkingDirectory, "pubspec.yaml"), true);
-            if (CaseInsensitiveType != CaseInsensitiveType.None)
-            {
-                File.Copy(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.dart"),
-                    Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.dart"), true);
-            }
 
             // Get dependencies
             var dependenciesProcessor = new Processor(CurrentRuntimeInfo.RuntimeToolName, "pub get",

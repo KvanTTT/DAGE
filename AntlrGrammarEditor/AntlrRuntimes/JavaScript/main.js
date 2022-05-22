@@ -3,7 +3,6 @@ import antlr4 from 'antlr4';
 import PredictionMode from 'antlr4/src/antlr4/atn/PredictionMode.js';
 import __TemplateLexerName__ from './__TemplateLexerName__.js';
 /*$ParserInclude*/import __TemplateParserName__ from './__TemplateParserName__.js';/*ParserInclude$*/
-/*$AntlrCaseInsensitive*/import AntlrCaseInsensitiveInputStream from './AntlrCaseInsensitiveInputStream.js';/*AntlrCaseInsensitive$*/
 
 var fileName = "../../Text"
 

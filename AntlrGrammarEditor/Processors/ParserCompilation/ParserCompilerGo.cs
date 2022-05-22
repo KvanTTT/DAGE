@@ -8,8 +8,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerGo : ParserCompiler
     {
-        public ParserCompilerGo(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
-            : base(state, caseInsensitiveType)
+        public ParserCompilerGo(ParserGeneratedState state)
+            : base(state)
         {
         }
 
@@ -31,16 +31,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             }
 
             File.Copy(Path.Combine(RuntimeDir, "go.mod"), Path.Combine(WorkingDirectory, "go.mod"));
-
-            if (CaseInsensitiveType != CaseInsensitiveType.None)
-            {
-                compiledFiles.Append(" \"AntlrCaseInsensitiveInputStream.go\"");
-
-                string sourceFileName = Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.go");
-                string destFileName = Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.go");
-
-                File.Copy(sourceFileName, destFileName, true);
-            }
 
             // Get dependencies
             var dependenciesProcessor = new Processor(CurrentRuntimeInfo.RuntimeToolName, "get",

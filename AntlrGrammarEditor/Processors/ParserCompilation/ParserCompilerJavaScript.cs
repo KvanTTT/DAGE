@@ -9,8 +9,8 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
 {
     public class ParserCompilerJavaScript : ParserCompiler
     {
-        public ParserCompilerJavaScript(ParserGeneratedState state, CaseInsensitiveType? caseInsensitiveType)
-            : base(state, caseInsensitiveType)
+        public ParserCompilerJavaScript(ParserGeneratedState state)
+            : base(state)
         {
         }
 
@@ -47,11 +47,6 @@ namespace AntlrGrammarEditor.Processors.ParserCompilers
             string compileTestFileName = CreateHelperFile(stringBuilder);
 
             File.Copy(Path.Combine(RuntimeDir, "package.json"), Path.Combine(WorkingDirectory, "package.json"), true);
-            if (CaseInsensitiveType != CaseInsensitiveType.None)
-            {
-                File.Copy(Path.Combine(RuntimeDir, "AntlrCaseInsensitiveInputStream.js"),
-                    Path.Combine(WorkingDirectory, "AntlrCaseInsensitiveInputStream.js"), true);
-            }
 
             return compileTestFileName;
         }
